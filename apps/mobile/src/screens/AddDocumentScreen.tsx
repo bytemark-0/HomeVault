@@ -31,6 +31,8 @@ type FormState = {
   date: string;
   vendor: string;
   amount: string;
+  filePath: string;
+  ocrText: string;
 };
 
 const documentTypes: Array<{ label: string; value: DocumentRecord['type'] }> = [
@@ -57,6 +59,8 @@ export function AddDocumentScreen({
     date: document?.date ?? '',
     vendor: document?.vendor ?? '',
     amount: formatAmountInput(document?.amountCents),
+    filePath: document?.filePath ?? '',
+    ocrText: document?.ocrText ?? '',
   });
   const [isSaving, setIsSaving] = useState(false);
 
@@ -75,11 +79,11 @@ export function AddDocumentScreen({
         propertyId,
         title: form.title.trim(),
         type: form.type,
-        filePath: document?.filePath,
+        filePath: cleanOptional(form.filePath),
         date: cleanOptional(form.date),
         vendor: cleanOptional(form.vendor),
         amountCents: parseAmountCents(form.amount),
-        ocrText: document?.ocrText,
+        ocrText: cleanOptional(form.ocrText),
         linkedRecordIds: [form.linkedRecordId],
       });
     } finally {
@@ -179,6 +183,19 @@ export function AddDocumentScreen({
           keyboardType="decimal-pad"
           onChangeText={(amount) => setForm((current) => ({ ...current, amount }))}
         />
+        <Field
+          label="File reference"
+          value={form.filePath}
+          placeholder="homevault://documents/hvac-manual.pdf"
+          onChangeText={(filePath) => setForm((current) => ({ ...current, filePath }))}
+        />
+        <Field
+          label="Captured text"
+          value={form.ocrText}
+          placeholder="Paste useful text, warranty terms, model notes, or OCR output"
+          multiline
+          onChangeText={(ocrText) => setForm((current) => ({ ...current, ocrText }))}
+        />
       </View>
 
       <Pressable
@@ -201,9 +218,17 @@ type FieldProps = {
   placeholder: string;
   onChangeText: (value: string) => void;
   keyboardType?: 'default' | 'decimal-pad';
+  multiline?: boolean;
 };
 
-function Field({ label, value, placeholder, onChangeText, keyboardType }: FieldProps) {
+function Field({
+  label,
+  value,
+  placeholder,
+  onChangeText,
+  keyboardType,
+  multiline = false,
+}: FieldProps) {
   return (
     <View style={styles.fieldGroup}>
       <Text style={styles.label}>{label}</Text>
@@ -212,7 +237,8 @@ function Field({ label, value, placeholder, onChangeText, keyboardType }: FieldP
         placeholder={placeholder}
         onChangeText={onChangeText}
         keyboardType={keyboardType}
-        style={styles.input}
+        multiline={multiline}
+        style={[styles.input, multiline && styles.textArea]}
         placeholderTextColor={colors.muted}
       />
     </View>
@@ -337,6 +363,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     fontSize: 15,
     fontWeight: '700',
+  },
+  textArea: {
+    minHeight: 112,
+    paddingTop: 12,
+    textAlignVertical: 'top',
   },
   optionGrid: {
     flexDirection: 'row',

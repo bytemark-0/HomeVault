@@ -44,7 +44,9 @@ export function DocumentDetailScreen({
         <Text style={styles.kicker}>{document.typeLabel}</Text>
         <Text style={styles.title}>{document.title}</Text>
         <View style={styles.statusPill}>
-          <Text style={styles.statusText}>{document.linkedToLabel}</Text>
+          <Text style={styles.statusText}>
+            {document.filePath ? 'File attached' : 'Metadata only'}
+          </Text>
         </View>
       </View>
 
@@ -57,6 +59,7 @@ export function DocumentDetailScreen({
 
       <View style={styles.panel}>
         <Text style={styles.sectionTitle}>Source</Text>
+        <DetailLine label="Linked to" value={document.linkedToLabel} />
         <DetailLine label="Vendor" value={document.vendor ?? 'Not recorded'} />
         <DetailLine label="File" value={document.filePath ?? 'Metadata only'} />
       </View>

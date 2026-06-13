@@ -119,6 +119,9 @@ export function AssetDetailScreen({
                 <Text style={styles.documentMeta}>
                   {document.typeLabel} · {document.dateLabel}
                 </Text>
+                <Text style={styles.documentFileMeta}>
+                  {document.filePath ? 'File attached' : 'Metadata only'}
+                </Text>
               </View>
             </Pressable>
           ))
@@ -497,6 +500,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     lineHeight: 17,
+  },
+  documentFileMeta: {
+    color: colors.green,
+    fontSize: 11,
+    fontWeight: '900',
+    lineHeight: 15,
   },
   serviceRow: {
     borderTopColor: colors.line,

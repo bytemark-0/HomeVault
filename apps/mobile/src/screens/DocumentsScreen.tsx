@@ -34,6 +34,8 @@ export function DocumentsScreen({
         document.linkedToLabel,
         document.dateLabel,
         document.vendor ?? '',
+        document.filePath ?? '',
+        document.ocrText ?? '',
       ]
         .join(' ')
         .toLowerCase();
@@ -108,6 +110,9 @@ export function DocumentsScreen({
               <Text style={styles.rowTitle}>{document.title}</Text>
               <Text style={styles.rowMeta}>
                 {document.typeLabel} · {document.linkedToLabel} · {document.dateLabel}
+              </Text>
+              <Text style={styles.fileMeta}>
+                {document.filePath ? 'File attached' : 'Metadata only'}
               </Text>
             </View>
           </Pressable>
@@ -232,6 +237,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     lineHeight: 17,
+  },
+  fileMeta: {
+    color: colors.green,
+    fontSize: 11,
+    fontWeight: '900',
+    lineHeight: 15,
   },
   emptyPanel: {
     borderRadius: 8,

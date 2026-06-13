@@ -157,6 +157,9 @@ export function RoomDetailScreen({
                 <Text style={styles.rowMeta}>
                   {document.typeLabel} · {document.dateLabel}
                 </Text>
+                <Text style={styles.fileMeta}>
+                  {document.filePath ? 'File attached' : 'Metadata only'}
+                </Text>
               </View>
               <Text style={styles.rowValue}>{document.linkedToLabel}</Text>
             </Pressable>
@@ -412,6 +415,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     lineHeight: 17,
+  },
+  fileMeta: {
+    color: colors.green,
+    fontSize: 11,
+    fontWeight: '900',
+    lineHeight: 15,
   },
   rowValue: {
     color: colors.muted,
