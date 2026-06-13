@@ -131,31 +131,43 @@ export function HouseholdScreen({
       </Pressable>
 
       <SectionTitle title="Rooms & areas" action="Add area" onActionPress={onAddRoom} />
-      <View style={styles.readinessList}>
-        {rooms.map((room) => (
-          <Pressable
-            key={room.id}
-            onPress={() => onRoomPress(room.id)}
-            style={styles.readinessRow}
-            accessibilityRole="button"
-          >
-            <View>
-              <Text style={styles.readinessLabel}>{room.name}</Text>
-              <Text style={styles.roomMeta}>
-                {formatRoomType(room.type)}{room.floor ? ` · ${room.floor}` : ''}
-              </Text>
-            </View>
-            <View style={styles.roomCounts}>
-              <Text style={styles.readinessValue}>{formatCount(room.assetCount, 'asset')}</Text>
-              <Text style={styles.roomCountMeta}>
-                {room.activeTaskCount > 0
-                  ? formatCount(room.activeTaskCount, 'task')
-                  : 'No open tasks'}
-              </Text>
-            </View>
+      {rooms.length > 0 ? (
+        <View style={styles.readinessList}>
+          {rooms.map((room) => (
+            <Pressable
+              key={room.id}
+              onPress={() => onRoomPress(room.id)}
+              style={styles.readinessRow}
+              accessibilityRole="button"
+            >
+              <View>
+                <Text style={styles.readinessLabel}>{room.name}</Text>
+                <Text style={styles.roomMeta}>
+                  {formatRoomType(room.type)}{room.floor ? ` · ${room.floor}` : ''}
+                </Text>
+              </View>
+              <View style={styles.roomCounts}>
+                <Text style={styles.readinessValue}>{formatCount(room.assetCount, 'asset')}</Text>
+                <Text style={styles.roomCountMeta}>
+                  {room.activeTaskCount > 0
+                    ? formatCount(room.activeTaskCount, 'task')
+                    : 'No open tasks'}
+                </Text>
+              </View>
+            </Pressable>
+          ))}
+        </View>
+      ) : (
+        <View style={styles.emptyPanel}>
+          <Text style={styles.emptyTitle}>Map the first area</Text>
+          <Text style={styles.emptyText}>
+            Add rooms, exterior spaces, or storage areas so assets and tasks can be grouped.
+          </Text>
+          <Pressable onPress={onAddRoom} style={styles.emptyAction} accessibilityRole="button">
+            <Text style={styles.emptyActionText}>Add area</Text>
           </Pressable>
-        ))}
-      </View>
+        </View>
+      )}
 
       <SectionTitle title="Readiness" action="Backup" />
       <View style={styles.readinessList}>
@@ -424,6 +436,40 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     marginTop: 2,
+  },
+  emptyPanel: {
+    borderRadius: 8,
+    borderColor: colors.line,
+    borderWidth: 1,
+    backgroundColor: colors.panel,
+    padding: 14,
+    gap: 8,
+  },
+  emptyTitle: {
+    color: colors.ink,
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  emptyText: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+  emptyAction: {
+    alignSelf: 'flex-start',
+    minHeight: 38,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    backgroundColor: colors.green,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  emptyActionText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '900',
   },
 });
 

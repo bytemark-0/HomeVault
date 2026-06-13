@@ -26,7 +26,7 @@ In-progress, uncommitted slice:
 
 - [ ] Decide whether to keep and commit smarter export-fix routing.
 - [ ] Add an onboarding/reset path that explains demo data versus a real household.
-- [ ] Add empty states for inventory, documents, rooms, maintenance, and export readiness.
+- [x] Add empty states for inventory, documents, rooms, maintenance, and export readiness.
 - [ ] Add basic form validation messages for required fields and invalid dates/amounts.
 - [ ] Add delete confirmations for destructive record actions.
 - [ ] Add edit flows for all primary record types: property, rooms, assets, documents, tasks.

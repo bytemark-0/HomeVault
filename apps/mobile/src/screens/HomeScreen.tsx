@@ -106,9 +106,18 @@ export function HomeScreen({
       )}
 
       <SectionTitle title="Recent records" action="Search" onActionPress={onViewInventory} />
-      {recentAssets.map((asset) => (
-        <AssetRow key={asset.id} asset={asset} onPress={() => onAssetPress(asset.id)} />
-      ))}
+      {recentAssets.length > 0 ? (
+        recentAssets.map((asset) => (
+          <AssetRow key={asset.id} asset={asset} onPress={() => onAssetPress(asset.id)} />
+        ))
+      ) : (
+        <View style={styles.emptyPanel}>
+          <Text style={styles.emptyTitle}>No asset records yet</Text>
+          <Text style={styles.emptyText}>
+            Add an asset from Inventory to start building the household record.
+          </Text>
+        </View>
+      )}
     </View>
   );
 }

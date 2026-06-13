@@ -267,7 +267,14 @@ export function ExportManifestScreen({
             />
           ))}
         </View>
-      ) : null}
+      ) : (
+        <View style={styles.readyPanel}>
+          <Text style={styles.readyTitle}>Ready to back up</Text>
+          <Text style={styles.readyText}>
+            The manifest checks are clear. Download a JSON package before making major changes or sharing records.
+          </Text>
+        </View>
+      )}
 
       <View style={styles.downloadPanel}>
         <View style={styles.downloadBody}>
@@ -892,6 +899,25 @@ const styles = StyleSheet.create({
     backgroundColor: colors.panel,
     padding: 14,
     gap: 10,
+  },
+  readyPanel: {
+    borderRadius: 8,
+    borderColor: '#B8D7CB',
+    borderWidth: 1,
+    backgroundColor: colors.greenSoft,
+    padding: 14,
+    gap: 6,
+  },
+  readyTitle: {
+    color: colors.green,
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  readyText: {
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: '800',
+    lineHeight: 18,
   },
   sectionTitle: {
     color: colors.ink,
