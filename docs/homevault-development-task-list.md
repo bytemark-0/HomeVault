@@ -28,10 +28,21 @@ In-progress, uncommitted slice:
 - [ ] Add an onboarding/reset path that explains demo data versus a real household.
 - [x] Add empty states for inventory, documents, rooms, maintenance, and export readiness.
 - [x] Add basic form validation messages for required fields and invalid dates/amounts.
-- [ ] Add delete confirmations for destructive record actions.
+- [x] Add delete confirmations for destructive record actions.
 - [ ] Add edit flows for all primary record types: property, rooms, assets, documents, tasks.
 - [ ] Verify navigation return paths after every create/edit/delete action.
 - [ ] Add a small “backup last created/restored” status indicator on Household or Export.
+
+## Destructive Action Audit
+
+Current destructive actions exposed in the app:
+- Document delete: confirmed from document detail.
+- Task delete: confirmed from task detail, including a completion-history warning when relevant.
+- Repair delete: confirmed from asset repair history.
+- Demo data reset: confirmed from Household readiness.
+- Backup restore: guarded by validation, preview, dry-run checklist, and typed `RESTORE` confirmation.
+
+Asset and room delete are not currently exposed as user actions.
 
 ## P1: Documents And Attachments
 
