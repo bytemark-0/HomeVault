@@ -384,13 +384,14 @@ export function toDocumentListItem(
   assets: Asset[],
   rooms: RoomArea[] = [],
 ): DocumentListItem {
-  const linkedAsset = assets.find((asset) => document.linkedRecordIds.includes(asset.id));
-  const linkedRoom = rooms.find((room) => document.linkedRecordIds.includes(room.id));
+  const linkedLabels = document.linkedRecordIds
+    .map((recordId) => formatLinkedRecordLabel(recordId, assets, rooms, document.propertyId))
+    .filter((label): label is string => Boolean(label));
 
   return {
     ...document,
     typeLabel: formatDocumentType(document.type),
-    linkedToLabel: linkedAsset?.name ?? linkedRoom?.name ?? 'Property',
+    linkedToLabel: formatLinkedRecordSummary(linkedLabels),
     dateLabel: document.date ?? 'No date',
   };
 }
@@ -510,6 +511,43 @@ function formatTaskDueLabel(task: MaintenanceTask) {
 
 function formatDocumentType(type: DocumentRecord['type']) {
   return type.slice(0, 1).toUpperCase() + type.slice(1);
+}
+
+function formatLinkedRecordLabel(
+  recordId: string,
+  assets: Asset[],
+  rooms: RoomArea[],
+  propertyId: string,
+) {
+  const linkedAsset = assets.find((asset) => asset.id === recordId);
+
+  if (linkedAsset) {
+    return linkedAsset.name;
+  }
+
+  const linkedRoom = rooms.find((room) => room.id === recordId);
+
+  if (linkedRoom) {
+    return linkedRoom.name;
+  }
+
+  if (recordId === propertyId) {
+    return 'Property';
+  }
+
+  return undefined;
+}
+
+function formatLinkedRecordSummary(labels: string[]) {
+  if (labels.length === 0) {
+    return 'Unlinked';
+  }
+
+  if (labels.length <= 2) {
+    return labels.join(' + ');
+  }
+
+  return `${labels[0]} + ${labels.length - 1} more`;
 }
 
 function getLatestRepairEvent(assetId: string, repairEvents: RepairEvent[]) {

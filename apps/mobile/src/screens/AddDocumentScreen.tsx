@@ -30,7 +30,7 @@ type AddDocumentScreenProps = {
 type FormState = {
   title: string;
   type: DocumentRecord['type'];
-  linkedRecordId: string;
+  linkedRecordIds: string[];
   date: string;
   vendor: string;
   amount: string;
@@ -59,7 +59,11 @@ export function AddDocumentScreen({
   const [form, setForm] = useState<FormState>({
     title: document?.title ?? '',
     type: document?.type ?? 'receipt',
-    linkedRecordId: document?.linkedRecordIds[0] ?? initialLinkedRecordId ?? assets[0]?.id ?? propertyId,
+    linkedRecordIds: getInitialLinkedRecordIds(
+      document?.linkedRecordIds,
+      initialLinkedRecordId,
+      assets[0]?.id ?? propertyId,
+    ),
     date: document?.date ?? '',
     vendor: document?.vendor ?? '',
     amount: formatAmountInput(document?.amountCents),
@@ -138,7 +142,7 @@ export function AddDocumentScreen({
         vendor: cleanOptional(form.vendor),
         amountCents: parseAmountCents(form.amount),
         ocrText: cleanOptional(form.ocrText),
-        linkedRecordIds: [form.linkedRecordId],
+        linkedRecordIds: form.linkedRecordIds,
       });
     } finally {
       setIsSaving(false);
@@ -194,26 +198,27 @@ export function AddDocumentScreen({
 
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>Link to</Text>
+          <Text style={styles.helperText}>Select every asset, room, or property record this document supports.</Text>
           <View style={styles.optionGrid}>
             <RecordPill
               label="Property"
-              isSelected={form.linkedRecordId === propertyId}
-              onPress={() => setForm((current) => ({ ...current, linkedRecordId: propertyId }))}
+              isSelected={form.linkedRecordIds.includes(propertyId)}
+              onPress={() => setForm((current) => toggleLinkedRecord(current, propertyId))}
             />
             {rooms.map((room) => (
               <RecordPill
                 key={room.id}
                 label={room.name}
-                isSelected={form.linkedRecordId === room.id}
-                onPress={() => setForm((current) => ({ ...current, linkedRecordId: room.id }))}
+                isSelected={form.linkedRecordIds.includes(room.id)}
+                onPress={() => setForm((current) => toggleLinkedRecord(current, room.id))}
               />
             ))}
             {assets.map((asset) => (
               <RecordPill
                 key={asset.id}
                 label={asset.name}
-                isSelected={form.linkedRecordId === asset.id}
-                onPress={() => setForm((current) => ({ ...current, linkedRecordId: asset.id }))}
+                isSelected={form.linkedRecordIds.includes(asset.id)}
+                onPress={() => setForm((current) => toggleLinkedRecord(current, asset.id))}
               />
             ))}
           </View>
@@ -286,6 +291,30 @@ export function AddDocumentScreen({
       </Pressable>
     </ScrollView>
   );
+}
+
+function getInitialLinkedRecordIds(
+  documentLinkedRecordIds: string[] | undefined,
+  initialLinkedRecordId: string | undefined,
+  fallbackRecordId: string,
+) {
+  const ids = documentLinkedRecordIds?.length
+    ? documentLinkedRecordIds
+    : [initialLinkedRecordId ?? fallbackRecordId];
+
+  return Array.from(new Set(ids));
+}
+
+function toggleLinkedRecord(form: FormState, recordId: string): FormState {
+  const isSelected = form.linkedRecordIds.includes(recordId);
+  const linkedRecordIds = isSelected
+    ? form.linkedRecordIds.filter((candidate) => candidate !== recordId)
+    : [...form.linkedRecordIds, recordId];
+
+  return {
+    ...form,
+    linkedRecordIds,
+  };
 }
 
 type FieldProps = {
@@ -582,6 +611,12 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontSize: 13,
     fontWeight: '900',
+  },
+  helperText: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 17,
   },
   input: {
     minHeight: 46,
