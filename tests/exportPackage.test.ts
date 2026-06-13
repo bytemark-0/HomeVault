@@ -1,17 +1,21 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-import { createMemoryHomeVaultRepository, type HomeVaultSnapshot } from '../packages/database/src';
+import { createMemoryHomeVaultRepository } from '../packages/database/src';
 import {
-  buildHomeVaultExportPackage,
   formatHomeVaultExportPackage,
   parseHomeVaultExportPackage,
 } from '../packages/export/src';
-
-const currentSnapshot = createSnapshot('current', 'Current home');
-const backupSnapshot = createSnapshot('backup', 'Backup home');
+import {
+  backupSnapshot,
+  buildPackage,
+  currentSnapshot,
+  sampleBackupGeneratedAt,
+} from './support/exportFixtures';
 
 test('round-trips a full HomeVault export package', () => {
-  const exportPackage = buildPackage(backupSnapshot, '2026-06-13T12:00:00.000Z');
+  const exportPackage = buildPackage(backupSnapshot, sampleBackupGeneratedAt);
   const result = parseHomeVaultExportPackage(formatHomeVaultExportPackage(exportPackage));
 
   assert.equal(result.ok, true);
@@ -31,7 +35,7 @@ test('round-trips a full HomeVault export package', () => {
 });
 
 test('rejects packages whose manifest counts do not match records', () => {
-  const exportPackage = buildPackage(backupSnapshot, '2026-06-13T12:00:00.000Z');
+  const exportPackage = buildPackage(backupSnapshot, sampleBackupGeneratedAt);
   exportPackage.manifest.recordCounts.assets = 2;
 
   const result = parseHomeVaultExportPackage(formatHomeVaultExportPackage(exportPackage));
@@ -48,7 +52,7 @@ test('rejects packages whose manifest counts do not match records', () => {
 test('restores a validated package into the local repository snapshot', async () => {
   const repository = createMemoryHomeVaultRepository(currentSnapshot);
   const result = parseHomeVaultExportPackage(
-    formatHomeVaultExportPackage(buildPackage(backupSnapshot, '2026-06-13T12:00:00.000Z')),
+    formatHomeVaultExportPackage(buildPackage(backupSnapshot, sampleBackupGeneratedAt)),
   );
 
   assert.equal(result.ok, true);
@@ -74,6 +78,15 @@ test('restores a validated package into the local repository snapshot', async ()
   assert.equal(completions[0]?.taskId, 'task-backup');
 });
 
+test('keeps the sample backup fixture valid for manual restore testing', () => {
+  const fixturePath = resolve(process.cwd(), 'docs/homevault-sample-backup.json');
+  const result = parseHomeVaultExportPackage(readFileSync(fixturePath, 'utf8'));
+
+  assert.equal(result.ok, true);
+  assert.equal(result.preview.generatedAt, sampleBackupGeneratedAt);
+  assert.equal(result.preview.propertyLabel, 'Backup home');
+});
+
 async function test(name: string, run: () => void | Promise<void>) {
   try {
     await run();
@@ -82,105 +95,4 @@ async function test(name: string, run: () => void | Promise<void>) {
     console.error(`not ok - ${name}`);
     throw error;
   }
-}
-
-function buildPackage(snapshot: HomeVaultSnapshot, generatedAt: string) {
-  const [property] = snapshot.properties;
-
-  if (!property) {
-    throw new Error('Test snapshot must include a property.');
-  }
-
-  return buildHomeVaultExportPackage({
-    property,
-    assets: snapshot.assets,
-    documents: snapshot.documents,
-    repairEvents: snapshot.repairEvents,
-    rooms: snapshot.rooms,
-    taskCompletions: snapshot.taskCompletions,
-    tasks: snapshot.tasks,
-    generatedAt,
-  });
-}
-
-function createSnapshot(id: string, label: string): HomeVaultSnapshot {
-  const propertyId = `property-${id}`;
-  const assetId = `asset-${id}`;
-  const roomId = `room-${id}`;
-  const documentId = `document-${id}`;
-  const taskId = `task-${id}`;
-
-  return {
-    properties: [
-      {
-        id: propertyId,
-        householdId: `household-${id}`,
-        label,
-        type: 'single_family',
-        yearBuilt: 2001,
-      },
-    ],
-    rooms: [
-      {
-        id: roomId,
-        propertyId,
-        name: 'Kitchen',
-        type: 'room',
-      },
-    ],
-    assets: [
-      {
-        id: assetId,
-        propertyId,
-        roomId,
-        name: 'Dishwasher',
-        category: 'Appliance',
-        brand: 'Bosch',
-        status: 'ready',
-      },
-    ],
-    documents: [
-      {
-        id: documentId,
-        propertyId,
-        title: 'Dishwasher receipt',
-        type: 'receipt',
-        filePath: `/receipts/${id}.pdf`,
-        linkedRecordIds: [assetId],
-      },
-    ],
-    tasks: [
-      {
-        id: taskId,
-        propertyId,
-        scope: 'asset',
-        scopeId: assetId,
-        title: 'Clean dishwasher filter',
-        dueDate: '2026-06-01',
-        recurrenceKind: 'interval',
-        recurrenceLabel: 'Monthly',
-        state: 'completed',
-      },
-    ],
-    taskCompletions: [
-      {
-        id: `completion-${id}`,
-        taskId,
-        completedAt: '2026-06-02T13:00:00.000Z',
-        costCents: 0,
-      },
-    ],
-    repairEvents: [
-      {
-        id: `repair-${id}`,
-        propertyId,
-        assetId,
-        issue: 'Leaking supply line',
-        resolution: 'Replaced hose',
-        costCents: 4200,
-        date: '2026-05-15',
-        documentIds: [documentId],
-      },
-    ],
-  };
 }

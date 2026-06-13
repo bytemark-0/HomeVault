@@ -401,7 +401,9 @@ function buildExportChecklist({
         documentCount === 0 || attachedDocumentCount === documentCount ? 'ready' : 'review',
       detail:
         documentCount > 0
-          ? `${attachedDocumentCount} of ${documentCount} document${documentCount === 1 ? '' : 's'} include file references`
+          ? `${attachedDocumentCount} of ${documentCount} document${documentCount === 1 ? '' : 's'} ${
+              documentCount === 1 ? 'includes' : 'include'
+            } file references`
           : 'No documents require file references yet',
     },
     {
@@ -428,7 +430,9 @@ function buildExportChecklist({
       state: assetCount > 0 && documentedAssetCount === assetCount ? 'ready' : 'review',
       detail:
         assetCount > 0
-          ? `${documentedAssetCount} of ${assetCount} asset${assetCount === 1 ? '' : 's'} have documents`
+          ? `${documentedAssetCount} of ${assetCount} asset${assetCount === 1 ? '' : 's'} ${
+              assetCount === 1 ? 'has' : 'have'
+            } documents`
           : 'Add assets before tracking documentation coverage',
     },
   ] satisfies HomeVaultExportChecklistItem[];
