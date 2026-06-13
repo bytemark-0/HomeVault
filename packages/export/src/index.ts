@@ -59,6 +59,17 @@ export type HomeVaultExportAttachment = {
   type: DocumentRecord['type'];
 };
 
+export type HomeVaultExportPackageValidation =
+  | {
+      ok: true;
+      package: HomeVaultExportPackage;
+      summary: string;
+    }
+  | {
+      ok: false;
+      errors: string[];
+    };
+
 export type HomeVaultExportChecklistItem = {
   id:
     | 'rooms'
@@ -179,11 +190,115 @@ export function formatHomeVaultExportPackage(exportPackage: HomeVaultExportPacka
   return JSON.stringify(exportPackage, null, 2);
 }
 
+export function parseHomeVaultExportPackage(
+  source: string,
+): HomeVaultExportPackageValidation {
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(source);
+  } catch {
+    return { ok: false, errors: ['The selected file is not valid JSON.'] };
+  }
+
+  return validateHomeVaultExportPackage(parsed);
+}
+
+export function validateHomeVaultExportPackage(
+  candidate: unknown,
+): HomeVaultExportPackageValidation {
+  const errors: string[] = [];
+
+  if (!isRecord(candidate)) {
+    return { ok: false, errors: ['The package must be a JSON object.'] };
+  }
+
+  const manifest = candidate.manifest;
+  const records = candidate.records;
+  const attachments = candidate.attachments;
+
+  if (!isRecord(manifest)) {
+    errors.push('Missing manifest object.');
+  }
+
+  if (!isRecord(records)) {
+    errors.push('Missing records object.');
+  }
+
+  if (!Array.isArray(attachments)) {
+    errors.push('Missing attachments array.');
+  }
+
+  if (errors.length > 0 || !isRecord(manifest) || !isRecord(records) || !Array.isArray(attachments)) {
+    return { ok: false, errors };
+  }
+
+  if (manifest.app !== 'HomeVault') {
+    errors.push('Manifest app must be HomeVault.');
+  }
+
+  if (manifest.version !== 1) {
+    errors.push('Only HomeVault export version 1 is supported.');
+  }
+
+  if (!isRecord(manifest.recordCounts)) {
+    errors.push('Manifest record counts are missing.');
+  }
+
+  const roomCount = validateArrayCount(records.rooms, manifest.recordCounts, 'rooms', errors);
+  const assetCount = validateArrayCount(records.assets, manifest.recordCounts, 'assets', errors);
+  const documentCount = validateArrayCount(
+    records.documents,
+    manifest.recordCounts,
+    'documents',
+    errors,
+  );
+  const taskCount = validateArrayCount(records.tasks, manifest.recordCounts, 'tasks', errors);
+  validateArrayCount(records.taskCompletions, manifest.recordCounts, 'taskCompletions', errors);
+  validateArrayCount(records.repairEvents, manifest.recordCounts, 'repairEvents', errors);
+
+  if (!isRecord(records.property)) {
+    errors.push('Property record is missing.');
+  }
+
+  if (errors.length > 0) {
+    return { ok: false, errors };
+  }
+
+  return {
+    ok: true,
+    package: candidate as HomeVaultExportPackage,
+    summary: `${roomCount} areas, ${assetCount} assets, ${documentCount} documents, ${taskCount} tasks`,
+  };
+}
+
 export function createHomeVaultExportFileName(manifest: HomeVaultExportManifest): string {
   const propertySlug = slugify(manifest.property.label || manifest.property.id);
   const generatedDate = manifest.generatedAt.slice(0, 10);
 
   return `homevault-${propertySlug}-${generatedDate}.json`;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function validateArrayCount(
+  recordsValue: unknown,
+  countsValue: unknown,
+  key: string,
+  errors: string[],
+) {
+  if (!Array.isArray(recordsValue)) {
+    errors.push(`Records.${key} must be an array.`);
+    return 0;
+  }
+
+  if (!isRecord(countsValue) || countsValue[key] !== recordsValue.length) {
+    errors.push(`Record count mismatch for ${key}.`);
+  }
+
+  return recordsValue.length;
 }
 
 function slugify(value: string) {

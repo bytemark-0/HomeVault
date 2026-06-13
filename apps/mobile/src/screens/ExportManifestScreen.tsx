@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import * as DocumentPicker from 'expo-document-picker';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { Property } from '@homevault/domain';
@@ -8,6 +9,7 @@ import {
   createHomeVaultExportFileName,
   formatHomeVaultExportPackage,
   formatHomeVaultExportManifest,
+  parseHomeVaultExportPackage,
 } from '@homevault/export';
 
 import type {
@@ -44,6 +46,7 @@ export function ExportManifestScreen({
   const [downloadStatus, setDownloadStatus] = useState<'idle' | 'downloaded' | 'unsupported'>(
     'idle',
   );
+  const [validationResult, setValidationResult] = useState<string | null>(null);
   const exportInput = {
     property,
     assets,
@@ -83,6 +86,33 @@ export function ExportManifestScreen({
     });
 
     setDownloadStatus(didDownload ? 'downloaded' : 'unsupported');
+  }
+
+  async function handleValidateBackup() {
+    const result = await DocumentPicker.getDocumentAsync({
+      copyToCacheDirectory: true,
+      multiple: false,
+      type: 'application/json',
+    });
+
+    if (result.canceled || result.assets.length === 0) {
+      return;
+    }
+
+    const [asset] = result.assets;
+
+    if (!asset.file) {
+      setValidationResult('Backup validation is available for downloaded JSON files in the web preview.');
+      return;
+    }
+
+    const parsed = parseHomeVaultExportPackage(await asset.file.text());
+
+    setValidationResult(
+      parsed.ok
+        ? `Valid HomeVault backup: ${parsed.summary}.`
+        : `Backup needs review: ${parsed.errors.join(' ')}`,
+    );
   }
 
   return (
@@ -130,6 +160,22 @@ export function ExportManifestScreen({
           accessibilityRole="button"
         >
           <Text style={styles.primaryButtonText}>Download JSON</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.downloadPanel}>
+        <View style={styles.downloadBody}>
+          <Text style={styles.sectionTitle}>Validate backup</Text>
+          <Text style={styles.downloadMeta}>
+            {validationResult ?? 'Choose a HomeVault JSON package and check its manifest counts.'}
+          </Text>
+        </View>
+        <Pressable
+          onPress={handleValidateBackup}
+          style={styles.secondaryActionButton}
+          accessibilityRole="button"
+        >
+          <Text style={styles.secondaryActionText}>Choose JSON</Text>
         </Pressable>
       </View>
 
@@ -356,6 +402,21 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  secondaryActionButton: {
+    minHeight: 40,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderColor: colors.line,
+    borderWidth: 1,
+    backgroundColor: colors.panel,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryActionText: {
+    color: colors.blue,
     fontSize: 12,
     fontWeight: '900',
   },
