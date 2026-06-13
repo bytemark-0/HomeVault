@@ -48,6 +48,8 @@ type ExportManifestScreenProps = {
   onRestoreBackup: (backupPackage: HomeVaultExportPackage) => Promise<void>;
 };
 
+type BackupOperationState = 'idle' | 'validating' | 'ready' | 'restoring' | 'error';
+
 export function ExportManifestScreen({
   property,
   assets,
@@ -66,6 +68,7 @@ export function ExportManifestScreen({
   const [importPreview, setImportPreview] = useState<HomeVaultImportPreview | null>(null);
   const [validatedPackage, setValidatedPackage] = useState<HomeVaultExportPackage | null>(null);
   const [restoreConfirmText, setRestoreConfirmText] = useState('');
+  const [operationState, setOperationState] = useState<BackupOperationState>('idle');
   const exportInput = {
     property,
     assets,
@@ -96,7 +99,9 @@ export function ExportManifestScreen({
   const manifestText = formatHomeVaultExportManifest(manifest);
   const packageText = formatHomeVaultExportPackage(exportPackage);
   const exportFileName = createHomeVaultExportFileName(manifest);
+  const isBusy = operationState === 'validating' || operationState === 'restoring';
   const restoreReady = restoreConfirmText.trim() === 'RESTORE';
+  const canRestore = restoreReady && operationState === 'ready';
 
   function handleDownloadManifest() {
     const didDownload = downloadTextFile({
@@ -109,51 +114,70 @@ export function ExportManifestScreen({
   }
 
   async function handleValidateBackup() {
-    const result = await DocumentPicker.getDocumentAsync({
-      copyToCacheDirectory: true,
-      multiple: false,
-      type: 'application/json',
-    });
+    setOperationState('validating');
 
-    if (result.canceled || result.assets.length === 0) {
-      return;
-    }
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        copyToCacheDirectory: true,
+        multiple: false,
+        type: 'application/json',
+      });
 
-    const [asset] = result.assets;
-    setImportPreview(null);
-    setValidatedPackage(null);
-    setRestoreConfirmText('');
+      if (result.canceled || result.assets.length === 0) {
+        setOperationState(importPreview ? 'ready' : 'idle');
+        return;
+      }
 
-    if (!asset.file) {
-      setValidationResult('Backup validation is available for downloaded JSON files in the web preview.');
-      return;
-    }
-
-    const parsed = parseHomeVaultExportPackage(await asset.file.text());
-
-    if (parsed.ok) {
-      setImportPreview(parsed.preview);
-      setValidatedPackage(parsed.package);
+      const [asset] = result.assets;
+      setImportPreview(null);
+      setValidatedPackage(null);
       setRestoreConfirmText('');
-    }
 
-    setValidationResult(
-      parsed.ok
-        ? `Valid HomeVault backup: ${parsed.summary}.`
-        : `Backup needs review: ${parsed.errors.join(' ')}`,
-    );
+      if (!asset.file) {
+        setOperationState('error');
+        setValidationResult('Backup validation is available for downloaded JSON files in the web preview.');
+        return;
+      }
+
+      const parsed = parseHomeVaultExportPackage(await asset.file.text());
+
+      if (parsed.ok) {
+        setImportPreview(parsed.preview);
+        setValidatedPackage(parsed.package);
+        setRestoreConfirmText('');
+        setOperationState('ready');
+      } else {
+        setOperationState('error');
+      }
+
+      setValidationResult(
+        parsed.ok
+          ? `Valid HomeVault backup: ${parsed.summary}.`
+          : `Backup needs review: ${parsed.errors.join(' ')}`,
+      );
+    } catch (error) {
+      setImportPreview(null);
+      setValidatedPackage(null);
+      setRestoreConfirmText('');
+      setOperationState('error');
+      setValidationResult(`Backup validation failed: ${formatErrorMessage(error)}`);
+    }
   }
 
   function handleLoadSampleBackup() {
     setImportPreview(null);
     setValidatedPackage(null);
     setRestoreConfirmText('');
+    setOperationState('validating');
 
     const parsed = validateHomeVaultExportPackage(sampleBackupPackage);
 
     if (parsed.ok) {
       setImportPreview(parsed.preview);
       setValidatedPackage(parsed.package);
+      setOperationState('ready');
+    } else {
+      setOperationState('error');
     }
 
     setValidationResult(
@@ -164,7 +188,7 @@ export function ExportManifestScreen({
   }
 
   function handleRestoreBackup() {
-    if (!validatedPackage || restoreConfirmText.trim() !== 'RESTORE') {
+    if (!validatedPackage || !canRestore) {
       return;
     }
 
@@ -177,11 +201,24 @@ export function ExportManifestScreen({
           text: 'Restore',
           style: 'destructive',
           onPress: () => {
-            void onRestoreBackup(validatedPackage);
+            void restoreBackup(validatedPackage);
           },
         },
       ],
     );
+  }
+
+  async function restoreBackup(backupPackage: HomeVaultExportPackage) {
+    setOperationState('restoring');
+    setValidationResult('Restoring validated backup package...');
+
+    try {
+      await onRestoreBackup(backupPackage);
+      setOperationState('ready');
+    } catch (error) {
+      setOperationState('error');
+      setValidationResult(`Restore failed: ${formatErrorMessage(error)}`);
+    }
   }
 
   return (
@@ -238,18 +275,31 @@ export function ExportManifestScreen({
           <Text style={styles.downloadMeta}>
             {validationResult ?? 'Choose a HomeVault JSON package and check its manifest counts.'}
           </Text>
+          <Text
+            style={[
+              styles.operationStatus,
+              operationState === 'error' && styles.operationStatusError,
+              operationState === 'ready' && styles.operationStatusReady,
+            ]}
+          >
+            {formatOperationState(operationState)}
+          </Text>
         </View>
         <View style={styles.actionGroup}>
           <Pressable
             onPress={handleValidateBackup}
-            style={styles.secondaryActionButton}
+            disabled={isBusy}
+            style={[styles.secondaryActionButton, isBusy && styles.actionButtonDisabled]}
             accessibilityRole="button"
           >
-            <Text style={styles.secondaryActionText}>Choose JSON</Text>
+            <Text style={styles.secondaryActionText}>
+              {operationState === 'validating' ? 'Checking...' : 'Choose JSON'}
+            </Text>
           </Pressable>
           <Pressable
             onPress={handleLoadSampleBackup}
-            style={styles.secondaryActionButton}
+            disabled={isBusy}
+            style={[styles.secondaryActionButton, isBusy && styles.actionButtonDisabled]}
             accessibilityRole="button"
           >
             <Text style={styles.secondaryActionText}>Load sample</Text>
@@ -322,7 +372,7 @@ export function ExportManifestScreen({
             />
             <RestorePlanRow
               label="Typed confirmation"
-              detail={restoreReady ? 'Restore action is enabled.' : 'Type RESTORE to enable restore.'}
+              detail={canRestore ? 'Restore action is enabled.' : 'Type RESTORE to enable restore.'}
               state={restoreReady ? 'ready' : 'pending'}
             />
           </View>
@@ -344,14 +394,16 @@ export function ExportManifestScreen({
           </View>
           <Pressable
             onPress={handleRestoreBackup}
-            disabled={!restoreReady}
+            disabled={!canRestore}
             style={[
               styles.restoreButton,
-              !restoreReady && styles.restoreButtonDisabled,
+              !canRestore && styles.restoreButtonDisabled,
             ]}
             accessibilityRole="button"
           >
-            <Text style={styles.restoreButtonText}>Restore this backup</Text>
+            <Text style={styles.restoreButtonText}>
+              {operationState === 'restoring' ? 'Restoring...' : 'Restore this backup'}
+            </Text>
           </Pressable>
         </View>
       ) : null}
@@ -519,6 +571,26 @@ function formatDateTime(value: string) {
   }).format(date);
 }
 
+function formatOperationState(state: BackupOperationState) {
+  switch (state) {
+    case 'validating':
+      return 'Checking backup package...';
+    case 'ready':
+      return 'Backup package is ready to restore.';
+    case 'restoring':
+      return 'Restore is running...';
+    case 'error':
+      return 'Needs attention before continuing.';
+    case 'idle':
+    default:
+      return 'Waiting for a backup package.';
+  }
+}
+
+function formatErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Unknown error';
+}
+
 function downloadTextFile({
   fileName,
   mimeType,
@@ -677,8 +749,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '900',
   },
+  operationStatus: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
+  operationStatusError: {
+    color: colors.red,
+  },
+  operationStatusReady: {
+    color: colors.green,
+  },
   actionGroup: {
     gap: 8,
+  },
+  actionButtonDisabled: {
+    opacity: 0.5,
   },
   restoreButton: {
     minHeight: 42,
