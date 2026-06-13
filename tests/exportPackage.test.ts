@@ -7,6 +7,7 @@ import {
   formatHomeVaultExportPackage,
   parseHomeVaultExportPackage,
 } from '../packages/export/src';
+import { sampleBackupPackage } from '../apps/mobile/src/data/sampleBackupPackage';
 import {
   backupSnapshot,
   buildPackage,
@@ -85,6 +86,15 @@ test('keeps the sample backup fixture valid for manual restore testing', () => {
   assert.equal(result.ok, true);
   assert.equal(result.preview.generatedAt, sampleBackupGeneratedAt);
   assert.equal(result.preview.propertyLabel, 'Backup home');
+});
+
+test('keeps the bundled app sample backup aligned with the fixture data', () => {
+  const expectedPackage = buildPackage(backupSnapshot, sampleBackupGeneratedAt);
+
+  assert.deepEqual(
+    sampleBackupPackage,
+    JSON.parse(formatHomeVaultExportPackage(expectedPackage)),
+  );
 });
 
 async function test(name: string, run: () => void | Promise<void>) {

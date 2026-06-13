@@ -20,5 +20,10 @@
     "target": "ES2022",
     "types": ["node"]
   },
-  "include": ["packages/*/src/**/*.ts", "scripts/**/*.ts", "tests/**/*.ts"]
+  "include": [
+    "apps/mobile/src/data/sampleBackupPackage.ts",
+    "packages/*/src/**/*.ts",
+    "scripts/**/*.ts",
+    "tests/**/*.ts"
+  ]
 }

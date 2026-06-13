@@ -22,6 +22,7 @@ import {
   type HomeVaultExportPackage,
   type HomeVaultImportPreview,
   parseHomeVaultExportPackage,
+  validateHomeVaultExportPackage,
 } from '@homevault/export';
 
 import type {
@@ -32,6 +33,7 @@ import type {
   TaskCompletionListItem,
   TaskListItem,
 } from '../data/homeVaultSampleData';
+import { sampleBackupPackage } from '../data/sampleBackupPackage';
 import { colors } from '../theme/colors';
 
 type ExportManifestScreenProps = {
@@ -141,6 +143,25 @@ export function ExportManifestScreen({
     );
   }
 
+  function handleLoadSampleBackup() {
+    setImportPreview(null);
+    setValidatedPackage(null);
+    setRestoreConfirmText('');
+
+    const parsed = validateHomeVaultExportPackage(sampleBackupPackage);
+
+    if (parsed.ok) {
+      setImportPreview(parsed.preview);
+      setValidatedPackage(parsed.package);
+    }
+
+    setValidationResult(
+      parsed.ok
+        ? `Sample backup loaded: ${parsed.summary}.`
+        : `Sample backup needs review: ${parsed.errors.join(' ')}`,
+    );
+  }
+
   function handleRestoreBackup() {
     if (!validatedPackage || restoreConfirmText.trim() !== 'RESTORE') {
       return;
@@ -217,13 +238,22 @@ export function ExportManifestScreen({
             {validationResult ?? 'Choose a HomeVault JSON package and check its manifest counts.'}
           </Text>
         </View>
-        <Pressable
-          onPress={handleValidateBackup}
-          style={styles.secondaryActionButton}
-          accessibilityRole="button"
-        >
-          <Text style={styles.secondaryActionText}>Choose JSON</Text>
-        </Pressable>
+        <View style={styles.actionGroup}>
+          <Pressable
+            onPress={handleValidateBackup}
+            style={styles.secondaryActionButton}
+            accessibilityRole="button"
+          >
+            <Text style={styles.secondaryActionText}>Choose JSON</Text>
+          </Pressable>
+          <Pressable
+            onPress={handleLoadSampleBackup}
+            style={styles.secondaryActionButton}
+            accessibilityRole="button"
+          >
+            <Text style={styles.secondaryActionText}>Load sample</Text>
+          </Pressable>
+        </View>
       </View>
 
       {importPreview ? (
@@ -588,6 +618,9 @@ const styles = StyleSheet.create({
     color: colors.blue,
     fontSize: 12,
     fontWeight: '900',
+  },
+  actionGroup: {
+    gap: 8,
   },
   restoreButton: {
     minHeight: 42,

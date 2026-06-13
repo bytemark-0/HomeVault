@@ -1,0 +1,154 @@
+import type { HomeVaultExportPackage } from '@homevault/export';
+
+export const sampleBackupPackage: HomeVaultExportPackage = {
+  manifest: {
+    app: 'HomeVault',
+    version: 1,
+    property: {
+      id: 'property-backup',
+      label: 'Backup home',
+      type: 'single_family',
+      yearBuilt: 2001,
+    },
+    generatedAt: '2026-06-13T12:00:00.000Z',
+    recordCounts: {
+      rooms: 1,
+      assets: 1,
+      documents: 1,
+      tasks: 1,
+      taskCompletions: 1,
+      repairEvents: 1,
+    },
+    coverage: {
+      activeTaskCount: 0,
+      attachedDocumentCount: 1,
+      linkedDocumentCount: 1,
+      documentedAssetCount: 1,
+      repairEventsWithCostCount: 1,
+    },
+    checklist: [
+      {
+        id: 'rooms',
+        label: 'Rooms and areas',
+        state: 'ready',
+        detail: '1 area included',
+      },
+      {
+        id: 'assets',
+        label: 'Asset inventory',
+        state: 'ready',
+        detail: '1 asset included',
+      },
+      {
+        id: 'documents',
+        label: 'Linked documents',
+        state: 'ready',
+        detail: '1 of 1 document linked',
+      },
+      {
+        id: 'attachments',
+        label: 'File attachments',
+        state: 'ready',
+        detail: '1 of 1 document includes file references',
+      },
+      {
+        id: 'history',
+        label: 'Service history',
+        state: 'ready',
+        detail: '1 completion and 1 costed repair',
+      },
+      {
+        id: 'tasks',
+        label: 'Open maintenance',
+        state: 'ready',
+        detail: 'No open tasks need attention',
+      },
+      {
+        id: 'assetDocumentation',
+        label: 'Asset documentation',
+        state: 'ready',
+        detail: '1 of 1 asset has documents',
+      },
+    ],
+  },
+  attachments: [
+    {
+      documentId: 'document-backup',
+      title: 'Dishwasher receipt',
+      filePath: '/receipts/backup.pdf',
+      linkedRecordIds: ['asset-backup'],
+      type: 'receipt',
+    },
+  ],
+  records: {
+    property: {
+      id: 'property-backup',
+      householdId: 'household-backup',
+      label: 'Backup home',
+      type: 'single_family',
+      yearBuilt: 2001,
+    },
+    rooms: [
+      {
+        id: 'room-backup',
+        propertyId: 'property-backup',
+        name: 'Kitchen',
+        type: 'room',
+      },
+    ],
+    assets: [
+      {
+        id: 'asset-backup',
+        propertyId: 'property-backup',
+        roomId: 'room-backup',
+        name: 'Dishwasher',
+        category: 'Appliance',
+        brand: 'Bosch',
+        status: 'ready',
+      },
+    ],
+    documents: [
+      {
+        id: 'document-backup',
+        propertyId: 'property-backup',
+        title: 'Dishwasher receipt',
+        type: 'receipt',
+        filePath: '/receipts/backup.pdf',
+        linkedRecordIds: ['asset-backup'],
+      },
+    ],
+    tasks: [
+      {
+        id: 'task-backup',
+        propertyId: 'property-backup',
+        scope: 'asset',
+        scopeId: 'asset-backup',
+        title: 'Clean dishwasher filter',
+        dueDate: '2026-06-01',
+        recurrenceKind: 'interval',
+        recurrenceLabel: 'Monthly',
+        state: 'completed',
+      },
+    ],
+    taskCompletions: [
+      {
+        id: 'completion-backup',
+        taskId: 'task-backup',
+        completedAt: '2026-06-02T13:00:00.000Z',
+        costCents: 0,
+      },
+    ],
+    repairEvents: [
+      {
+        id: 'repair-backup',
+        propertyId: 'property-backup',
+        assetId: 'asset-backup',
+        issue: 'Leaking supply line',
+        resolution: 'Replaced hose',
+        costCents: 4200,
+        date: '2026-05-15',
+        documentIds: ['document-backup'],
+      },
+    ],
+  },
+};
