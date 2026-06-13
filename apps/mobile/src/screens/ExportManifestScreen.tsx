@@ -229,6 +229,37 @@ export function ExportManifestScreen({
             label="Repair events"
             value={String(importPreview.recordCounts.repairEvents)}
           />
+          <Text style={styles.subsectionTitle}>Restore comparison</Text>
+          <CompareLine
+            label="Rooms & areas"
+            currentValue={manifest.recordCounts.rooms}
+            backupValue={importPreview.recordCounts.rooms}
+          />
+          <CompareLine
+            label="Assets"
+            currentValue={manifest.recordCounts.assets}
+            backupValue={importPreview.recordCounts.assets}
+          />
+          <CompareLine
+            label="Documents"
+            currentValue={manifest.recordCounts.documents}
+            backupValue={importPreview.recordCounts.documents}
+          />
+          <CompareLine
+            label="Maintenance tasks"
+            currentValue={manifest.recordCounts.tasks}
+            backupValue={importPreview.recordCounts.tasks}
+          />
+          <CompareLine
+            label="Service completions"
+            currentValue={manifest.recordCounts.taskCompletions}
+            backupValue={importPreview.recordCounts.taskCompletions}
+          />
+          <CompareLine
+            label="Repairs"
+            currentValue={manifest.recordCounts.repairEvents}
+            backupValue={importPreview.recordCounts.repairEvents}
+          />
           <Pressable
             onPress={handleRestoreBackup}
             style={styles.restoreButton}
@@ -318,6 +349,39 @@ function DetailLine({ label, value }: { label: string; value: string }) {
     <View style={styles.detailLine}>
       <Text style={styles.detailLabel}>{label}</Text>
       <Text style={styles.detailValue}>{value}</Text>
+    </View>
+  );
+}
+
+function CompareLine({
+  label,
+  currentValue,
+  backupValue,
+}: {
+  label: string;
+  currentValue: number;
+  backupValue: number;
+}) {
+  const delta = backupValue - currentValue;
+  const deltaLabel = delta === 0 ? 'No change' : `${delta > 0 ? '+' : ''}${delta}`;
+
+  return (
+    <View style={styles.compareLine}>
+      <Text style={styles.compareLabel}>{label}</Text>
+      <View style={styles.compareValues}>
+        <Text style={styles.compareValue}>{currentValue} now</Text>
+        <Text style={styles.compareArrow}>to</Text>
+        <Text style={styles.compareValue}>{backupValue} backup</Text>
+        <Text
+          style={[
+            styles.compareDelta,
+            delta < 0 && styles.compareDeltaNegative,
+            delta > 0 && styles.compareDeltaPositive,
+          ]}
+        >
+          {deltaLabel}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -595,6 +659,51 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     lineHeight: 20,
+  },
+  subsectionTitle: {
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: '900',
+    marginTop: 6,
+  },
+  compareLine: {
+    minHeight: 42,
+    borderTopColor: colors.line,
+    borderTopWidth: 1,
+    paddingTop: 9,
+    gap: 5,
+  },
+  compareLabel: {
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  compareValues: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 6,
+  },
+  compareValue: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  compareArrow: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  compareDelta: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  compareDeltaNegative: {
+    color: colors.red,
+  },
+  compareDeltaPositive: {
+    color: colors.green,
   },
   detailLine: {
     minHeight: 34,
