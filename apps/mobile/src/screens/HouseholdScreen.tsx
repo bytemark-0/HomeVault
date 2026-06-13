@@ -1,0 +1,363 @@
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+
+import type { Property, RoomArea } from '@homevault/domain';
+
+import { SectionTitle } from '../components/SectionTitle';
+import type { RoomListItem } from '../data/homeVaultSampleData';
+import { colors } from '../theme/colors';
+
+type HouseholdScreenProps = {
+  activeTaskCount: number;
+  assetCount: number;
+  documentCount: number;
+  documentedAssetCount: number;
+  linkedDocumentCount: number;
+  property: Property;
+  rooms: RoomListItem[];
+  onAddRoom: () => void;
+  onEditProperty: () => void;
+  onExportManifest: () => void;
+  onResetDemoData: () => void;
+  onRoomPress: (roomId: string) => void;
+};
+
+export function HouseholdScreen({
+  activeTaskCount,
+  assetCount,
+  documentCount,
+  documentedAssetCount,
+  linkedDocumentCount,
+  property,
+  rooms,
+  onAddRoom,
+  onEditProperty,
+  onExportManifest,
+  onResetDemoData,
+  onRoomPress,
+}: HouseholdScreenProps) {
+  const readinessScore = calculateReadinessScore({
+    activeTaskCount,
+    assetCount,
+    documentCount,
+    documentedAssetCount,
+    linkedDocumentCount,
+    roomCount: rooms.length,
+  });
+  const readinessLabel =
+    readinessScore >= 80 ? 'Strong coverage' : readinessScore >= 55 ? 'Getting organized' : 'Needs setup';
+
+  return (
+    <View style={styles.screen}>
+      <View style={styles.householdPanel}>
+        <Text style={styles.kicker}>Household</Text>
+        <Text style={styles.focusTitle}>{readinessScore}% ready</Text>
+        <Text style={styles.focusMeta}>
+          {readinessLabel} · {formatCount(rooms.length, 'area')} · {formatCount(assetCount, 'asset')}
+        </Text>
+      </View>
+
+      <SectionTitle title="Property" action="Edit" onActionPress={onEditProperty} />
+      <Pressable
+        onPress={onEditProperty}
+        style={styles.propertyCard}
+        accessibilityRole="button"
+      >
+        <View style={styles.propertyPhoto}>
+          <Text style={styles.propertyPhotoText}>MS</Text>
+        </View>
+        <View style={styles.rowBody}>
+          <Text style={styles.rowTitle}>{property.label}</Text>
+          <Text style={styles.rowMeta}>
+            {formatPropertyType(property.type)}
+            {property.yearBuilt ? ` · Built ${property.yearBuilt}` : ''}
+            {property.purchaseDate ? ` · Purchased ${property.purchaseDate.slice(0, 4)}` : ''}
+          </Text>
+          {property.addressLabel ? (
+            <Text style={styles.rowMeta}>{property.addressLabel}</Text>
+          ) : null}
+        </View>
+      </Pressable>
+
+      <SectionTitle title="Rooms & areas" action="Add area" onActionPress={onAddRoom} />
+      <View style={styles.readinessList}>
+        {rooms.map((room) => (
+          <Pressable
+            key={room.id}
+            onPress={() => onRoomPress(room.id)}
+            style={styles.readinessRow}
+            accessibilityRole="button"
+          >
+            <View>
+              <Text style={styles.readinessLabel}>{room.name}</Text>
+              <Text style={styles.roomMeta}>
+                {formatRoomType(room.type)}{room.floor ? ` · ${room.floor}` : ''}
+              </Text>
+            </View>
+            <View style={styles.roomCounts}>
+              <Text style={styles.readinessValue}>{formatCount(room.assetCount, 'asset')}</Text>
+              <Text style={styles.roomCountMeta}>
+                {room.activeTaskCount > 0
+                  ? formatCount(room.activeTaskCount, 'task')
+                  : 'No open tasks'}
+              </Text>
+            </View>
+          </Pressable>
+        ))}
+      </View>
+
+      <SectionTitle title="Readiness" action="Backup" />
+      <View style={styles.readinessList}>
+        <View style={styles.readinessRow}>
+          <View>
+            <Text style={styles.readinessLabel}>Offline records</Text>
+            <Text style={styles.roomMeta}>Stored on this device for quick access</Text>
+          </View>
+          <Text style={styles.readinessValue}>Available</Text>
+        </View>
+        <View style={styles.readinessRow}>
+          <View>
+            <Text style={styles.readinessLabel}>Document coverage</Text>
+            <Text style={styles.roomMeta}>Assets with at least one linked record</Text>
+          </View>
+          <Text style={styles.readinessValue}>
+            {documentedAssetCount}/{assetCount || 0}
+          </Text>
+        </View>
+        <View style={styles.readinessRow}>
+          <View>
+            <Text style={styles.readinessLabel}>Linked documents</Text>
+            <Text style={styles.roomMeta}>Receipts, manuals, and policy records connected</Text>
+          </View>
+          <Text style={styles.readinessValue}>
+            {linkedDocumentCount}/{documentCount || 0}
+          </Text>
+        </View>
+        <View style={styles.readinessRow}>
+          <View>
+            <Text style={styles.readinessLabel}>Open maintenance</Text>
+            <Text style={styles.roomMeta}>Tasks still needing attention</Text>
+          </View>
+          <Text style={styles.readinessValue}>
+            {activeTaskCount > 0 ? formatCount(activeTaskCount, 'task') : 'Clear'}
+          </Text>
+        </View>
+        <Pressable
+          onPress={onExportManifest}
+          style={styles.readinessRow}
+          accessibilityRole="button"
+        >
+          <View>
+            <Text style={styles.readinessLabel}>Export manifest</Text>
+            <Text style={styles.roomMeta}>Review local record coverage</Text>
+          </View>
+          <Text style={styles.readinessValue}>Open</Text>
+        </Pressable>
+        <View style={styles.readinessRow}>
+          <View>
+            <Text style={styles.readinessLabel}>Demo data</Text>
+            <Text style={styles.roomMeta}>Restore seeded home records</Text>
+          </View>
+          <Pressable
+            onPress={() => confirmResetDemoData(onResetDemoData)}
+            style={styles.resetButton}
+            accessibilityRole="button"
+          >
+            <Text style={styles.resetButtonText}>Reset</Text>
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: {
+    gap: 14,
+  },
+  householdPanel: {
+    backgroundColor: colors.greenSoft,
+    borderColor: '#B8D7CB',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 16,
+    gap: 8,
+  },
+  kicker: {
+    color: colors.green,
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0,
+  },
+  focusTitle: {
+    color: colors.ink,
+    fontSize: 22,
+    lineHeight: 27,
+    fontWeight: '900',
+    letterSpacing: 0,
+  },
+  focusMeta: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 19,
+  },
+  propertyCard: {
+    backgroundColor: colors.panel,
+    borderColor: colors.line,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    flexDirection: 'row',
+    gap: 12,
+  },
+  propertyPhoto: {
+    width: 62,
+    height: 62,
+    borderRadius: 8,
+    backgroundColor: colors.ink,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  propertyPhotoText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  rowBody: {
+    flex: 1,
+    gap: 4,
+  },
+  rowTitle: {
+    color: colors.ink,
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  rowMeta: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 17,
+  },
+  readinessList: {
+    backgroundColor: colors.panel,
+    borderRadius: 8,
+    borderColor: colors.line,
+    borderWidth: 1,
+  },
+  readinessRow: {
+    minHeight: 50,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomColor: colors.line,
+    borderBottomWidth: 1,
+  },
+  readinessLabel: {
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  readinessValue: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: '800',
+    textAlign: 'right',
+  },
+  roomCounts: {
+    alignItems: 'flex-end',
+    gap: 2,
+    marginLeft: 12,
+  },
+  roomCountMeta: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  resetButton: {
+    minHeight: 32,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: colors.greenSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resetButtonText: {
+    color: colors.green,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  roomMeta: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+});
+
+function formatRoomType(type: RoomArea['type']) {
+  return type.slice(0, 1).toUpperCase() + type.slice(1);
+}
+
+function formatPropertyType(type: Property['type']) {
+  switch (type) {
+    case 'single_family':
+      return 'Single-family';
+    case 'multi_unit':
+      return 'Multi-unit';
+    case 'townhome':
+      return 'Townhome';
+    case 'condo':
+      return 'Condo';
+    case 'other':
+    default:
+      return 'Other';
+  }
+}
+
+function formatCount(value: number, singular: string) {
+  return `${value} ${singular}${value === 1 ? '' : 's'}`;
+}
+
+function calculateReadinessScore({
+  activeTaskCount,
+  assetCount,
+  documentCount,
+  documentedAssetCount,
+  linkedDocumentCount,
+  roomCount,
+}: {
+  activeTaskCount: number;
+  assetCount: number;
+  documentCount: number;
+  documentedAssetCount: number;
+  linkedDocumentCount: number;
+  roomCount: number;
+}) {
+  const roomScore = roomCount > 0 ? 20 : 0;
+  const assetScore = assetCount > 0 ? 20 : 0;
+  const documentScore =
+    documentCount > 0 ? Math.round((linkedDocumentCount / documentCount) * 25) : 0;
+  const assetDocumentScore =
+    assetCount > 0 ? Math.round((documentedAssetCount / assetCount) * 25) : 0;
+  const taskPenalty = Math.min(10, activeTaskCount * 2);
+
+  return Math.max(0, Math.min(100, roomScore + assetScore + documentScore + assetDocumentScore + 10 - taskPenalty));
+}
+
+function confirmResetDemoData(onConfirm: () => void) {
+  Alert.alert(
+    'Reset demo data?',
+    'This restores the seeded HomeVault records and removes local edits in this preview.',
+    [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Reset',
+        style: 'destructive',
+        onPress: onConfirm,
+      },
+    ],
+  );
+}

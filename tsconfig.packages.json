@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "paths": {
+      "@homevault/database": ["packages/database/src"],
+      "@homevault/domain": ["packages/domain/src"],
+      "@homevault/export": ["packages/export/src"],
+      "@homevault/ocr": ["packages/ocr/src"],
+      "@homevault/sync": ["packages/sync/src"],
+      "@homevault/ui": ["packages/ui/src"]
+    },
+    "strict": true,
+    "target": "ES2022"
+  },
+  "include": ["packages/*/src/**/*.ts"]
+}

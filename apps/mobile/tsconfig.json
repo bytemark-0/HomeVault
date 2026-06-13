@@ -1,0 +1,13 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "ignoreDeprecations": "6.0",
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@homevault/database": ["../../packages/database/src"],
+      "@homevault/domain": ["../../packages/domain/src"],
+      "@homevault/export": ["../../packages/export/src"]
+    }
+  }
+}

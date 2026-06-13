@@ -1,0 +1,15 @@
+export const colors = {
+  ink: '#172026',
+  muted: '#667781',
+  line: '#D9E2E5',
+  page: '#F4F7F6',
+  panel: '#FFFFFF',
+  green: '#1C6B57',
+  greenSoft: '#DCEBE5',
+  blue: '#2E5F8A',
+  blueSoft: '#E2EEF8',
+  amber: '#9A5A00',
+  amberSoft: '#FFF0D6',
+  red: '#9D3328',
+  redSoft: '#F8DDD8',
+};

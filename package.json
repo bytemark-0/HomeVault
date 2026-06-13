@@ -1,0 +1,18 @@
+{
+  "name": "homevault",
+  "version": "0.0.1",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "mobile": "npm run start --workspace=apps/mobile",
+    "typecheck": "npm run typecheck:packages && npm run typecheck --workspace=apps/mobile",
+    "typecheck:app": "npm run typecheck --workspace=apps/mobile",
+    "typecheck:packages": "tsc --noEmit -p tsconfig.packages.json"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3"
+  }
+}
