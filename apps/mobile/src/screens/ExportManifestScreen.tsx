@@ -45,6 +45,7 @@ type ExportManifestScreenProps = {
   taskCompletions: TaskCompletionListItem[];
   tasks: TaskListItem[];
   onBack: () => void;
+  onFixPress: (fixId: HomeVaultExportPackage['manifest']['checklist'][number]['id']) => void;
   onRestoreBackup: (backupPackage: HomeVaultExportPackage) => Promise<void>;
 };
 
@@ -59,6 +60,7 @@ export function ExportManifestScreen({
   taskCompletions,
   tasks,
   onBack,
+  onFixPress,
   onRestoreBackup,
 }: ExportManifestScreenProps) {
   const [downloadStatus, setDownloadStatus] = useState<'idle' | 'downloaded' | 'unsupported'>(
@@ -256,7 +258,13 @@ export function ExportManifestScreen({
             Resolve these before sharing a backup with someone else.
           </Text>
           {reviewItems.map((item) => (
-            <FixRow key={item.id} label={item.label} detail={item.detail} action={item.action} />
+            <FixRow
+              key={item.id}
+              label={item.label}
+              detail={item.detail}
+              action={item.action}
+              onPress={() => onFixPress(item.id)}
+            />
           ))}
         </View>
       ) : null}
@@ -508,13 +516,15 @@ function FixRow({
   action,
   detail,
   label,
+  onPress,
 }: {
   action: string;
   detail: string;
   label: string;
+  onPress: () => void;
 }) {
   return (
-    <View style={styles.fixRow}>
+    <Pressable accessibilityRole="button" style={styles.fixRow} onPress={onPress}>
       <View style={styles.fixMarker}>
         <Text style={styles.fixMarkerText}>Fix</Text>
       </View>
@@ -523,7 +533,8 @@ function FixRow({
         <Text style={styles.fixDetail}>{detail}</Text>
         <Text style={styles.fixAction}>{action}</Text>
       </View>
-    </View>
+      <Text style={styles.fixOpen}>Open</Text>
+    </Pressable>
   );
 }
 
@@ -988,6 +999,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '900',
     lineHeight: 17,
+  },
+  fixOpen: {
+    color: colors.blue,
+    fontSize: 11,
+    fontWeight: '900',
+    lineHeight: 16,
+    paddingTop: 1,
+    textTransform: 'uppercase',
   },
   subsectionTitle: {
     color: colors.ink,

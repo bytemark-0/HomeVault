@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 
 import type { Property } from '@homevault/domain';
-import type { HomeVaultExportPackage } from '@homevault/export';
+import type { HomeVaultExportChecklistItem, HomeVaultExportPackage } from '@homevault/export';
 import type {
   CreateAssetInput,
   CreateDocumentInput,
@@ -297,6 +297,44 @@ export default function App() {
     setTaskReturnTarget('maintenance');
     setRestoreSummary(null);
     setActiveTab('household');
+    setMode('tabs');
+  }
+
+  function handleExportFixPress(fixId: HomeVaultExportChecklistItem['id']) {
+    setSelectedAssetId(null);
+    setSelectedDocumentId(null);
+    setSelectedRoomId(null);
+    setSelectedTaskId(null);
+    setDocumentLinkTargetId(null);
+    setAssetReturnTarget('inventory');
+    setDocumentReturnTarget('documents');
+    setTaskReturnTarget('maintenance');
+
+    if (fixId === 'rooms') {
+      setActiveTab('household');
+      setMode('addRoom');
+      return;
+    }
+
+    if (fixId === 'assets') {
+      setActiveTab('inventory');
+      setMode('addAsset');
+      return;
+    }
+
+    if (fixId === 'documents' || fixId === 'assetDocumentation') {
+      setActiveTab('documents');
+      setMode('addDocument');
+      return;
+    }
+
+    if (fixId === 'attachments') {
+      setActiveTab('documents');
+      setMode('tabs');
+      return;
+    }
+
+    setActiveTab('maintenance');
     setMode('tabs');
   }
 
@@ -734,6 +772,7 @@ export default function App() {
             setActiveTab('household');
             setMode('tabs');
           }}
+          onFixPress={handleExportFixPress}
           onRestoreBackup={handleRestoreBackup}
         />
       </SafeAreaView>
