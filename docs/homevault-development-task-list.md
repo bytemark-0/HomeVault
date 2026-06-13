@@ -30,7 +30,7 @@ In-progress, uncommitted slice:
 - [x] Add basic form validation messages for required fields and invalid dates/amounts.
 - [x] Add delete confirmations for destructive record actions.
 - [ ] Add edit flows for all primary record types: property, rooms, assets, documents, tasks.
-- [ ] Verify navigation return paths after every create/edit/delete action.
+- [x] Verify navigation return paths after every create/edit/delete action.
 - [ ] Add a small “backup last created/restored” status indicator on Household or Export.
 
 ## Destructive Action Audit
@@ -43,6 +43,18 @@ Current destructive actions exposed in the app:
 - Backup restore: guarded by validation, preview, dry-run checklist, and typed `RESTORE` confirmation.
 
 Asset and room delete are not currently exposed as user actions.
+
+## Navigation Return Audit
+
+Current create/edit/delete return behavior:
+- Room-scoped asset, document, and task additions return to the room detail screen.
+- Asset-scoped document, task, repair, task delete, repair delete, and document delete flows return to asset detail.
+- Document and task edits return to their detail screens so the user can review the saved record.
+- Room edits return to room detail; property edits return to Household.
+- Generic inventory, document, and maintenance creates return to the relevant tab list.
+- Restore and demo reset clear selected records and return to Household.
+
+No broken return paths were found in the currently exposed flows.
 
 ## P1: Documents And Attachments
 
