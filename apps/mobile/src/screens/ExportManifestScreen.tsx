@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import * as DocumentPicker from 'expo-document-picker';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { Property } from '@homevault/domain';
 import {
@@ -10,6 +10,7 @@ import {
   formatHomeVaultExportPackage,
   formatHomeVaultExportManifest,
   formatHomeVaultImportPreview,
+  type HomeVaultExportPackage,
   type HomeVaultImportPreview,
   parseHomeVaultExportPackage,
 } from '@homevault/export';
@@ -33,6 +34,7 @@ type ExportManifestScreenProps = {
   taskCompletions: TaskCompletionListItem[];
   tasks: TaskListItem[];
   onBack: () => void;
+  onRestoreBackup: (backupPackage: HomeVaultExportPackage) => Promise<void>;
 };
 
 export function ExportManifestScreen({
@@ -44,12 +46,14 @@ export function ExportManifestScreen({
   taskCompletions,
   tasks,
   onBack,
+  onRestoreBackup,
 }: ExportManifestScreenProps) {
   const [downloadStatus, setDownloadStatus] = useState<'idle' | 'downloaded' | 'unsupported'>(
     'idle',
   );
   const [validationResult, setValidationResult] = useState<string | null>(null);
   const [importPreview, setImportPreview] = useState<HomeVaultImportPreview | null>(null);
+  const [validatedPackage, setValidatedPackage] = useState<HomeVaultExportPackage | null>(null);
   const exportInput = {
     property,
     assets,
@@ -104,6 +108,7 @@ export function ExportManifestScreen({
 
     const [asset] = result.assets;
     setImportPreview(null);
+    setValidatedPackage(null);
 
     if (!asset.file) {
       setValidationResult('Backup validation is available for downloaded JSON files in the web preview.');
@@ -114,12 +119,34 @@ export function ExportManifestScreen({
 
     if (parsed.ok) {
       setImportPreview(parsed.preview);
+      setValidatedPackage(parsed.package);
     }
 
     setValidationResult(
       parsed.ok
         ? `Valid HomeVault backup: ${parsed.summary}.`
         : `Backup needs review: ${parsed.errors.join(' ')}`,
+    );
+  }
+
+  function handleRestoreBackup() {
+    if (!validatedPackage) {
+      return;
+    }
+
+    Alert.alert(
+      'Restore backup?',
+      'This replaces the local HomeVault records in this preview with the validated backup package.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Restore',
+          style: 'destructive',
+          onPress: () => {
+            void onRestoreBackup(validatedPackage);
+          },
+        },
+      ],
     );
   }
 
@@ -202,6 +229,13 @@ export function ExportManifestScreen({
             label="Repair events"
             value={String(importPreview.recordCounts.repairEvents)}
           />
+          <Pressable
+            onPress={handleRestoreBackup}
+            style={styles.restoreButton}
+            accessibilityRole="button"
+          >
+            <Text style={styles.restoreButtonText}>Restore this backup</Text>
+          </Pressable>
         </View>
       ) : null}
 
@@ -457,6 +491,19 @@ const styles = StyleSheet.create({
   secondaryActionText: {
     color: colors.blue,
     fontSize: 12,
+    fontWeight: '900',
+  },
+  restoreButton: {
+    minHeight: 42,
+    borderRadius: 8,
+    backgroundColor: colors.redSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  restoreButtonText: {
+    color: colors.red,
+    fontSize: 13,
     fontWeight: '900',
   },
   metricGrid: {

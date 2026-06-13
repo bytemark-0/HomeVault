@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 
 import type { Property } from '@homevault/domain';
+import type { HomeVaultExportPackage } from '@homevault/export';
 import type {
   CreateAssetInput,
   CreateDocumentInput,
@@ -277,6 +278,35 @@ export default function App() {
     }
 
     await homeVaultRepository.resetDemoData();
+    await loadHomeVault();
+    setSelectedAssetId(null);
+    setSelectedDocumentId(null);
+    setSelectedRoomId(null);
+    setSelectedTaskId(null);
+    setDocumentLinkTargetId(null);
+    setAssetReturnTarget('inventory');
+    setDocumentReturnTarget('documents');
+    setTaskReturnTarget('maintenance');
+    setActiveTab('household');
+    setMode('tabs');
+  }
+
+  async function handleRestoreBackup(backupPackage: HomeVaultExportPackage) {
+    const homeVaultRepository = await getHomeVaultRepository();
+
+    if (!homeVaultRepository.restoreSnapshot) {
+      return;
+    }
+
+    await homeVaultRepository.restoreSnapshot({
+      properties: [backupPackage.records.property],
+      rooms: backupPackage.records.rooms,
+      assets: backupPackage.records.assets,
+      documents: backupPackage.records.documents,
+      tasks: backupPackage.records.tasks,
+      taskCompletions: backupPackage.records.taskCompletions,
+      repairEvents: backupPackage.records.repairEvents,
+    });
     await loadHomeVault();
     setSelectedAssetId(null);
     setSelectedDocumentId(null);
@@ -689,6 +719,7 @@ export default function App() {
             setActiveTab('household');
             setMode('tabs');
           }}
+          onRestoreBackup={handleRestoreBackup}
         />
       </SafeAreaView>
     );

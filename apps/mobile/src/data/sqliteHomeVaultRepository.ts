@@ -236,6 +236,9 @@ export async function createSQLiteHomeVaultRepository(
     async resetDemoData() {
       await resetDemoData(db, initialSnapshot);
     },
+    async restoreSnapshot(snapshot) {
+      await resetDemoData(db, snapshot);
+    },
   };
 }
 

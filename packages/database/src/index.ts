@@ -43,6 +43,7 @@ export type HomeVaultRepository = {
   deleteRepairEvent(repairEventId: EntityId): Promise<void>;
   completeTask(input: CompleteTaskInput): Promise<TaskCompletion>;
   resetDemoData?(): Promise<void>;
+  restoreSnapshot?(snapshot: HomeVaultSnapshot): Promise<void>;
 };
 
 export type UpdatePropertyInput = Property;
@@ -312,6 +313,17 @@ export function createMemoryHomeVaultRepository(
     },
     async resetDemoData() {
       const freshSnapshot = cloneSnapshot(initialSnapshot);
+
+      snapshot.properties = freshSnapshot.properties;
+      snapshot.rooms = freshSnapshot.rooms;
+      snapshot.assets = freshSnapshot.assets;
+      snapshot.documents = freshSnapshot.documents;
+      snapshot.tasks = freshSnapshot.tasks;
+      snapshot.taskCompletions = freshSnapshot.taskCompletions;
+      snapshot.repairEvents = freshSnapshot.repairEvents;
+    },
+    async restoreSnapshot(nextSnapshot) {
+      const freshSnapshot = cloneSnapshot(nextSnapshot);
 
       snapshot.properties = freshSnapshot.properties;
       snapshot.rooms = freshSnapshot.rooms;
