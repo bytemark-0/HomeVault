@@ -1,8 +1,10 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { Property } from '@homevault/domain';
 import {
   buildHomeVaultExportManifest,
+  createHomeVaultExportFileName,
   formatHomeVaultExportManifest,
 } from '@homevault/export';
 
@@ -37,6 +39,9 @@ export function ExportManifestScreen({
   tasks,
   onBack,
 }: ExportManifestScreenProps) {
+  const [downloadStatus, setDownloadStatus] = useState<'idle' | 'downloaded' | 'unsupported'>(
+    'idle',
+  );
   const manifest = buildHomeVaultExportManifest({
     property,
     assets,
@@ -61,6 +66,18 @@ export function ExportManifestScreen({
     reviewItems.length > 0
       ? reviewItems.map((item) => item.label).join(' · ')
       : `${rooms.length} areas · ${assets.length} assets · ${documents.length} documents`;
+  const manifestText = formatHomeVaultExportManifest(manifest);
+  const exportFileName = createHomeVaultExportFileName(manifest);
+
+  function handleDownloadManifest() {
+    const didDownload = downloadTextFile({
+      fileName: exportFileName,
+      mimeType: 'application/json',
+      text: manifestText,
+    });
+
+    setDownloadStatus(didDownload ? 'downloaded' : 'unsupported');
+  }
 
   return (
     <ScrollView
@@ -88,6 +105,26 @@ export function ExportManifestScreen({
         <Metric label="Linked docs" value={`${linkedDocumentCount}/${documents.length}`} />
         <Metric label="Documented assets" value={`${documentedAssetCount}/${assets.length}`} />
         <Metric label="Open tasks" value={String(activeTaskCount)} />
+      </View>
+
+      <View style={styles.downloadPanel}>
+        <View style={styles.downloadBody}>
+          <Text style={styles.sectionTitle}>Download package</Text>
+          <Text style={styles.downloadMeta}>
+            {downloadStatus === 'downloaded'
+              ? `${exportFileName} was generated.`
+              : downloadStatus === 'unsupported'
+                ? 'Download is available in the web preview. Native sharing comes next.'
+                : 'Save the manifest JSON for backup, review, or handoff.'}
+          </Text>
+        </View>
+        <Pressable
+          onPress={handleDownloadManifest}
+          style={styles.primaryButton}
+          accessibilityRole="button"
+        >
+          <Text style={styles.primaryButtonText}>Download JSON</Text>
+        </Pressable>
       </View>
 
       <View style={styles.panel}>
@@ -145,7 +182,7 @@ export function ExportManifestScreen({
 
       <View style={styles.panel}>
         <Text style={styles.sectionTitle}>Manifest preview</Text>
-        <Text style={styles.manifestText}>{formatHomeVaultExportManifest(manifest)}</Text>
+        <Text style={styles.manifestText}>{manifestText}</Text>
       </View>
     </ScrollView>
   );
@@ -167,6 +204,44 @@ function DetailLine({ label, value }: { label: string; value: string }) {
       <Text style={styles.detailValue}>{value}</Text>
     </View>
   );
+}
+
+function downloadTextFile({
+  fileName,
+  mimeType,
+  text,
+}: {
+  fileName: string;
+  mimeType: string;
+  text: string;
+}) {
+  if (Platform.OS !== 'web') {
+    return false;
+  }
+
+  const webGlobal = globalThis as typeof globalThis & {
+    Blob?: typeof Blob;
+    URL?: typeof URL;
+    document?: Document;
+  };
+
+  if (!webGlobal.Blob || !webGlobal.URL || !webGlobal.document) {
+    return false;
+  }
+
+  const blob = new webGlobal.Blob([text], { type: mimeType });
+  const url = webGlobal.URL.createObjectURL(blob);
+  const link = webGlobal.document.createElement('a');
+
+  link.href = url;
+  link.download = fileName;
+  link.style.display = 'none';
+  webGlobal.document.body.appendChild(link);
+  link.click();
+  link.remove();
+  webGlobal.URL.revokeObjectURL(url);
+
+  return true;
 }
 
 const styles = StyleSheet.create({
@@ -240,6 +315,39 @@ const styles = StyleSheet.create({
     color: colors.blueSoft,
     fontSize: 13,
     fontWeight: '800',
+  },
+  downloadPanel: {
+    borderRadius: 8,
+    borderColor: colors.line,
+    borderWidth: 1,
+    backgroundColor: colors.panel,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  downloadBody: {
+    flex: 1,
+    gap: 5,
+  },
+  downloadMeta: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+  primaryButton: {
+    minHeight: 40,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: colors.green,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '900',
   },
   metricGrid: {
     flexDirection: 'row',

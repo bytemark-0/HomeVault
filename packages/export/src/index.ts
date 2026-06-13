@@ -118,6 +118,23 @@ export function formatHomeVaultExportManifest(manifest: HomeVaultExportManifest)
   return JSON.stringify(manifest, null, 2);
 }
 
+export function createHomeVaultExportFileName(manifest: HomeVaultExportManifest): string {
+  const propertySlug = slugify(manifest.property.label || manifest.property.id);
+  const generatedDate = manifest.generatedAt.slice(0, 10);
+
+  return `homevault-${propertySlug}-${generatedDate}.json`;
+}
+
+function slugify(value: string) {
+  const slug = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return slug || 'export';
+}
+
 function buildExportChecklist({
   activeTaskCount,
   assetCount,
