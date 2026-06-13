@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import {
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -104,20 +106,13 @@ export function AddDocumentScreen({
     }
 
     const [asset] = result.assets;
+    const attachment = await createAttachmentFromPickedAsset(asset);
 
     setForm((current) => ({
       ...current,
-      attachment: {
-        attachedAt: new Date().toISOString(),
-        fileName: asset.name,
-        mimeType: asset.mimeType,
-        originalUri: asset.uri,
-        sizeBytes: asset.size,
-        storageKind: 'external_reference',
-        storedUri: asset.uri,
-      },
+      attachment,
       title: current.title.trim().length > 0 ? current.title : formatPickedFileTitle(asset.name),
-      filePath: asset.uri,
+      filePath: attachment.storedUri,
       ocrText: current.ocrText.trim().length > 0
         ? current.ocrText
         : formatPickedFileMetadata(asset),
@@ -376,6 +371,55 @@ function buildAttachmentInput(
   };
 }
 
+async function createAttachmentFromPickedAsset(
+  asset: DocumentPicker.DocumentPickerAsset,
+): Promise<DocumentAttachment> {
+  const attachedAt = new Date().toISOString();
+  const baseAttachment = {
+    attachedAt,
+    fileName: asset.name,
+    mimeType: asset.mimeType,
+    originalUri: asset.uri,
+    sizeBytes: asset.size,
+  };
+  const copiedUri = await copyPickedAssetToHomeVaultStorage(asset, attachedAt);
+
+  if (copiedUri) {
+    return {
+      ...baseAttachment,
+      storageKind: 'app_copy',
+      storedUri: copiedUri,
+    };
+  }
+
+  return {
+    ...baseAttachment,
+    storageKind: 'external_reference',
+    storedUri: asset.uri,
+  };
+}
+
+async function copyPickedAssetToHomeVaultStorage(
+  asset: DocumentPicker.DocumentPickerAsset,
+  attachedAt: string,
+) {
+  if (Platform.OS === 'web' || !FileSystem.documentDirectory) {
+    return null;
+  }
+
+  try {
+    const directoryUri = `${FileSystem.documentDirectory}homevault-documents/`;
+    const fileUri = `${directoryUri}${formatStoredFileName(asset.name, attachedAt)}`;
+
+    await FileSystem.makeDirectoryAsync(directoryUri, { intermediates: true });
+    await FileSystem.copyAsync({ from: asset.uri, to: fileUri });
+
+    return fileUri;
+  } catch {
+    return null;
+  }
+}
+
 function parseAmountCents(value: string) {
   const normalized = value.trim();
 
@@ -420,6 +464,13 @@ function formatAmountInput(value?: number) {
 
 function formatPickedFileTitle(fileName: string) {
   return fileName.replace(/\.[^/.]+$/, '').replace(/[-_]+/g, ' ').trim() || fileName;
+}
+
+function formatStoredFileName(fileName: string, attachedAt: string) {
+  const safeName = fileName.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+  const timestamp = attachedAt.replace(/[^0-9]/g, '').slice(0, 14);
+
+  return `${timestamp}-${safeName || 'document'}`;
 }
 
 function formatPickedFileMetadata(asset: DocumentPicker.DocumentPickerAsset) {

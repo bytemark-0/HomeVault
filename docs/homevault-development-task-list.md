@@ -65,7 +65,7 @@ No missing primary edit affordances were found in the currently exposed flows.
 ## P1: Documents And Attachments
 
 - [x] Define the file attachment model for native mobile and web preview.
-- [ ] Copy picked files into an app-owned storage location instead of storing picker URIs directly.
+- [x] Copy picked files into an app-owned storage location instead of storing picker URIs directly.
 - [ ] Add attachment presence/status labels in document list and detail views.
 - [ ] Allow documents to link to multiple records, not just one asset/room/property.
 - [ ] Add a “missing attachment” filtered view from export readiness.
@@ -74,7 +74,8 @@ No missing primary edit affordances were found in the currently exposed flows.
 
 Attachment model note:
 - Documents preserve backward-compatible `filePath` values and optional structured attachment metadata.
-- Picked files are stored as `external_reference` attachments until app-owned file copying is implemented.
+- Native picked files are copied into app-owned `homevault-documents` storage when filesystem access is available.
+- Web preview and copy failures fall back to `external_reference` attachments.
 
 ## P1: Export, Restore, And Trust
 
