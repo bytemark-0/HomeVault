@@ -1082,6 +1082,7 @@ export default function App() {
                   restoreNotice={restoreNotice ?? undefined}
                   rooms={appData.rooms}
                   onAddRoom={() => setMode('addRoom')}
+                  onDismissRestoreNotice={() => setRestoreNotice(null)}
                   onEditProperty={() => setMode('editProperty')}
                   onExportManifest={() => setMode('exportManifest')}
                   onResetDemoData={handleResetDemoData}

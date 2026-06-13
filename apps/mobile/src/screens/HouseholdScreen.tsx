@@ -16,6 +16,7 @@ type HouseholdScreenProps = {
   restoreNotice?: string;
   rooms: RoomListItem[];
   onAddRoom: () => void;
+  onDismissRestoreNotice: () => void;
   onEditProperty: () => void;
   onExportManifest: () => void;
   onResetDemoData: () => void;
@@ -32,6 +33,7 @@ export function HouseholdScreen({
   restoreNotice,
   rooms,
   onAddRoom,
+  onDismissRestoreNotice,
   onEditProperty,
   onExportManifest,
   onResetDemoData,
@@ -60,7 +62,16 @@ export function HouseholdScreen({
 
       {restoreNotice ? (
         <View style={styles.noticePanel}>
-          <Text style={styles.noticeTitle}>Backup restored</Text>
+          <View style={styles.noticeHeader}>
+            <Text style={styles.noticeTitle}>Backup restored</Text>
+            <Pressable
+              onPress={onDismissRestoreNotice}
+              style={styles.noticeDismiss}
+              accessibilityRole="button"
+            >
+              <Text style={styles.noticeDismissText}>Dismiss</Text>
+            </Pressable>
+          </View>
           <Text style={styles.noticeText}>{restoreNotice}</Text>
         </View>
       ) : null}
@@ -199,9 +210,29 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 4,
   },
+  noticeHeader: {
+    minHeight: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
   noticeTitle: {
     color: colors.ink,
     fontSize: 14,
+    fontWeight: '900',
+  },
+  noticeDismiss: {
+    minHeight: 28,
+    paddingHorizontal: 10,
+    borderRadius: 7,
+    backgroundColor: colors.panel,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noticeDismissText: {
+    color: colors.blue,
+    fontSize: 11,
     fontWeight: '900',
   },
   noticeText: {
