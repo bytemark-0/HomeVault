@@ -29,6 +29,7 @@ export type HomeVaultExportManifest = {
   };
   coverage: {
     activeTaskCount: number;
+    attachedDocumentCount: number;
     linkedDocumentCount: number;
     documentedAssetCount: number;
     repairEventsWithCostCount: number;
@@ -38,6 +39,7 @@ export type HomeVaultExportManifest = {
 
 export type HomeVaultExportPackage = {
   manifest: HomeVaultExportManifest;
+  attachments: HomeVaultExportAttachment[];
   records: {
     property: Property;
     rooms: RoomArea[];
@@ -49,8 +51,23 @@ export type HomeVaultExportPackage = {
   };
 };
 
+export type HomeVaultExportAttachment = {
+  documentId: string;
+  title: string;
+  filePath: string;
+  linkedRecordIds: string[];
+  type: DocumentRecord['type'];
+};
+
 export type HomeVaultExportChecklistItem = {
-  id: 'rooms' | 'assets' | 'documents' | 'history' | 'tasks' | 'assetDocumentation';
+  id:
+    | 'rooms'
+    | 'assets'
+    | 'documents'
+    | 'history'
+    | 'tasks'
+    | 'assetDocumentation'
+    | 'attachments';
   label: string;
   state: 'ready' | 'review';
   detail: string;
@@ -78,6 +95,7 @@ export function buildHomeVaultExportManifest({
   generatedAt = new Date().toISOString(),
 }: BuildExportManifestInput): HomeVaultExportManifest {
   const activeTaskCount = tasks.filter((task) => task.state !== 'completed').length;
+  const attachedDocumentCount = documents.filter((document) => document.filePath).length;
   const linkedDocumentCount = documents.filter(
     (document) => document.linkedRecordIds.length > 0,
   ).length;
@@ -109,12 +127,14 @@ export function buildHomeVaultExportManifest({
     },
     coverage: {
       activeTaskCount,
+      attachedDocumentCount,
       linkedDocumentCount,
       documentedAssetCount,
       repairEventsWithCostCount,
     },
     checklist: buildExportChecklist({
       activeTaskCount,
+      attachedDocumentCount,
       assetCount: assets.length,
       documentCount: documents.length,
       documentedAssetCount,
@@ -136,6 +156,7 @@ export function buildHomeVaultExportPackage(
 ): HomeVaultExportPackage {
   return {
     manifest: buildHomeVaultExportManifest(input),
+    attachments: buildExportAttachments(input.documents),
     records: {
       property: { ...input.property },
       rooms: input.rooms.map((room) => ({ ...room })),
@@ -177,6 +198,7 @@ function slugify(value: string) {
 
 function buildExportChecklist({
   activeTaskCount,
+  attachedDocumentCount,
   assetCount,
   documentCount,
   documentedAssetCount,
@@ -187,6 +209,7 @@ function buildExportChecklist({
   taskCompletionCount,
 }: {
   activeTaskCount: number;
+  attachedDocumentCount: number;
   assetCount: number;
   documentCount: number;
   documentedAssetCount: number;
@@ -225,6 +248,16 @@ function buildExportChecklist({
           : 'Add receipts, manuals, warranties, invoices, or reports',
     },
     {
+      id: 'attachments',
+      label: 'File attachments',
+      state:
+        documentCount === 0 || attachedDocumentCount === documentCount ? 'ready' : 'review',
+      detail:
+        documentCount > 0
+          ? `${attachedDocumentCount} of ${documentCount} document${documentCount === 1 ? '' : 's'} include file references`
+          : 'No documents require file references yet',
+    },
+    {
       id: 'history',
       label: 'Service history',
       state: taskCompletionCount > 0 || repairEventCount > 0 ? 'ready' : 'review',
@@ -252,4 +285,16 @@ function buildExportChecklist({
           : 'Add assets before tracking documentation coverage',
     },
   ] satisfies HomeVaultExportChecklistItem[];
+}
+
+function buildExportAttachments(documents: DocumentRecord[]): HomeVaultExportAttachment[] {
+  return documents
+    .filter((document) => document.filePath)
+    .map((document) => ({
+      documentId: document.id,
+      title: document.title,
+      filePath: document.filePath as string,
+      linkedRecordIds: [...document.linkedRecordIds],
+      type: document.type,
+    }));
 }

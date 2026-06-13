@@ -57,6 +57,7 @@ export function ExportManifestScreen({
   const exportPackage = buildHomeVaultExportPackage(exportInput);
   const {
     activeTaskCount,
+    attachedDocumentCount,
     documentedAssetCount,
     linkedDocumentCount,
     repairEventsWithCostCount,
@@ -108,7 +109,7 @@ export function ExportManifestScreen({
 
       <View style={styles.metricGrid}>
         <Metric label="Linked docs" value={`${linkedDocumentCount}/${documents.length}`} />
-        <Metric label="Documented assets" value={`${documentedAssetCount}/${assets.length}`} />
+        <Metric label="Attached files" value={`${attachedDocumentCount}/${documents.length}`} />
         <Metric label="Open tasks" value={String(activeTaskCount)} />
       </View>
 
@@ -174,6 +175,10 @@ export function ExportManifestScreen({
         <DetailLine
           label="Asset documentation"
           value={`${documentedAssetCount} of ${assets.length}`}
+        />
+        <DetailLine
+          label="File attachments"
+          value={`${attachedDocumentCount} of ${documents.length}`}
         />
         <DetailLine
           label="Task history"
