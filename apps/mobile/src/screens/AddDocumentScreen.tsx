@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import * as DocumentPicker from 'expo-document-picker';
 import {
   Pressable,
   ScrollView,
@@ -65,6 +66,35 @@ export function AddDocumentScreen({
   const [isSaving, setIsSaving] = useState(false);
 
   const canSave = useMemo(() => form.title.trim().length > 0 && !isSaving, [form.title, isSaving]);
+
+  async function handleChooseFile() {
+    const result = await DocumentPicker.getDocumentAsync({
+      copyToCacheDirectory: true,
+      multiple: false,
+      type: [
+        'application/pdf',
+        'image/*',
+        'text/*',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      ],
+    });
+
+    if (result.canceled || result.assets.length === 0) {
+      return;
+    }
+
+    const [asset] = result.assets;
+
+    setForm((current) => ({
+      ...current,
+      title: current.title.trim().length > 0 ? current.title : formatPickedFileTitle(asset.name),
+      filePath: asset.uri,
+      ocrText: current.ocrText.trim().length > 0
+        ? current.ocrText
+        : formatPickedFileMetadata(asset),
+    }));
+  }
 
   async function handleSave() {
     if (!canSave) {
@@ -189,6 +219,23 @@ export function AddDocumentScreen({
           placeholder="homevault://documents/hvac-manual.pdf"
           onChangeText={(filePath) => setForm((current) => ({ ...current, filePath }))}
         />
+        <View style={styles.attachmentPanel}>
+          <View style={styles.attachmentBody}>
+            <Text style={styles.attachmentTitle}>
+              {form.filePath ? 'Attachment selected' : 'Attach a file'}
+            </Text>
+            <Text style={styles.attachmentMeta} numberOfLines={2}>
+              {form.filePath || 'Choose a PDF, image, text file, Word doc, receipt, or report.'}
+            </Text>
+          </View>
+          <Pressable
+            onPress={handleChooseFile}
+            style={styles.attachmentButton}
+            accessibilityRole="button"
+          >
+            <Text style={styles.attachmentButtonText}>Choose file</Text>
+          </Pressable>
+        </View>
         <Field
           label="Captured text"
           value={form.ocrText}
@@ -291,6 +338,36 @@ function formatAmountInput(value?: number) {
   return (value / 100).toFixed(2);
 }
 
+function formatPickedFileTitle(fileName: string) {
+  return fileName.replace(/\.[^/.]+$/, '').replace(/[-_]+/g, ' ').trim() || fileName;
+}
+
+function formatPickedFileMetadata(asset: DocumentPicker.DocumentPickerAsset) {
+  const details = [`File: ${asset.name}`];
+
+  if (asset.mimeType) {
+    details.push(`Type: ${asset.mimeType}`);
+  }
+
+  if (asset.size !== undefined) {
+    details.push(`Size: ${formatBytes(asset.size)}`);
+  }
+
+  return details.join('\n');
+}
+
+function formatBytes(value: number) {
+  if (value < 1024) {
+    return `${value} B`;
+  }
+
+  if (value < 1024 * 1024) {
+    return `${(value / 1024).toFixed(1)} KB`;
+  }
+
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
@@ -368,6 +445,44 @@ const styles = StyleSheet.create({
     minHeight: 112,
     paddingTop: 12,
     textAlignVertical: 'top',
+  },
+  attachmentPanel: {
+    borderColor: colors.line,
+    borderWidth: 1,
+    borderRadius: 8,
+    backgroundColor: colors.greenSoft,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  attachmentBody: {
+    flex: 1,
+    gap: 3,
+  },
+  attachmentTitle: {
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  attachmentMeta: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 17,
+  },
+  attachmentButton: {
+    minHeight: 36,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: colors.green,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  attachmentButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '900',
   },
   optionGrid: {
     flexDirection: 'row',
