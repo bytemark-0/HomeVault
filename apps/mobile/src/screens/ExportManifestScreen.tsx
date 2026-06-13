@@ -3,8 +3,10 @@ import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-n
 
 import type { Property } from '@homevault/domain';
 import {
+  buildHomeVaultExportPackage,
   buildHomeVaultExportManifest,
   createHomeVaultExportFileName,
+  formatHomeVaultExportPackage,
   formatHomeVaultExportManifest,
 } from '@homevault/export';
 
@@ -42,7 +44,7 @@ export function ExportManifestScreen({
   const [downloadStatus, setDownloadStatus] = useState<'idle' | 'downloaded' | 'unsupported'>(
     'idle',
   );
-  const manifest = buildHomeVaultExportManifest({
+  const exportInput = {
     property,
     assets,
     documents,
@@ -50,7 +52,9 @@ export function ExportManifestScreen({
     rooms,
     taskCompletions,
     tasks,
-  });
+  };
+  const manifest = buildHomeVaultExportManifest(exportInput);
+  const exportPackage = buildHomeVaultExportPackage(exportInput);
   const {
     activeTaskCount,
     documentedAssetCount,
@@ -67,13 +71,14 @@ export function ExportManifestScreen({
       ? reviewItems.map((item) => item.label).join(' · ')
       : `${rooms.length} areas · ${assets.length} assets · ${documents.length} documents`;
   const manifestText = formatHomeVaultExportManifest(manifest);
+  const packageText = formatHomeVaultExportPackage(exportPackage);
   const exportFileName = createHomeVaultExportFileName(manifest);
 
   function handleDownloadManifest() {
     const didDownload = downloadTextFile({
       fileName: exportFileName,
       mimeType: 'application/json',
-      text: manifestText,
+      text: packageText,
     });
 
     setDownloadStatus(didDownload ? 'downloaded' : 'unsupported');
@@ -115,7 +120,7 @@ export function ExportManifestScreen({
               ? `${exportFileName} was generated.`
               : downloadStatus === 'unsupported'
                 ? 'Download is available in the web preview. Native sharing comes next.'
-                : 'Save the manifest JSON for backup, review, or handoff.'}
+                : 'Save manifest and local records as a JSON backup package.'}
           </Text>
         </View>
         <Pressable

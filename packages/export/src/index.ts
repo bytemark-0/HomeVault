@@ -36,6 +36,19 @@ export type HomeVaultExportManifest = {
   checklist: HomeVaultExportChecklistItem[];
 };
 
+export type HomeVaultExportPackage = {
+  manifest: HomeVaultExportManifest;
+  records: {
+    property: Property;
+    rooms: RoomArea[];
+    assets: Asset[];
+    documents: DocumentRecord[];
+    tasks: MaintenanceTask[];
+    taskCompletions: TaskCompletion[];
+    repairEvents: RepairEvent[];
+  };
+};
+
 export type HomeVaultExportChecklistItem = {
   id: 'rooms' | 'assets' | 'documents' | 'history' | 'tasks' | 'assetDocumentation';
   label: string;
@@ -116,6 +129,33 @@ export function buildHomeVaultExportManifest({
 
 export function formatHomeVaultExportManifest(manifest: HomeVaultExportManifest): string {
   return JSON.stringify(manifest, null, 2);
+}
+
+export function buildHomeVaultExportPackage(
+  input: BuildExportManifestInput,
+): HomeVaultExportPackage {
+  return {
+    manifest: buildHomeVaultExportManifest(input),
+    records: {
+      property: { ...input.property },
+      rooms: input.rooms.map((room) => ({ ...room })),
+      assets: input.assets.map((asset) => ({ ...asset })),
+      documents: input.documents.map((document) => ({
+        ...document,
+        linkedRecordIds: [...document.linkedRecordIds],
+      })),
+      tasks: input.tasks.map((task) => ({ ...task })),
+      taskCompletions: input.taskCompletions.map((completion) => ({ ...completion })),
+      repairEvents: input.repairEvents.map((repairEvent) => ({
+        ...repairEvent,
+        documentIds: [...repairEvent.documentIds],
+      })),
+    },
+  };
+}
+
+export function formatHomeVaultExportPackage(exportPackage: HomeVaultExportPackage): string {
+  return JSON.stringify(exportPackage, null, 2);
 }
 
 export function createHomeVaultExportFileName(manifest: HomeVaultExportManifest): string {
