@@ -13,6 +13,7 @@ type HouseholdScreenProps = {
   documentedAssetCount: number;
   linkedDocumentCount: number;
   property: Property;
+  restoreNotice?: string;
   rooms: RoomListItem[];
   onAddRoom: () => void;
   onEditProperty: () => void;
@@ -28,6 +29,7 @@ export function HouseholdScreen({
   documentedAssetCount,
   linkedDocumentCount,
   property,
+  restoreNotice,
   rooms,
   onAddRoom,
   onEditProperty,
@@ -55,6 +57,13 @@ export function HouseholdScreen({
           {readinessLabel} · {formatCount(rooms.length, 'area')} · {formatCount(assetCount, 'asset')}
         </Text>
       </View>
+
+      {restoreNotice ? (
+        <View style={styles.noticePanel}>
+          <Text style={styles.noticeTitle}>Backup restored</Text>
+          <Text style={styles.noticeText}>{restoreNotice}</Text>
+        </View>
+      ) : null}
 
       <SectionTitle title="Property" action="Edit" onActionPress={onEditProperty} />
       <Pressable
@@ -181,6 +190,25 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 16,
     gap: 8,
+  },
+  noticePanel: {
+    backgroundColor: colors.blueSoft,
+    borderColor: '#B9D2E7',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 14,
+    gap: 4,
+  },
+  noticeTitle: {
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  noticeText: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
   },
   kicker: {
     color: colors.green,

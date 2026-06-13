@@ -135,6 +135,7 @@ export default function App() {
   const [taskReturnTarget, setTaskReturnTarget] =
     useState<TaskReturnTarget>('maintenance');
   const [appData, setAppData] = useState<AppData | null>(null);
+  const [restoreNotice, setRestoreNotice] = useState<string | null>(null);
 
   async function loadHomeVault() {
     const homeVaultRepository = await getHomeVaultRepository();
@@ -287,6 +288,7 @@ export default function App() {
     setAssetReturnTarget('inventory');
     setDocumentReturnTarget('documents');
     setTaskReturnTarget('maintenance');
+    setRestoreNotice(null);
     setActiveTab('household');
     setMode('tabs');
   }
@@ -316,6 +318,11 @@ export default function App() {
     setAssetReturnTarget('inventory');
     setDocumentReturnTarget('documents');
     setTaskReturnTarget('maintenance');
+    setRestoreNotice(
+      `${backupPackage.manifest.property.label} restored from ${formatDateTime(
+        backupPackage.manifest.generatedAt,
+      )}.`,
+    );
     setActiveTab('household');
     setMode('tabs');
   }
@@ -1072,6 +1079,7 @@ export default function App() {
                   documentedAssetCount={documentedAssetCount}
                   linkedDocumentCount={linkedDocumentCount}
                   property={appData.property}
+                  restoreNotice={restoreNotice ?? undefined}
                   rooms={appData.rooms}
                   onAddRoom={() => setMode('addRoom')}
                   onEditProperty={() => setMode('editProperty')}
@@ -1239,4 +1247,17 @@ function formatCurrency(value: number) {
     currency: 'USD',
     maximumFractionDigits: value % 100 === 0 ? 0 : 2,
   }).format(value / 100);
+}
+
+function formatDateTime(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
 }
