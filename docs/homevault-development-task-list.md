@@ -31,7 +31,7 @@ In-progress, uncommitted slice:
 - [x] Add delete confirmations for destructive record actions.
 - [ ] Add edit flows for all primary record types: property, rooms, assets, documents, tasks.
 - [x] Verify navigation return paths after every create/edit/delete action.
-- [ ] Add a small “backup last created/restored” status indicator on Household or Export.
+- [x] Add a small “backup last created/restored” status indicator on Household or Export.
 
 ## Destructive Action Audit
 

@@ -127,6 +127,15 @@ type RestoreSummary = {
   restoredAt: string;
 };
 
+type BackupSummary = {
+  generatedAt: string;
+  fileName?: string;
+  kind: 'created' | 'restored';
+  propertyLabel: string;
+  recordCounts: HomeVaultExportPackage['manifest']['recordCounts'];
+  updatedAt: string;
+};
+
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('home');
   const [mode, setMode] = useState<AppMode>('tabs');
@@ -142,6 +151,7 @@ export default function App() {
   const [taskReturnTarget, setTaskReturnTarget] =
     useState<TaskReturnTarget>('maintenance');
   const [appData, setAppData] = useState<AppData | null>(null);
+  const [backupSummary, setBackupSummary] = useState<BackupSummary | null>(null);
   const [restoreSummary, setRestoreSummary] = useState<RestoreSummary | null>(null);
 
   async function loadHomeVault() {
@@ -295,9 +305,21 @@ export default function App() {
     setAssetReturnTarget('inventory');
     setDocumentReturnTarget('documents');
     setTaskReturnTarget('maintenance');
+    setBackupSummary(null);
     setRestoreSummary(null);
     setActiveTab('household');
     setMode('tabs');
+  }
+
+  function handleBackupCreated(backupPackage: HomeVaultExportPackage, fileName: string) {
+    setBackupSummary({
+      generatedAt: backupPackage.manifest.generatedAt,
+      fileName,
+      kind: 'created',
+      propertyLabel: backupPackage.manifest.property.label,
+      recordCounts: { ...backupPackage.manifest.recordCounts },
+      updatedAt: new Date().toISOString(),
+    });
   }
 
   function handleExportFixPress(fixId: HomeVaultExportChecklistItem['id']) {
@@ -421,6 +443,13 @@ export default function App() {
     setAssetReturnTarget('inventory');
     setDocumentReturnTarget('documents');
     setTaskReturnTarget('maintenance');
+    setBackupSummary({
+      generatedAt: backupPackage.manifest.generatedAt,
+      kind: 'restored',
+      propertyLabel: backupPackage.manifest.property.label,
+      recordCounts: { ...backupPackage.manifest.recordCounts },
+      updatedAt: new Date().toISOString(),
+    });
     setRestoreSummary({
       generatedAt: backupPackage.manifest.generatedAt,
       propertyLabel: backupPackage.manifest.property.label,
@@ -826,6 +855,7 @@ export default function App() {
           tasks={appData.tasks}
           taskCompletions={appData.taskCompletions}
           repairEvents={appData.repairEvents}
+          onBackupCreated={handleBackupCreated}
           onBack={() => {
             setActiveTab('household');
             setMode('tabs');
@@ -1183,6 +1213,7 @@ export default function App() {
                   documentCount={appData.documentCount}
                   documentedAssetCount={documentedAssetCount}
                   linkedDocumentCount={linkedDocumentCount}
+                  backupSummary={backupSummary ?? undefined}
                   property={appData.property}
                   restoreSummary={restoreSummary ?? undefined}
                   rooms={appData.rooms}

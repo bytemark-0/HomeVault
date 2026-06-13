@@ -44,6 +44,7 @@ type ExportManifestScreenProps = {
   rooms: RoomListItem[];
   taskCompletions: TaskCompletionListItem[];
   tasks: TaskListItem[];
+  onBackupCreated: (backupPackage: HomeVaultExportPackage, fileName: string) => void;
   onBack: () => void;
   onFixPress: (fixId: HomeVaultExportPackage['manifest']['checklist'][number]['id']) => void;
   onRestoreBackup: (backupPackage: HomeVaultExportPackage) => Promise<void>;
@@ -59,6 +60,7 @@ export function ExportManifestScreen({
   rooms,
   taskCompletions,
   tasks,
+  onBackupCreated,
   onBack,
   onFixPress,
   onRestoreBackup,
@@ -113,6 +115,10 @@ export function ExportManifestScreen({
     });
 
     setDownloadStatus(didDownload ? 'downloaded' : 'unsupported');
+
+    if (didDownload) {
+      onBackupCreated(exportPackage, exportFileName);
+    }
   }
 
   async function handleValidateBackup() {

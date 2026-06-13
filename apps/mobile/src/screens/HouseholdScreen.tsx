@@ -9,6 +9,7 @@ import { colors } from '../theme/colors';
 type HouseholdScreenProps = {
   activeTaskCount: number;
   assetCount: number;
+  backupSummary?: BackupSummary;
   documentCount: number;
   documentedAssetCount: number;
   linkedDocumentCount: number;
@@ -37,9 +38,26 @@ type RestoreSummary = {
   restoredAt: string;
 };
 
+type BackupSummary = {
+  generatedAt: string;
+  fileName?: string;
+  kind: 'created' | 'restored';
+  propertyLabel: string;
+  recordCounts: {
+    rooms: number;
+    assets: number;
+    documents: number;
+    tasks: number;
+    taskCompletions: number;
+    repairEvents: number;
+  };
+  updatedAt: string;
+};
+
 export function HouseholdScreen({
   activeTaskCount,
   assetCount,
+  backupSummary,
   documentCount,
   documentedAssetCount,
   linkedDocumentCount,
@@ -204,6 +222,41 @@ export function HouseholdScreen({
           <Text style={styles.readinessValue}>
             {activeTaskCount > 0 ? formatCount(activeTaskCount, 'task') : 'Clear'}
           </Text>
+        </View>
+        <View style={styles.backupStatusRow}>
+          <View style={styles.backupStatusHeader}>
+            <View style={styles.backupStatusBody}>
+              <Text style={styles.readinessLabel}>Backup status</Text>
+              <Text style={styles.roomMeta}>
+                {backupSummary
+                  ? `${formatBackupKind(backupSummary.kind)} ${formatDateTime(backupSummary.updatedAt)}`
+                  : 'No backup created in this session'}
+              </Text>
+            </View>
+            <Text style={styles.readinessValue}>
+              {backupSummary ? 'Current' : 'Not started'}
+            </Text>
+          </View>
+          {backupSummary ? (
+            <>
+              <Text style={styles.backupMeta} numberOfLines={2}>
+                {backupSummary.fileName ?? backupSummary.propertyLabel}
+              </Text>
+              <View style={styles.noticeCounts}>
+                <RestoreCount label="Areas" value={backupSummary.recordCounts.rooms} />
+                <RestoreCount label="Assets" value={backupSummary.recordCounts.assets} />
+                <RestoreCount label="Docs" value={backupSummary.recordCounts.documents} />
+                <RestoreCount label="Tasks" value={backupSummary.recordCounts.tasks} />
+                <RestoreCount
+                  label="History"
+                  value={
+                    backupSummary.recordCounts.taskCompletions +
+                    backupSummary.recordCounts.repairEvents
+                  }
+                />
+              </View>
+            </>
+          ) : null}
         </View>
         <Pressable
           onPress={onExportManifest}
@@ -397,6 +450,29 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.line,
     borderBottomWidth: 1,
   },
+  backupStatusRow: {
+    minHeight: 72,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomColor: colors.line,
+    borderBottomWidth: 1,
+    gap: 8,
+  },
+  backupStatusHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  backupStatusBody: {
+    flex: 1,
+  },
+  backupMeta: {
+    color: colors.ink,
+    fontSize: 12,
+    fontWeight: '800',
+    lineHeight: 17,
+  },
   readinessLabel: {
     color: colors.ink,
     fontSize: 14,
@@ -508,6 +584,10 @@ function formatDateTime(value: string) {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(date);
+}
+
+function formatBackupKind(kind: BackupSummary['kind']) {
+  return kind === 'created' ? 'Created' : 'Restored';
 }
 
 function calculateReadinessScore({
