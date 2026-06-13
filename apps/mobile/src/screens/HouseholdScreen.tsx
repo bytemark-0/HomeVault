@@ -92,6 +92,28 @@ export function HouseholdScreen({
         </Text>
       </View>
 
+      <View style={styles.demoPanel}>
+        <View style={styles.demoBody}>
+          <Text style={styles.demoTitle}>Demo workspace</Text>
+          <Text style={styles.demoText}>
+            These seeded records stay local to this preview. Rename the home and replace sample areas,
+            assets, documents, and tasks with your own household records.
+          </Text>
+        </View>
+        <View style={styles.demoActions}>
+          <Pressable onPress={onEditProperty} style={styles.demoPrimaryAction} accessibilityRole="button">
+            <Text style={styles.demoPrimaryActionText}>Edit home</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => confirmResetDemoData(onResetDemoData)}
+            style={styles.demoSecondaryAction}
+            accessibilityRole="button"
+          >
+            <Text style={styles.demoSecondaryActionText}>Reset demo</Text>
+          </Pressable>
+        </View>
+      </View>
+
       {restoreSummary ? (
         <View style={styles.noticePanel}>
           <View style={styles.noticeHeader}>
@@ -315,6 +337,61 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 14,
     gap: 8,
+  },
+  demoPanel: {
+    borderRadius: 8,
+    borderColor: '#B9D2E7',
+    borderWidth: 1,
+    backgroundColor: colors.blueSoft,
+    padding: 14,
+    gap: 12,
+  },
+  demoBody: {
+    gap: 5,
+  },
+  demoTitle: {
+    color: colors.ink,
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  demoText: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+  demoActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  demoPrimaryAction: {
+    minHeight: 36,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: colors.green,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  demoPrimaryActionText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  demoSecondaryAction: {
+    minHeight: 36,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: colors.panel,
+    borderColor: colors.line,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  demoSecondaryActionText: {
+    color: colors.blue,
+    fontSize: 12,
+    fontWeight: '900',
   },
   noticeHeader: {
     minHeight: 28,

@@ -4,16 +4,11 @@ Last reviewed: 2026-06-13
 
 ## Current State
 
-HomeVault is a working Expo/React Native app with local persistence, demo household data, core household/inventory/documents/maintenance screens, export manifest generation, backup validation, sample restore flow, and restore confirmation/audit feedback.
+HomeVault is a working Expo/React Native app with local persistence, demo household data, core household/inventory/documents/maintenance screens, export manifest generation, backup validation, sample restore flow, restore confirmation/audit feedback, export readiness routing, empty states, form validation, and Household backup status.
 
 Current branch: `codex/homevault-stabilization`
 
-Latest committed slice: `b581022 Make export fixes actionable`
-
-In-progress, uncommitted slice:
-- Smarter export readiness routing in `apps/mobile/App.tsx`
-- Status: implemented locally, typecheck/test/web export passed before interruption, not committed
-- Behavior: export fix rows can open the first unlinked document, missing-file document, open task, undocumented asset link flow, or repair-history fallback instead of landing on a generic tab
+Latest committed slice before this review: `1370988 Show backup status on household`
 
 ## Review Questions
 
@@ -24,8 +19,8 @@ In-progress, uncommitted slice:
 
 ## P0: Finish The Usable Local MVP
 
-- [ ] Decide whether to keep and commit smarter export-fix routing.
-- [ ] Add an onboarding/reset path that explains demo data versus a real household.
+- [x] Decide whether to keep and commit smarter export-fix routing.
+- [x] Add an onboarding/reset path that explains demo data versus a real household.
 - [x] Add empty states for inventory, documents, rooms, maintenance, and export readiness.
 - [x] Add basic form validation messages for required fields and invalid dates/amounts.
 - [x] Add delete confirmations for destructive record actions.
