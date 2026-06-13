@@ -13,7 +13,7 @@ type HouseholdScreenProps = {
   documentedAssetCount: number;
   linkedDocumentCount: number;
   property: Property;
-  restoreNotice?: string;
+  restoreSummary?: RestoreSummary;
   rooms: RoomListItem[];
   onAddRoom: () => void;
   onDismissRestoreNotice: () => void;
@@ -23,6 +23,20 @@ type HouseholdScreenProps = {
   onRoomPress: (roomId: string) => void;
 };
 
+type RestoreSummary = {
+  generatedAt: string;
+  propertyLabel: string;
+  recordCounts: {
+    rooms: number;
+    assets: number;
+    documents: number;
+    tasks: number;
+    taskCompletions: number;
+    repairEvents: number;
+  };
+  restoredAt: string;
+};
+
 export function HouseholdScreen({
   activeTaskCount,
   assetCount,
@@ -30,7 +44,7 @@ export function HouseholdScreen({
   documentedAssetCount,
   linkedDocumentCount,
   property,
-  restoreNotice,
+  restoreSummary,
   rooms,
   onAddRoom,
   onDismissRestoreNotice,
@@ -60,7 +74,7 @@ export function HouseholdScreen({
         </Text>
       </View>
 
-      {restoreNotice ? (
+      {restoreSummary ? (
         <View style={styles.noticePanel}>
           <View style={styles.noticeHeader}>
             <Text style={styles.noticeTitle}>Backup restored</Text>
@@ -72,7 +86,25 @@ export function HouseholdScreen({
               <Text style={styles.noticeDismissText}>Dismiss</Text>
             </Pressable>
           </View>
-          <Text style={styles.noticeText}>{restoreNotice}</Text>
+          <Text style={styles.noticeText}>
+            {restoreSummary.propertyLabel} restored at {formatDateTime(restoreSummary.restoredAt)}.
+          </Text>
+          <Text style={styles.noticeMeta}>
+            Backup generated {formatDateTime(restoreSummary.generatedAt)}
+          </Text>
+          <View style={styles.noticeCounts}>
+            <RestoreCount label="Areas" value={restoreSummary.recordCounts.rooms} />
+            <RestoreCount label="Assets" value={restoreSummary.recordCounts.assets} />
+            <RestoreCount label="Docs" value={restoreSummary.recordCounts.documents} />
+            <RestoreCount label="Tasks" value={restoreSummary.recordCounts.tasks} />
+            <RestoreCount
+              label="History"
+              value={
+                restoreSummary.recordCounts.taskCompletions +
+                restoreSummary.recordCounts.repairEvents
+              }
+            />
+          </View>
         </View>
       ) : null}
 
@@ -190,6 +222,15 @@ export function HouseholdScreen({
   );
 }
 
+function RestoreCount({ label, value }: { label: string; value: number }) {
+  return (
+    <View style={styles.noticeCountPill}>
+      <Text style={styles.noticeCountValue}>{value}</Text>
+      <Text style={styles.noticeCountLabel}>{label}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   screen: {
     gap: 14,
@@ -208,7 +249,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     padding: 14,
-    gap: 4,
+    gap: 8,
   },
   noticeHeader: {
     minHeight: 28,
@@ -240,6 +281,36 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     lineHeight: 18,
+  },
+  noticeMeta: {
+    color: colors.ink,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  noticeCounts: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  noticeCountPill: {
+    minHeight: 40,
+    minWidth: 66,
+    borderRadius: 8,
+    backgroundColor: colors.panel,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    justifyContent: 'center',
+  },
+  noticeCountValue: {
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  noticeCountLabel: {
+    color: colors.muted,
+    fontSize: 10,
+    fontWeight: '900',
+    marginTop: 1,
   },
   kicker: {
     color: colors.green,
@@ -378,6 +449,19 @@ function formatPropertyType(type: Property['type']) {
 
 function formatCount(value: number, singular: string) {
   return `${value} ${singular}${value === 1 ? '' : 's'}`;
+}
+
+function formatDateTime(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
 }
 
 function calculateReadinessScore({
