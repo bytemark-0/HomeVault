@@ -9,6 +9,8 @@ import {
   createHomeVaultExportFileName,
   formatHomeVaultExportPackage,
   formatHomeVaultExportManifest,
+  formatHomeVaultImportPreview,
+  type HomeVaultImportPreview,
   parseHomeVaultExportPackage,
 } from '@homevault/export';
 
@@ -47,6 +49,7 @@ export function ExportManifestScreen({
     'idle',
   );
   const [validationResult, setValidationResult] = useState<string | null>(null);
+  const [importPreview, setImportPreview] = useState<HomeVaultImportPreview | null>(null);
   const exportInput = {
     property,
     assets,
@@ -100,6 +103,7 @@ export function ExportManifestScreen({
     }
 
     const [asset] = result.assets;
+    setImportPreview(null);
 
     if (!asset.file) {
       setValidationResult('Backup validation is available for downloaded JSON files in the web preview.');
@@ -107,6 +111,10 @@ export function ExportManifestScreen({
     }
 
     const parsed = parseHomeVaultExportPackage(await asset.file.text());
+
+    if (parsed.ok) {
+      setImportPreview(parsed.preview);
+    }
 
     setValidationResult(
       parsed.ok
@@ -178,6 +186,24 @@ export function ExportManifestScreen({
           <Text style={styles.secondaryActionText}>Choose JSON</Text>
         </Pressable>
       </View>
+
+      {importPreview ? (
+        <View style={styles.panel}>
+          <Text style={styles.sectionTitle}>Backup preview</Text>
+          <Text style={styles.previewSummary}>
+            {formatHomeVaultImportPreview(importPreview)}
+          </Text>
+          <DetailLine label="Generated" value={formatDateTime(importPreview.generatedAt)} />
+          <DetailLine
+            label="Service history"
+            value={`${importPreview.recordCounts.taskCompletions} completions`}
+          />
+          <DetailLine
+            label="Repair events"
+            value={String(importPreview.recordCounts.repairEvents)}
+          />
+        </View>
+      ) : null}
 
       <View style={styles.panel}>
         <Text style={styles.sectionTitle}>Package checklist</Text>
@@ -260,6 +286,19 @@ function DetailLine({ label, value }: { label: string; value: string }) {
       <Text style={styles.detailValue}>{value}</Text>
     </View>
   );
+}
+
+function formatDateTime(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
 }
 
 function downloadTextFile({
@@ -503,6 +542,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     lineHeight: 17,
+  },
+  previewSummary: {
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: '800',
+    lineHeight: 20,
   },
   detailLine: {
     minHeight: 34,

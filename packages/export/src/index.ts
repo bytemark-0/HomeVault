@@ -63,12 +63,21 @@ export type HomeVaultExportPackageValidation =
   | {
       ok: true;
       package: HomeVaultExportPackage;
+      preview: HomeVaultImportPreview;
       summary: string;
     }
   | {
       ok: false;
       errors: string[];
     };
+
+export type HomeVaultImportPreview = {
+  attachmentCount: number;
+  generatedAt: string;
+  propertyLabel: string;
+  recordCounts: HomeVaultExportManifest['recordCounts'];
+  reviewItemCount: number;
+};
 
 export type HomeVaultExportChecklistItem = {
   id:
@@ -268,8 +277,20 @@ export function validateHomeVaultExportPackage(
   return {
     ok: true,
     package: candidate as HomeVaultExportPackage,
+    preview: buildImportPreview(candidate as HomeVaultExportPackage),
     summary: `${roomCount} areas, ${assetCount} assets, ${documentCount} documents, ${taskCount} tasks`,
   };
+}
+
+export function formatHomeVaultImportPreview(preview: HomeVaultImportPreview): string {
+  return [
+    preview.propertyLabel,
+    `${preview.recordCounts.rooms} areas`,
+    `${preview.recordCounts.assets} assets`,
+    `${preview.recordCounts.documents} documents`,
+    `${preview.attachmentCount} attachments`,
+    `${preview.reviewItemCount} review items`,
+  ].join(' · ');
 }
 
 export function createHomeVaultExportFileName(manifest: HomeVaultExportManifest): string {
@@ -299,6 +320,17 @@ function validateArrayCount(
   }
 
   return recordsValue.length;
+}
+
+function buildImportPreview(exportPackage: HomeVaultExportPackage): HomeVaultImportPreview {
+  return {
+    attachmentCount: exportPackage.attachments.length,
+    generatedAt: exportPackage.manifest.generatedAt,
+    propertyLabel: exportPackage.manifest.property.label,
+    recordCounts: { ...exportPackage.manifest.recordCounts },
+    reviewItemCount: exportPackage.manifest.checklist.filter((item) => item.state === 'review')
+      .length,
+  };
 }
 
 function slugify(value: string) {
