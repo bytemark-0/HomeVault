@@ -96,6 +96,7 @@ export function ExportManifestScreen({
   const manifestText = formatHomeVaultExportManifest(manifest);
   const packageText = formatHomeVaultExportPackage(exportPackage);
   const exportFileName = createHomeVaultExportFileName(manifest);
+  const restoreReady = restoreConfirmText.trim() === 'RESTORE';
 
   function handleDownloadManifest() {
     const didDownload = downloadTextFile({
@@ -302,6 +303,29 @@ export function ExportManifestScreen({
             currentValue={manifest.recordCounts.repairEvents}
             backupValue={importPreview.recordCounts.repairEvents}
           />
+          <Text style={styles.subsectionTitle}>Dry-run checklist</Text>
+          <View style={styles.restoreChecklist}>
+            <RestorePlanRow
+              label="Package validated"
+              detail="Manifest counts match the included records."
+              state="ready"
+            />
+            <RestorePlanRow
+              label="Differences reviewed"
+              detail="Current and backup record counts are shown above."
+              state="ready"
+            />
+            <RestorePlanRow
+              label="Overwrite warning"
+              detail="Restore replaces the local preview dataset."
+              state="ready"
+            />
+            <RestorePlanRow
+              label="Typed confirmation"
+              detail={restoreReady ? 'Restore action is enabled.' : 'Type RESTORE to enable restore.'}
+              state={restoreReady ? 'ready' : 'pending'}
+            />
+          </View>
           <View style={styles.restoreWarning}>
             <Text style={styles.restoreWarningTitle}>Restore will overwrite this preview</Text>
             <Text style={styles.restoreWarningText}>
@@ -320,10 +344,10 @@ export function ExportManifestScreen({
           </View>
           <Pressable
             onPress={handleRestoreBackup}
-            disabled={restoreConfirmText.trim() !== 'RESTORE'}
+            disabled={!restoreReady}
             style={[
               styles.restoreButton,
-              restoreConfirmText.trim() !== 'RESTORE' && styles.restoreButtonDisabled,
+              !restoreReady && styles.restoreButtonDisabled,
             ]}
             accessibilityRole="button"
           >
@@ -443,6 +467,40 @@ function CompareLine({
         >
           {deltaLabel}
         </Text>
+      </View>
+    </View>
+  );
+}
+
+function RestorePlanRow({
+  label,
+  detail,
+  state,
+}: {
+  label: string;
+  detail: string;
+  state: 'pending' | 'ready';
+}) {
+  return (
+    <View style={styles.restorePlanRow}>
+      <View
+        style={[
+          styles.restorePlanBadge,
+          state === 'pending' && styles.restorePlanBadgePending,
+        ]}
+      >
+        <Text
+          style={[
+            styles.restorePlanBadgeText,
+            state === 'pending' && styles.restorePlanBadgeTextPending,
+          ]}
+        >
+          {state === 'ready' ? 'Ready' : 'Pending'}
+        </Text>
+      </View>
+      <View style={styles.restorePlanBody}>
+        <Text style={styles.restorePlanTitle}>{label}</Text>
+        <Text style={styles.restorePlanDetail}>{detail}</Text>
       </View>
     </View>
   );
@@ -802,6 +860,58 @@ const styles = StyleSheet.create({
   },
   compareDeltaPositive: {
     color: colors.green,
+  },
+  restoreChecklist: {
+    borderRadius: 8,
+    borderColor: colors.line,
+    borderWidth: 1,
+    backgroundColor: colors.page,
+  },
+  restorePlanRow: {
+    minHeight: 58,
+    borderBottomColor: colors.line,
+    borderBottomWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  restorePlanBadge: {
+    minHeight: 26,
+    minWidth: 62,
+    paddingHorizontal: 8,
+    borderRadius: 7,
+    backgroundColor: colors.greenSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  restorePlanBadgePending: {
+    backgroundColor: colors.amberSoft,
+  },
+  restorePlanBadgeText: {
+    color: colors.green,
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  restorePlanBadgeTextPending: {
+    color: colors.amber,
+  },
+  restorePlanBody: {
+    flex: 1,
+    gap: 3,
+  },
+  restorePlanTitle: {
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: '900',
+    lineHeight: 18,
+  },
+  restorePlanDetail: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 17,
   },
   detailLine: {
     minHeight: 34,
