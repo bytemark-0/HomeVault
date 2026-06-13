@@ -38,10 +38,26 @@ export function AddRepairEventScreen({ asset, onCancel, onSave }: AddRepairEvent
     date: toDateInputValue(new Date()),
   });
   const [isSaving, setIsSaving] = useState(false);
+  const errors = useMemo(
+    () => ({
+      issue: form.issue.trim().length === 0 ? 'Issue is required.' : undefined,
+      date:
+        form.date.trim().length === 0
+          ? 'Date is required.'
+          : !isValidDateInput(form.date)
+            ? 'Use YYYY-MM-DD.'
+            : undefined,
+      cost:
+        form.cost.trim().length > 0 && !isValidAmountInput(form.cost)
+          ? 'Enter a valid cost.'
+          : undefined,
+    }),
+    [form.cost, form.date, form.issue],
+  );
 
   const canSave = useMemo(
-    () => form.issue.trim().length > 0 && form.date.trim().length > 0 && !isSaving,
-    [form.date, form.issue, isSaving],
+    () => !errors.issue && !errors.date && !errors.cost && !isSaving,
+    [errors.cost, errors.date, errors.issue, isSaving],
   );
 
   async function handleSave() {
@@ -90,6 +106,7 @@ export function AddRepairEventScreen({ asset, onCancel, onSave }: AddRepairEvent
           label="Issue"
           value={form.issue}
           placeholder="Leak, error code, weak airflow"
+          error={errors.issue}
           onChangeText={(issue) => setForm((current) => ({ ...current, issue }))}
         />
         <Field
@@ -117,12 +134,14 @@ export function AddRepairEventScreen({ asset, onCancel, onSave }: AddRepairEvent
           value={form.cost}
           placeholder="249.00"
           keyboardType="decimal-pad"
+          error={errors.cost}
           onChangeText={(cost) => setForm((current) => ({ ...current, cost }))}
         />
         <Field
           label="Date"
           value={form.date}
           placeholder="2026-06-12"
+          error={errors.date}
           onChangeText={(date) => setForm((current) => ({ ...current, date }))}
         />
       </View>
@@ -144,6 +163,7 @@ type FieldProps = {
   value: string;
   placeholder: string;
   onChangeText: (value: string) => void;
+  error?: string;
   keyboardType?: 'default' | 'decimal-pad';
   multiline?: boolean;
 };
@@ -153,6 +173,7 @@ function Field({
   value,
   placeholder,
   onChangeText,
+  error,
   keyboardType,
   multiline,
 }: FieldProps) {
@@ -165,9 +186,10 @@ function Field({
         onChangeText={onChangeText}
         keyboardType={keyboardType}
         multiline={multiline}
-        style={[styles.input, multiline && styles.multilineInput]}
+        style={[styles.input, error && styles.inputError, multiline && styles.multilineInput]}
         placeholderTextColor={colors.muted}
       />
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>
   );
 }
@@ -188,6 +210,28 @@ function parseAmountCents(value: string) {
   const parsed = Number(normalized);
 
   return Number.isFinite(parsed) ? Math.round(parsed * 100) : undefined;
+}
+
+function isValidDateInput(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+
+  if (!match) {
+    return false;
+  }
+
+  const [, yearValue, monthValue, dayValue] = match;
+  const year = Number(yearValue);
+  const month = Number(monthValue);
+  const day = Number(dayValue);
+  const date = new Date(year, month - 1, day);
+
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+}
+
+function isValidAmountInput(value: string) {
+  const parsed = Number(value.trim());
+
+  return Number.isFinite(parsed) && parsed >= 0;
 }
 
 function toDateInputValue(date: Date) {
@@ -272,6 +316,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     fontSize: 15,
     fontWeight: '800',
+  },
+  inputError: {
+    borderColor: colors.red,
+  },
+  errorText: {
+    color: colors.red,
+    fontSize: 12,
+    fontWeight: '800',
+    lineHeight: 16,
   },
   multilineInput: {
     minHeight: 88,

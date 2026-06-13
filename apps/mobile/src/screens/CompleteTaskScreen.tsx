@@ -32,10 +32,25 @@ export function CompleteTaskScreen({ task, onCancel, onSave }: CompleteTaskScree
     notes: '',
   });
   const [isSaving, setIsSaving] = useState(false);
+  const errors = useMemo(
+    () => ({
+      completedAt:
+        form.completedAt.trim().length === 0
+          ? 'Completed date is required.'
+          : !isValidDateInput(form.completedAt)
+            ? 'Use YYYY-MM-DD.'
+            : undefined,
+      cost:
+        form.cost.trim().length > 0 && !isValidAmountInput(form.cost)
+          ? 'Enter a valid cost.'
+          : undefined,
+    }),
+    [form.completedAt, form.cost],
+  );
 
   const canSave = useMemo(
-    () => form.completedAt.trim().length > 0 && !isSaving,
-    [form.completedAt, isSaving],
+    () => !errors.completedAt && !errors.cost && !isSaving,
+    [errors.completedAt, errors.cost, isSaving],
   );
 
   async function handleSave() {
@@ -79,6 +94,7 @@ export function CompleteTaskScreen({ task, onCancel, onSave }: CompleteTaskScree
           label="Completed date"
           value={form.completedAt}
           placeholder="2026-06-12"
+          error={errors.completedAt}
           onChangeText={(completedAt) => setForm((current) => ({ ...current, completedAt }))}
         />
         <Field
@@ -86,6 +102,7 @@ export function CompleteTaskScreen({ task, onCancel, onSave }: CompleteTaskScree
           value={form.cost}
           placeholder="49.99"
           keyboardType="decimal-pad"
+          error={errors.cost}
           onChangeText={(cost) => setForm((current) => ({ ...current, cost }))}
         />
         <Field
@@ -114,6 +131,7 @@ type FieldProps = {
   value: string;
   placeholder: string;
   onChangeText: (value: string) => void;
+  error?: string;
   keyboardType?: 'default' | 'decimal-pad';
   multiline?: boolean;
 };
@@ -123,6 +141,7 @@ function Field({
   value,
   placeholder,
   onChangeText,
+  error,
   keyboardType,
   multiline,
 }: FieldProps) {
@@ -135,9 +154,10 @@ function Field({
         onChangeText={onChangeText}
         keyboardType={keyboardType}
         multiline={multiline}
-        style={[styles.input, multiline && styles.multilineInput]}
+        style={[styles.input, error && styles.inputError, multiline && styles.multilineInput]}
         placeholderTextColor={colors.muted}
       />
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>
   );
 }
@@ -158,6 +178,28 @@ function parseAmountCents(value: string) {
   const parsed = Number(normalized);
 
   return Number.isFinite(parsed) ? Math.round(parsed * 100) : undefined;
+}
+
+function isValidDateInput(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+
+  if (!match) {
+    return false;
+  }
+
+  const [, yearValue, monthValue, dayValue] = match;
+  const year = Number(yearValue);
+  const month = Number(monthValue);
+  const day = Number(dayValue);
+  const date = new Date(year, month - 1, day);
+
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+}
+
+function isValidAmountInput(value: string) {
+  const parsed = Number(value.trim());
+
+  return Number.isFinite(parsed) && parsed >= 0;
 }
 
 function toCompletedAtIso(value: string) {
@@ -252,6 +294,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     fontSize: 15,
     fontWeight: '800',
+  },
+  inputError: {
+    borderColor: colors.red,
+  },
+  errorText: {
+    color: colors.red,
+    fontSize: 12,
+    fontWeight: '800',
+    lineHeight: 16,
   },
   multilineInput: {
     minHeight: 96,

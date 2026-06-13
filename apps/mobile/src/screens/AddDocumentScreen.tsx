@@ -64,8 +64,25 @@ export function AddDocumentScreen({
     ocrText: document?.ocrText ?? '',
   });
   const [isSaving, setIsSaving] = useState(false);
+  const errors = useMemo(
+    () => ({
+      title: form.title.trim().length === 0 ? 'Title is required.' : undefined,
+      date:
+        form.date.trim().length > 0 && !isValidDateInput(form.date)
+          ? 'Use YYYY-MM-DD.'
+          : undefined,
+      amount:
+        form.amount.trim().length > 0 && !isValidAmountInput(form.amount)
+          ? 'Enter a valid amount.'
+          : undefined,
+    }),
+    [form.amount, form.date, form.title],
+  );
 
-  const canSave = useMemo(() => form.title.trim().length > 0 && !isSaving, [form.title, isSaving]);
+  const canSave = useMemo(
+    () => !errors.title && !errors.date && !errors.amount && !isSaving,
+    [errors.amount, errors.date, errors.title, isSaving],
+  );
 
   async function handleChooseFile() {
     const result = await DocumentPicker.getDocumentAsync({
@@ -142,6 +159,7 @@ export function AddDocumentScreen({
           label="Title"
           value={form.title}
           placeholder="Receipt, manual, inspection report"
+          error={errors.title}
           onChangeText={(title) => setForm((current) => ({ ...current, title }))}
         />
 
@@ -198,6 +216,7 @@ export function AddDocumentScreen({
           label="Date"
           value={form.date}
           placeholder="2026-06-12"
+          error={errors.date}
           onChangeText={(date) => setForm((current) => ({ ...current, date }))}
         />
         <Field
@@ -211,6 +230,7 @@ export function AddDocumentScreen({
           value={form.amount}
           placeholder="129.99"
           keyboardType="decimal-pad"
+          error={errors.amount}
           onChangeText={(amount) => setForm((current) => ({ ...current, amount }))}
         />
         <Field
@@ -264,6 +284,7 @@ type FieldProps = {
   value: string;
   placeholder: string;
   onChangeText: (value: string) => void;
+  error?: string;
   keyboardType?: 'default' | 'decimal-pad';
   multiline?: boolean;
 };
@@ -273,6 +294,7 @@ function Field({
   value,
   placeholder,
   onChangeText,
+  error,
   keyboardType,
   multiline = false,
 }: FieldProps) {
@@ -285,9 +307,10 @@ function Field({
         onChangeText={onChangeText}
         keyboardType={keyboardType}
         multiline={multiline}
-        style={[styles.input, multiline && styles.textArea]}
+        style={[styles.input, error && styles.inputError, multiline && styles.textArea]}
         placeholderTextColor={colors.muted}
       />
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>
   );
 }
@@ -328,6 +351,28 @@ function parseAmountCents(value: string) {
   const parsed = Number(normalized);
 
   return Number.isFinite(parsed) ? Math.round(parsed * 100) : undefined;
+}
+
+function isValidDateInput(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+
+  if (!match) {
+    return false;
+  }
+
+  const [, yearValue, monthValue, dayValue] = match;
+  const year = Number(yearValue);
+  const month = Number(monthValue);
+  const day = Number(dayValue);
+  const date = new Date(year, month - 1, day);
+
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+}
+
+function isValidAmountInput(value: string) {
+  const parsed = Number(value.trim());
+
+  return Number.isFinite(parsed) && parsed >= 0;
 }
 
 function formatAmountInput(value?: number) {
@@ -440,6 +485,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     fontSize: 15,
     fontWeight: '700',
+  },
+  inputError: {
+    borderColor: colors.red,
+  },
+  errorText: {
+    color: colors.red,
+    fontSize: 12,
+    fontWeight: '800',
+    lineHeight: 16,
   },
   textArea: {
     minHeight: 112,

@@ -40,8 +40,14 @@ export function AddRoomScreen({ propertyId, room, onCancel, onSave }: AddRoomScr
     floor: room?.floor ?? '',
   });
   const [isSaving, setIsSaving] = useState(false);
+  const errors = useMemo(
+    () => ({
+      name: form.name.trim().length === 0 ? 'Name is required.' : undefined,
+    }),
+    [form.name],
+  );
 
-  const canSave = useMemo(() => form.name.trim().length > 0 && !isSaving, [form.name, isSaving]);
+  const canSave = useMemo(() => !errors.name && !isSaving, [errors.name, isSaving]);
 
   async function handleSave() {
     if (!canSave) {
@@ -84,6 +90,7 @@ export function AddRoomScreen({ propertyId, room, onCancel, onSave }: AddRoomScr
           label="Name"
           value={form.name}
           placeholder="Kitchen, basement, roof, electrical"
+          error={errors.name}
           onChangeText={(name) => setForm((current) => ({ ...current, name }))}
         />
 
@@ -136,9 +143,10 @@ type FieldProps = {
   value: string;
   placeholder: string;
   onChangeText: (value: string) => void;
+  error?: string;
 };
 
-function Field({ label, value, placeholder, onChangeText }: FieldProps) {
+function Field({ label, value, placeholder, onChangeText, error }: FieldProps) {
   return (
     <View style={styles.fieldGroup}>
       <Text style={styles.label}>{label}</Text>
@@ -146,9 +154,10 @@ function Field({ label, value, placeholder, onChangeText }: FieldProps) {
         value={value}
         placeholder={placeholder}
         onChangeText={onChangeText}
-        style={styles.input}
+        style={[styles.input, error && styles.inputError]}
         placeholderTextColor={colors.muted}
       />
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>
   );
 }
@@ -231,6 +240,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     fontSize: 15,
     fontWeight: '800',
+  },
+  inputError: {
+    borderColor: colors.red,
+  },
+  errorText: {
+    color: colors.red,
+    fontSize: 12,
+    fontWeight: '800',
+    lineHeight: 16,
   },
   optionGrid: {
     flexDirection: 'row',

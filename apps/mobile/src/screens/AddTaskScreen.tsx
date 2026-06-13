@@ -51,10 +51,22 @@ export function AddTaskScreen({
     instructions: task?.instructions ?? '',
   });
   const [isSaving, setIsSaving] = useState(false);
+  const errors = useMemo(
+    () => ({
+      title: form.title.trim().length === 0 ? 'Title is required.' : undefined,
+      dueDate:
+        form.dueDate.trim().length === 0
+          ? 'Due date is required.'
+          : !isValidDateInput(form.dueDate)
+            ? 'Use YYYY-MM-DD.'
+            : undefined,
+    }),
+    [form.dueDate, form.title],
+  );
 
   const canSave = useMemo(
-    () => form.title.trim().length > 0 && form.dueDate.trim().length > 0 && !isSaving,
-    [form.dueDate, form.title, isSaving],
+    () => !errors.title && !errors.dueDate && !isSaving,
+    [errors.dueDate, errors.title, isSaving],
   );
 
   async function handleSave() {
@@ -106,6 +118,7 @@ export function AddTaskScreen({
           label="Title"
           value={form.title}
           placeholder="Replace filter, flush tank, test detector"
+          error={errors.title}
           onChangeText={(title) => setForm((current) => ({ ...current, title }))}
         />
 
@@ -140,6 +153,7 @@ export function AddTaskScreen({
           label="Due date"
           value={form.dueDate}
           placeholder="2026-06-12"
+          error={errors.dueDate}
           onChangeText={(dueDate) => setForm((current) => ({ ...current, dueDate }))}
         />
 
@@ -185,10 +199,11 @@ type FieldProps = {
   value: string;
   placeholder: string;
   onChangeText: (value: string) => void;
+  error?: string;
   multiline?: boolean;
 };
 
-function Field({ label, value, placeholder, onChangeText, multiline }: FieldProps) {
+function Field({ label, value, placeholder, onChangeText, error, multiline }: FieldProps) {
   return (
     <View style={styles.fieldGroup}>
       <Text style={styles.label}>{label}</Text>
@@ -197,9 +212,10 @@ function Field({ label, value, placeholder, onChangeText, multiline }: FieldProp
         placeholder={placeholder}
         onChangeText={onChangeText}
         multiline={multiline}
-        style={[styles.input, multiline && styles.multilineInput]}
+        style={[styles.input, error && styles.inputError, multiline && styles.multilineInput]}
         placeholderTextColor={colors.muted}
       />
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>
   );
 }
@@ -242,6 +258,22 @@ function getTaskState(dueDate: string): MaintenanceTask['state'] {
   }
 
   return 'upcoming';
+}
+
+function isValidDateInput(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+
+  if (!match) {
+    return false;
+  }
+
+  const [, yearValue, monthValue, dayValue] = match;
+  const year = Number(yearValue);
+  const month = Number(monthValue);
+  const day = Number(dayValue);
+  const date = new Date(year, month - 1, day);
+
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
 }
 
 function toDateInputValue(date: Date) {
@@ -320,6 +352,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     fontSize: 15,
     fontWeight: '800',
+  },
+  inputError: {
+    borderColor: colors.red,
+  },
+  errorText: {
+    color: colors.red,
+    fontSize: 12,
+    fontWeight: '800',
+    lineHeight: 16,
   },
   multilineInput: {
     minHeight: 88,

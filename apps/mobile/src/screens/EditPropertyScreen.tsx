@@ -44,8 +44,25 @@ export function EditPropertyScreen({ property, onCancel, onSave }: EditPropertyS
     purchaseDate: property.purchaseDate ?? '',
   });
   const [isSaving, setIsSaving] = useState(false);
+  const errors = useMemo(
+    () => ({
+      label: form.label.trim().length === 0 ? 'Home name is required.' : undefined,
+      yearBuilt:
+        form.yearBuilt.trim().length > 0 && !isValidYear(form.yearBuilt)
+          ? 'Enter a four-digit year.'
+          : undefined,
+      purchaseDate:
+        form.purchaseDate.trim().length > 0 && !isValidDateInput(form.purchaseDate)
+          ? 'Use YYYY-MM-DD.'
+          : undefined,
+    }),
+    [form.label, form.purchaseDate, form.yearBuilt],
+  );
 
-  const canSave = useMemo(() => form.label.trim().length > 0 && !isSaving, [form.label, isSaving]);
+  const canSave = useMemo(
+    () => !errors.label && !errors.yearBuilt && !errors.purchaseDate && !isSaving,
+    [errors.label, errors.purchaseDate, errors.yearBuilt, isSaving],
+  );
 
   async function handleSave() {
     if (!canSave) {
@@ -89,6 +106,7 @@ export function EditPropertyScreen({ property, onCancel, onSave }: EditPropertyS
           label="Home name"
           value={form.label}
           placeholder="Maple Street home"
+          error={errors.label}
           onChangeText={(label) => setForm((current) => ({ ...current, label }))}
         />
         <Field
@@ -127,12 +145,14 @@ export function EditPropertyScreen({ property, onCancel, onSave }: EditPropertyS
           value={form.yearBuilt}
           placeholder="1998"
           keyboardType="number-pad"
+          error={errors.yearBuilt}
           onChangeText={(yearBuilt) => setForm((current) => ({ ...current, yearBuilt }))}
         />
         <Field
           label="Purchase date"
           value={form.purchaseDate}
           placeholder="2023-08-15"
+          error={errors.purchaseDate}
           onChangeText={(purchaseDate) =>
             setForm((current) => ({ ...current, purchaseDate }))
           }
@@ -156,10 +176,11 @@ type FieldProps = {
   value: string;
   placeholder: string;
   onChangeText: (value: string) => void;
+  error?: string;
   keyboardType?: 'default' | 'number-pad';
 };
 
-function Field({ label, value, placeholder, onChangeText, keyboardType }: FieldProps) {
+function Field({ label, value, placeholder, onChangeText, error, keyboardType }: FieldProps) {
   return (
     <View style={styles.fieldGroup}>
       <Text style={styles.label}>{label}</Text>
@@ -168,9 +189,10 @@ function Field({ label, value, placeholder, onChangeText, keyboardType }: FieldP
         placeholder={placeholder}
         onChangeText={onChangeText}
         keyboardType={keyboardType}
-        style={styles.input}
+        style={[styles.input, error && styles.inputError]}
         placeholderTextColor={colors.muted}
       />
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>
   );
 }
@@ -185,6 +207,29 @@ function parseYear(value: string) {
   const parsed = Number(value.trim());
 
   return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+function isValidYear(value: string) {
+  const parsed = Number(value.trim());
+  const currentYear = new Date().getFullYear();
+
+  return Number.isInteger(parsed) && parsed >= 1700 && parsed <= currentYear + 1;
+}
+
+function isValidDateInput(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+
+  if (!match) {
+    return false;
+  }
+
+  const [, yearValue, monthValue, dayValue] = match;
+  const year = Number(yearValue);
+  const month = Number(monthValue);
+  const day = Number(dayValue);
+  const date = new Date(year, month - 1, day);
+
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
 }
 
 const styles = StyleSheet.create({
@@ -259,6 +304,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     fontSize: 15,
     fontWeight: '800',
+  },
+  inputError: {
+    borderColor: colors.red,
+  },
+  errorText: {
+    color: colors.red,
+    fontSize: 12,
+    fontWeight: '800',
+    lineHeight: 16,
   },
   optionGrid: {
     flexDirection: 'row',

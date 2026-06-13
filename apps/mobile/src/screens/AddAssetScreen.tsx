@@ -58,10 +58,17 @@ export function AddAssetScreen({
     notes: asset?.notes ?? '',
   });
   const [isSaving, setIsSaving] = useState(false);
+  const errors = useMemo(
+    () => ({
+      name: form.name.trim().length === 0 ? 'Name is required.' : undefined,
+      category: form.category.trim().length === 0 ? 'Category is required.' : undefined,
+    }),
+    [form.category, form.name],
+  );
 
   const canSave = useMemo(
-    () => form.name.trim().length > 0 && form.category.trim().length > 0 && !isSaving,
-    [form.category, form.name, isSaving],
+    () => !errors.name && !errors.category && !isSaving,
+    [errors.category, errors.name, isSaving],
   );
 
   async function handleSave() {
@@ -110,12 +117,14 @@ export function AddAssetScreen({
           label="Name"
           value={form.name}
           placeholder="Dishwasher, roof, breaker panel"
+          error={errors.name}
           onChangeText={(name) => setForm((current) => ({ ...current, name }))}
         />
         <Field
           label="Category"
           value={form.category}
           placeholder="Appliance, plumbing, exterior"
+          error={errors.category}
           onChangeText={(category) => setForm((current) => ({ ...current, category }))}
         />
 
@@ -210,6 +219,7 @@ type FieldProps = {
   value: string;
   placeholder: string;
   onChangeText: (value: string) => void;
+  error?: string;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   multiline?: boolean;
 };
@@ -219,6 +229,7 @@ function Field({
   value,
   placeholder,
   onChangeText,
+  error,
   autoCapitalize,
   multiline,
 }: FieldProps) {
@@ -231,9 +242,10 @@ function Field({
         onChangeText={onChangeText}
         autoCapitalize={autoCapitalize}
         multiline={multiline}
-        style={[styles.input, multiline && styles.multilineInput]}
+        style={[styles.input, error && styles.inputError, multiline && styles.multilineInput]}
         placeholderTextColor={colors.muted}
       />
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>
   );
 }
@@ -316,6 +328,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     fontSize: 15,
     fontWeight: '700',
+  },
+  inputError: {
+    borderColor: colors.red,
+  },
+  errorText: {
+    color: colors.red,
+    fontSize: 12,
+    fontWeight: '800',
+    lineHeight: 16,
   },
   multilineInput: {
     minHeight: 86,
