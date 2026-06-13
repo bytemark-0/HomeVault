@@ -205,12 +205,13 @@ export function createMemoryHomeVaultRepository(
       const document: DocumentRecord = {
         ...input,
         id: input.id ?? createEntityId('document'),
+        attachment: input.attachment ? { ...input.attachment } : undefined,
         linkedRecordIds: [...input.linkedRecordIds],
       };
 
       snapshot.documents.push(document);
 
-      return { ...document, linkedRecordIds: [...document.linkedRecordIds] };
+      return cloneDocument(document);
     },
     async updateDocument(input) {
       const documentIndex = snapshot.documents.findIndex((document) => document.id === input.id);
@@ -221,10 +222,11 @@ export function createMemoryHomeVaultRepository(
 
       snapshot.documents[documentIndex] = {
         ...input,
+        attachment: input.attachment ? { ...input.attachment } : undefined,
         linkedRecordIds: [...input.linkedRecordIds],
       };
 
-      return { ...input, linkedRecordIds: [...input.linkedRecordIds] };
+      return cloneDocument(input);
     },
     async deleteDocument(documentId) {
       const documentIndex = snapshot.documents.findIndex((document) => document.id === documentId);
@@ -347,6 +349,7 @@ function cloneSnapshot(snapshot: HomeVaultSnapshot): HomeVaultSnapshot {
     assets: snapshot.assets.map((asset) => ({ ...asset })),
     documents: snapshot.documents.map((document) => ({
       ...document,
+      attachment: document.attachment ? { ...document.attachment } : undefined,
       linkedRecordIds: [...document.linkedRecordIds],
     })),
     tasks: snapshot.tasks.map((task) => ({ ...task })),
@@ -355,5 +358,13 @@ function cloneSnapshot(snapshot: HomeVaultSnapshot): HomeVaultSnapshot {
       ...repairEvent,
       documentIds: [...repairEvent.documentIds],
     })),
+  };
+}
+
+function cloneDocument(document: DocumentRecord): DocumentRecord {
+  return {
+    ...document,
+    attachment: document.attachment ? { ...document.attachment } : undefined,
+    linkedRecordIds: [...document.linkedRecordIds],
   };
 }

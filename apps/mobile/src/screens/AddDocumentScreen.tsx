@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 
-import type { DocumentRecord, RoomArea } from '@homevault/domain';
+import type { DocumentAttachment, DocumentRecord, RoomArea } from '@homevault/domain';
 import type { CreateDocumentInput, UpdateDocumentInput } from '@homevault/database';
 
 import type { AssetListItem } from '../data/homeVaultSampleData';
@@ -32,6 +32,7 @@ type FormState = {
   date: string;
   vendor: string;
   amount: string;
+  attachment?: DocumentAttachment;
   filePath: string;
   ocrText: string;
 };
@@ -60,6 +61,7 @@ export function AddDocumentScreen({
     date: document?.date ?? '',
     vendor: document?.vendor ?? '',
     amount: formatAmountInput(document?.amountCents),
+    attachment: document?.attachment,
     filePath: document?.filePath ?? '',
     ocrText: document?.ocrText ?? '',
   });
@@ -105,6 +107,15 @@ export function AddDocumentScreen({
 
     setForm((current) => ({
       ...current,
+      attachment: {
+        attachedAt: new Date().toISOString(),
+        fileName: asset.name,
+        mimeType: asset.mimeType,
+        originalUri: asset.uri,
+        sizeBytes: asset.size,
+        storageKind: 'external_reference',
+        storedUri: asset.uri,
+      },
       title: current.title.trim().length > 0 ? current.title : formatPickedFileTitle(asset.name),
       filePath: asset.uri,
       ocrText: current.ocrText.trim().length > 0
@@ -126,6 +137,7 @@ export function AddDocumentScreen({
         propertyId,
         title: form.title.trim(),
         type: form.type,
+        attachment: buildAttachmentInput(form.filePath, form.attachment),
         filePath: cleanOptional(form.filePath),
         date: cleanOptional(form.date),
         vendor: cleanOptional(form.vendor),
@@ -237,7 +249,9 @@ export function AddDocumentScreen({
           label="File reference"
           value={form.filePath}
           placeholder="homevault://documents/hvac-manual.pdf"
-          onChangeText={(filePath) => setForm((current) => ({ ...current, filePath }))}
+          onChangeText={(filePath) =>
+            setForm((current) => ({ ...current, attachment: undefined, filePath }))
+          }
         />
         <View style={styles.attachmentPanel}>
           <View style={styles.attachmentBody}>
@@ -245,7 +259,7 @@ export function AddDocumentScreen({
               {form.filePath ? 'Attachment selected' : 'Attach a file'}
             </Text>
             <Text style={styles.attachmentMeta} numberOfLines={2}>
-              {form.filePath || 'Choose a PDF, image, text file, Word doc, receipt, or report.'}
+              {formatAttachmentMeta(form.filePath, form.attachment)}
             </Text>
           </View>
           <Pressable
@@ -341,6 +355,27 @@ function cleanOptional(value: string) {
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
+function buildAttachmentInput(
+  filePath: string,
+  attachment?: DocumentAttachment,
+): DocumentAttachment | undefined {
+  const storedUri = cleanOptional(filePath);
+
+  if (!storedUri) {
+    return undefined;
+  }
+
+  if (attachment && attachment.storedUri === storedUri) {
+    return { ...attachment };
+  }
+
+  return {
+    attachedAt: new Date().toISOString(),
+    storageKind: 'external_reference',
+    storedUri,
+  };
+}
+
 function parseAmountCents(value: string) {
   const normalized = value.trim();
 
@@ -399,6 +434,28 @@ function formatPickedFileMetadata(asset: DocumentPicker.DocumentPickerAsset) {
   }
 
   return details.join('\n');
+}
+
+function formatAttachmentMeta(filePath: string, attachment?: DocumentAttachment) {
+  if (!filePath) {
+    return 'Choose a PDF, image, text file, Word doc, receipt, or report.';
+  }
+
+  if (!attachment) {
+    return filePath;
+  }
+
+  const details = [attachment.fileName ?? filePath];
+
+  if (attachment.mimeType) {
+    details.push(attachment.mimeType);
+  }
+
+  if (attachment.sizeBytes !== undefined) {
+    details.push(formatBytes(attachment.sizeBytes));
+  }
+
+  return details.join(' · ');
 }
 
 function formatBytes(value: number) {

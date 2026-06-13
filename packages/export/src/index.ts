@@ -54,8 +54,13 @@ export type HomeVaultExportPackage = {
 export type HomeVaultExportAttachment = {
   documentId: string;
   title: string;
+  attachedAt?: string;
   filePath: string;
+  fileName?: string;
   linkedRecordIds: string[];
+  mimeType?: string;
+  sizeBytes?: number;
+  storageKind?: NonNullable<DocumentRecord['attachment']>['storageKind'];
   type: DocumentRecord['type'];
 };
 
@@ -116,7 +121,7 @@ export function buildHomeVaultExportManifest({
   generatedAt = new Date().toISOString(),
 }: BuildExportManifestInput): HomeVaultExportManifest {
   const activeTaskCount = tasks.filter((task) => task.state !== 'completed').length;
-  const attachedDocumentCount = documents.filter((document) => document.filePath).length;
+  const attachedDocumentCount = documents.filter((document) => getDocumentAttachmentUri(document)).length;
   const linkedDocumentCount = documents.filter(
     (document) => document.linkedRecordIds.length > 0,
   ).length;
@@ -469,12 +474,21 @@ function buildExportChecklist({
 
 function buildExportAttachments(documents: DocumentRecord[]): HomeVaultExportAttachment[] {
   return documents
-    .filter((document) => document.filePath)
+    .filter((document) => getDocumentAttachmentUri(document))
     .map((document) => ({
+      attachedAt: document.attachment?.attachedAt,
       documentId: document.id,
+      fileName: document.attachment?.fileName,
+      filePath: getDocumentAttachmentUri(document) as string,
       title: document.title,
-      filePath: document.filePath as string,
       linkedRecordIds: [...document.linkedRecordIds],
+      mimeType: document.attachment?.mimeType,
+      sizeBytes: document.attachment?.sizeBytes,
+      storageKind: document.attachment?.storageKind,
       type: document.type,
     }));
+}
+
+function getDocumentAttachmentUri(document: DocumentRecord) {
+  return document.attachment?.storedUri ?? document.filePath;
 }

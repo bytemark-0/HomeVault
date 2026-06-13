@@ -72,6 +72,7 @@ type DocumentRow = {
   title: string;
   type: DocumentRecord['type'];
   file_path: string | null;
+  attachment_json: string | null;
   date: string | null;
   vendor: string | null;
   amount_cents: number | null;
@@ -296,6 +297,7 @@ async function migrate(db: SQLiteDatabase) {
       title TEXT NOT NULL,
       type TEXT NOT NULL,
       file_path TEXT,
+      attachment_json TEXT,
       date TEXT,
       vendor TEXT,
       amount_cents INTEGER,
@@ -357,6 +359,8 @@ async function migrate(db: SQLiteDatabase) {
     CREATE INDEX IF NOT EXISTS idx_task_completions_task ON task_completions(task_id);
     CREATE INDEX IF NOT EXISTS idx_repair_events_property_asset ON repair_events(property_id, asset_id, date);
   `);
+
+  await ensureColumn(db, 'documents', 'attachment_json', 'TEXT');
 }
 
 async function seedIfNeeded(db: SQLiteDatabase, snapshot: HomeVaultSnapshot) {
@@ -420,15 +424,16 @@ async function seedIfNeeded(db: SQLiteDatabase, snapshot: HomeVaultSnapshot) {
     for (const document of snapshot.documents) {
       await db.runAsync(
         `INSERT INTO documents (
-          id, property_id, title, type, file_path, date, vendor,
+          id, property_id, title, type, file_path, attachment_json, date, vendor,
           amount_cents, ocr_text, linked_record_ids_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           document.id,
           document.propertyId,
           document.title,
           document.type,
           document.filePath ?? null,
+          stringifyAttachment(document),
           document.date ?? null,
           document.vendor ?? null,
           document.amountCents ?? null,
@@ -761,15 +766,16 @@ async function createDocument(
 
   await db.runAsync(
     `INSERT INTO documents (
-      id, property_id, title, type, file_path, date, vendor,
+      id, property_id, title, type, file_path, attachment_json, date, vendor,
       amount_cents, ocr_text, linked_record_ids_json
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       document.id,
       document.propertyId,
       document.title,
       document.type,
       document.filePath ?? null,
+      stringifyAttachment(document),
       document.date ?? null,
       document.vendor ?? null,
       document.amountCents ?? null,
@@ -790,6 +796,7 @@ async function updateDocument(
      SET title = ?,
          type = ?,
          file_path = ?,
+         attachment_json = ?,
          date = ?,
          vendor = ?,
          amount_cents = ?,
@@ -801,6 +808,7 @@ async function updateDocument(
       input.title,
       input.type,
       input.filePath ?? null,
+      stringifyAttachment(input),
       input.date ?? null,
       input.vendor ?? null,
       input.amountCents ?? null,
@@ -1051,12 +1059,44 @@ function toDocument(row: DocumentRow): DocumentRecord {
     title: row.title,
     type: row.type,
     filePath: row.file_path ?? undefined,
+    attachment: parseAttachment(row.attachment_json),
     date: row.date ?? undefined,
     vendor: row.vendor ?? undefined,
     amountCents: row.amount_cents ?? undefined,
     ocrText: row.ocr_text ?? undefined,
     linkedRecordIds: parseLinkedRecordIds(row.linked_record_ids_json),
   };
+}
+
+async function ensureColumn(
+  db: SQLiteDatabase,
+  tableName: string,
+  columnName: string,
+  columnDefinition: string,
+) {
+  const columns = await db.getAllAsync<{ name: string }>(`PRAGMA table_info(${tableName})`);
+
+  if (columns.some((column) => column.name === columnName)) {
+    return;
+  }
+
+  await db.execAsync(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnDefinition}`);
+}
+
+function stringifyAttachment(document: DocumentRecord) {
+  return document.attachment ? JSON.stringify(document.attachment) : null;
+}
+
+function parseAttachment(value: string | null): DocumentRecord['attachment'] {
+  if (!value) {
+    return undefined;
+  }
+
+  try {
+    return JSON.parse(value) as DocumentRecord['attachment'];
+  } catch {
+    return undefined;
+  }
 }
 
 function toTask(row: TaskRow): MaintenanceTask {

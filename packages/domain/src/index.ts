@@ -14,6 +14,17 @@ export type DocumentType =
   | 'report'
   | 'photo'
   | 'other';
+export type DocumentAttachmentStorageKind = 'external_reference' | 'app_copy';
+
+export type DocumentAttachment = {
+  storageKind: DocumentAttachmentStorageKind;
+  storedUri: string;
+  attachedAt: string;
+  fileName?: string;
+  mimeType?: string;
+  originalUri?: string;
+  sizeBytes?: number;
+};
 
 export type MaintenanceScope = 'asset' | 'room' | 'property';
 
@@ -81,6 +92,7 @@ export type DocumentRecord = {
   title: string;
   type: DocumentType;
   filePath?: string;
+  attachment?: DocumentAttachment;
   date?: string;
   vendor?: string;
   amountCents?: number;

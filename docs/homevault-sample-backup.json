@@ -79,8 +79,8 @@
   "attachments": [
     {
       "documentId": "document-backup",
-      "title": "Dishwasher receipt",
       "filePath": "/receipts/backup.pdf",
+      "title": "Dishwasher receipt",
       "linkedRecordIds": [
         "asset-backup"
       ],
