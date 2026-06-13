@@ -29,43 +29,50 @@
         "id": "rooms",
         "label": "Rooms and areas",
         "state": "ready",
-        "detail": "1 area included"
+        "detail": "1 area included",
+        "action": "Review room list for missing outdoor areas or systems"
       },
       {
         "id": "assets",
         "label": "Asset inventory",
         "state": "ready",
-        "detail": "1 asset included"
+        "detail": "1 asset included",
+        "action": "Check that major appliances and systems are represented"
       },
       {
         "id": "documents",
         "label": "Linked documents",
         "state": "ready",
-        "detail": "1 of 1 document linked"
+        "detail": "1 of 1 document linked",
+        "action": "Review document links for accuracy"
       },
       {
         "id": "attachments",
         "label": "File attachments",
         "state": "ready",
-        "detail": "1 of 1 document includes file references"
+        "detail": "1 of 1 document includes file references",
+        "action": "Confirm file references still point to the right documents"
       },
       {
         "id": "history",
         "label": "Service history",
         "state": "ready",
-        "detail": "1 completion and 1 costed repair"
+        "detail": "1 completion and 1 costed repair",
+        "action": "Review service history for missing costs or providers"
       },
       {
         "id": "tasks",
         "label": "Open maintenance",
         "state": "ready",
-        "detail": "No open tasks need attention"
+        "detail": "No open tasks need attention",
+        "action": "Export is clear of open maintenance tasks"
       },
       {
         "id": "assetDocumentation",
         "label": "Asset documentation",
         "state": "ready",
-        "detail": "1 of 1 asset has documents"
+        "detail": "1 of 1 asset has documents",
+        "action": "Confirm each asset has its most useful document attached"
       }
     ]
   },

@@ -91,6 +91,7 @@ export type HomeVaultExportChecklistItem = {
   label: string;
   state: 'ready' | 'review';
   detail: string;
+  action: string;
 };
 
 export type BuildExportManifestInput = {
@@ -375,6 +376,10 @@ function buildExportChecklist({
         roomCount > 0
           ? `${roomCount} area${roomCount === 1 ? '' : 's'} included`
           : 'Add at least one room or area before exporting',
+      action:
+        roomCount > 0
+          ? 'Review room list for missing outdoor areas or systems'
+          : 'Add rooms, exterior zones, or home systems from Household',
     },
     {
       id: 'assets',
@@ -384,6 +389,10 @@ function buildExportChecklist({
         assetCount > 0
           ? `${assetCount} asset${assetCount === 1 ? '' : 's'} included`
           : 'Add appliances, systems, fixtures, or exterior items',
+      action:
+        assetCount > 0
+          ? 'Check that major appliances and systems are represented'
+          : 'Add appliances, systems, fixtures, or exterior items from Inventory',
     },
     {
       id: 'documents',
@@ -393,6 +402,10 @@ function buildExportChecklist({
         documentCount > 0
           ? `${linkedDocumentCount} of ${documentCount} document${documentCount === 1 ? '' : 's'} linked`
           : 'Add receipts, manuals, warranties, invoices, or reports',
+      action:
+        documentCount > 0 && linkedDocumentCount === documentCount
+          ? 'Review document links for accuracy'
+          : 'Link each document to an asset, room, or property record',
     },
     {
       id: 'attachments',
@@ -405,6 +418,10 @@ function buildExportChecklist({
               documentCount === 1 ? 'includes' : 'include'
             } file references`
           : 'No documents require file references yet',
+      action:
+        documentCount === 0 || attachedDocumentCount === documentCount
+          ? 'Confirm file references still point to the right documents'
+          : 'Open document records and attach the missing source files',
     },
     {
       id: 'history',
@@ -414,6 +431,10 @@ function buildExportChecklist({
         taskCompletionCount > 0 || repairEventCount > 0
           ? `${taskCompletionCount} completion${taskCompletionCount === 1 ? '' : 's'} and ${repairEventsWithCostCount} costed repair${repairEventsWithCostCount === 1 ? '' : 's'}`
           : 'Complete a task or record a repair to build history',
+      action:
+        taskCompletionCount > 0 || repairEventCount > 0
+          ? 'Review service history for missing costs or providers'
+          : 'Complete a maintenance task or add a repair event',
     },
     {
       id: 'tasks',
@@ -423,6 +444,10 @@ function buildExportChecklist({
         activeTaskCount === 0
           ? 'No open tasks need attention'
           : `${activeTaskCount} open task${activeTaskCount === 1 ? '' : 's'} to review`,
+      action:
+        activeTaskCount === 0
+          ? 'Export is clear of open maintenance tasks'
+          : 'Complete, snooze, or update open maintenance tasks',
     },
     {
       id: 'assetDocumentation',
@@ -434,6 +459,10 @@ function buildExportChecklist({
               assetCount === 1 ? 'has' : 'have'
             } documents`
           : 'Add assets before tracking documentation coverage',
+      action:
+        assetCount > 0 && documentedAssetCount === assetCount
+          ? 'Confirm each asset has its most useful document attached'
+          : 'Link receipts, manuals, warranties, or invoices to undocumented assets',
     },
   ] satisfies HomeVaultExportChecklistItem[];
 }

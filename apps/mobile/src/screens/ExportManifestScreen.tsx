@@ -249,6 +249,18 @@ export function ExportManifestScreen({
         <Metric label="Open tasks" value={String(activeTaskCount)} />
       </View>
 
+      {reviewItems.length > 0 ? (
+        <View style={styles.panel}>
+          <Text style={styles.sectionTitle}>Next fixes</Text>
+          <Text style={styles.previewSummary}>
+            Resolve these before sharing a backup with someone else.
+          </Text>
+          {reviewItems.map((item) => (
+            <FixRow key={item.id} label={item.label} detail={item.detail} action={item.action} />
+          ))}
+        </View>
+      ) : null}
+
       <View style={styles.downloadPanel}>
         <View style={styles.downloadBody}>
           <Text style={styles.sectionTitle}>Download package</Text>
@@ -430,6 +442,7 @@ export function ExportManifestScreen({
             <View style={styles.checkBody}>
               <Text style={styles.checkTitle}>{item.label}</Text>
               <Text style={styles.checkDetail}>{item.detail}</Text>
+              <Text style={styles.checkAction}>{item.action}</Text>
             </View>
           </View>
         ))}
@@ -487,6 +500,29 @@ function DetailLine({ label, value }: { label: string; value: string }) {
     <View style={styles.detailLine}>
       <Text style={styles.detailLabel}>{label}</Text>
       <Text style={styles.detailValue}>{value}</Text>
+    </View>
+  );
+}
+
+function FixRow({
+  action,
+  detail,
+  label,
+}: {
+  action: string;
+  detail: string;
+  label: string;
+}) {
+  return (
+    <View style={styles.fixRow}>
+      <View style={styles.fixMarker}>
+        <Text style={styles.fixMarkerText}>Fix</Text>
+      </View>
+      <View style={styles.fixBody}>
+        <Text style={styles.fixTitle}>{label}</Text>
+        <Text style={styles.fixDetail}>{detail}</Text>
+        <Text style={styles.fixAction}>{action}</Text>
+      </View>
     </View>
   );
 }
@@ -897,11 +933,61 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 17,
   },
+  checkAction: {
+    color: colors.blue,
+    fontSize: 12,
+    fontWeight: '800',
+    lineHeight: 17,
+  },
   previewSummary: {
     color: colors.ink,
     fontSize: 14,
     fontWeight: '800',
     lineHeight: 20,
+  },
+  fixRow: {
+    minHeight: 70,
+    borderTopColor: colors.line,
+    borderTopWidth: 1,
+    paddingTop: 10,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  fixMarker: {
+    minHeight: 28,
+    minWidth: 42,
+    borderRadius: 7,
+    backgroundColor: colors.amberSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fixMarkerText: {
+    color: colors.amber,
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  fixBody: {
+    flex: 1,
+    gap: 3,
+  },
+  fixTitle: {
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: '900',
+    lineHeight: 18,
+  },
+  fixDetail: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 17,
+  },
+  fixAction: {
+    color: colors.blue,
+    fontSize: 12,
+    fontWeight: '900',
+    lineHeight: 17,
   },
   subsectionTitle: {
     color: colors.ink,
