@@ -301,6 +301,14 @@ export default function App() {
   }
 
   function handleExportFixPress(fixId: HomeVaultExportChecklistItem['id']) {
+    const firstUnlinkedDocument = appData?.documents.find(
+      (document) => document.linkedRecordIds.length === 0,
+    );
+    const firstDocumentWithoutFile = appData?.documents.find((document) => !document.filePath);
+    const firstUndocumentedAsset = appData?.assets.find((asset) => asset.documentCount === 0);
+    const firstOpenTask = appData?.tasks.find((task) => task.state !== 'completed');
+    const firstAsset = appData?.assets[0];
+
     setSelectedAssetId(null);
     setSelectedDocumentId(null);
     setSelectedRoomId(null);
@@ -322,15 +330,65 @@ export default function App() {
       return;
     }
 
-    if (fixId === 'documents' || fixId === 'assetDocumentation') {
+    if (fixId === 'documents') {
       setActiveTab('documents');
+      if (firstUnlinkedDocument) {
+        setSelectedDocumentId(firstUnlinkedDocument.id);
+        setMode('editDocument');
+        return;
+      }
+
       setMode('addDocument');
       return;
     }
 
     if (fixId === 'attachments') {
       setActiveTab('documents');
+      if (firstDocumentWithoutFile) {
+        setSelectedDocumentId(firstDocumentWithoutFile.id);
+        setMode('editDocument');
+        return;
+      }
+
       setMode('tabs');
+      return;
+    }
+
+    if (fixId === 'assetDocumentation') {
+      setActiveTab('documents');
+      if (firstUndocumentedAsset) {
+        setSelectedAssetId(firstUndocumentedAsset.id);
+        setDocumentLinkTargetId(firstUndocumentedAsset.id);
+        setDocumentReturnTarget('assetDetail');
+      }
+
+      setMode('addDocument');
+      return;
+    }
+
+    if (fixId === 'tasks') {
+      setActiveTab('maintenance');
+      if (firstOpenTask) {
+        setSelectedTaskId(firstOpenTask.id);
+        setMode('taskDetail');
+        return;
+      }
+
+      setMode('tabs');
+      return;
+    }
+
+    if (firstOpenTask) {
+      setActiveTab('maintenance');
+      setSelectedTaskId(firstOpenTask.id);
+      setMode('taskDetail');
+      return;
+    }
+
+    if (firstAsset) {
+      setActiveTab('inventory');
+      setSelectedAssetId(firstAsset.id);
+      setMode('addRepairEvent');
       return;
     }
 
