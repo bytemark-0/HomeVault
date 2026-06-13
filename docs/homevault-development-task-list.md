@@ -4,11 +4,11 @@ Last reviewed: 2026-06-13
 
 ## Current State
 
-HomeVault is a working Expo/React Native app with local persistence, demo household data, core household/inventory/documents/maintenance screens, export manifest generation, backup validation, sample restore flow, restore confirmation/audit feedback, export readiness routing, empty states, form validation, and Household backup status.
+HomeVault is a working Expo/React Native app with local persistence, demo household data, core household/inventory/documents/maintenance screens, export manifest generation, backup validation, sample restore flow, restore confirmation/audit feedback, export readiness routing, empty states, form validation, Household backup status, and demo workspace onboarding.
 
 Current branch: `codex/homevault-stabilization`
 
-Latest committed slice before this review: `1370988 Show backup status on household`
+Latest committed slice before this review: `5f039a3 Explain demo workspace on household`
 
 ## Review Questions
 
@@ -24,7 +24,7 @@ Latest committed slice before this review: `1370988 Show backup status on househ
 - [x] Add empty states for inventory, documents, rooms, maintenance, and export readiness.
 - [x] Add basic form validation messages for required fields and invalid dates/amounts.
 - [x] Add delete confirmations for destructive record actions.
-- [ ] Add edit flows for all primary record types: property, rooms, assets, documents, tasks.
+- [x] Add edit flows for all primary record types: property, rooms, assets, documents, tasks.
 - [x] Verify navigation return paths after every create/edit/delete action.
 - [x] Add a small “backup last created/restored” status indicator on Household or Export.
 
@@ -50,6 +50,17 @@ Current create/edit/delete return behavior:
 - Restore and demo reset clear selected records and return to Household.
 
 No broken return paths were found in the currently exposed flows.
+
+## Primary Edit Flow Audit
+
+Current primary record edit coverage:
+- Property: Household property card and demo onboarding panel open `EditPropertyScreen`.
+- Rooms/areas: room detail exposes Edit and saves through `AddRoomScreen`.
+- Assets: asset detail exposes Edit and saves through `AddAssetScreen`.
+- Documents: document detail exposes Edit and saves through `AddDocumentScreen`.
+- Tasks: task detail exposes Edit and saves through `AddTaskScreen`.
+
+No missing primary edit affordances were found in the currently exposed flows.
 
 ## P1: Documents And Attachments
 
@@ -109,6 +120,6 @@ No broken return paths were found in the currently exposed flows.
 
 ## Suggested Next Three Slices
 
-1. Commit or revise the smarter export-fix routing currently in progress.
-2. Add empty states and form validation messages across the five core tabs.
-3. Define and implement real document attachment storage semantics.
+1. Define and implement real document attachment storage semantics.
+2. Add attachment presence/status filters from export readiness.
+3. Add native export package download support.
