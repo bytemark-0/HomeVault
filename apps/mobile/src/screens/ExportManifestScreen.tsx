@@ -1,6 +1,15 @@
 import { useState } from 'react';
 import * as DocumentPicker from 'expo-document-picker';
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Alert,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 import type { Property } from '@homevault/domain';
 import {
@@ -54,6 +63,7 @@ export function ExportManifestScreen({
   const [validationResult, setValidationResult] = useState<string | null>(null);
   const [importPreview, setImportPreview] = useState<HomeVaultImportPreview | null>(null);
   const [validatedPackage, setValidatedPackage] = useState<HomeVaultExportPackage | null>(null);
+  const [restoreConfirmText, setRestoreConfirmText] = useState('');
   const exportInput = {
     property,
     assets,
@@ -109,6 +119,7 @@ export function ExportManifestScreen({
     const [asset] = result.assets;
     setImportPreview(null);
     setValidatedPackage(null);
+    setRestoreConfirmText('');
 
     if (!asset.file) {
       setValidationResult('Backup validation is available for downloaded JSON files in the web preview.');
@@ -120,6 +131,7 @@ export function ExportManifestScreen({
     if (parsed.ok) {
       setImportPreview(parsed.preview);
       setValidatedPackage(parsed.package);
+      setRestoreConfirmText('');
     }
 
     setValidationResult(
@@ -130,7 +142,7 @@ export function ExportManifestScreen({
   }
 
   function handleRestoreBackup() {
-    if (!validatedPackage) {
+    if (!validatedPackage || restoreConfirmText.trim() !== 'RESTORE') {
       return;
     }
 
@@ -260,9 +272,29 @@ export function ExportManifestScreen({
             currentValue={manifest.recordCounts.repairEvents}
             backupValue={importPreview.recordCounts.repairEvents}
           />
+          <View style={styles.restoreWarning}>
+            <Text style={styles.restoreWarningTitle}>Restore will overwrite this preview</Text>
+            <Text style={styles.restoreWarningText}>
+              Current rooms, assets, documents, tasks, service history, and repairs will be replaced
+              with the validated backup package.
+            </Text>
+            <TextInput
+              value={restoreConfirmText}
+              onChangeText={setRestoreConfirmText}
+              placeholder="Type RESTORE to enable"
+              placeholderTextColor={colors.muted}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              style={styles.restoreInput}
+            />
+          </View>
           <Pressable
             onPress={handleRestoreBackup}
-            style={styles.restoreButton}
+            disabled={restoreConfirmText.trim() !== 'RESTORE'}
+            style={[
+              styles.restoreButton,
+              restoreConfirmText.trim() !== 'RESTORE' && styles.restoreButtonDisabled,
+            ]}
             accessibilityRole="button"
           >
             <Text style={styles.restoreButtonText}>Restore this backup</Text>
@@ -565,10 +597,43 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 4,
   },
+  restoreButtonDisabled: {
+    opacity: 0.45,
+  },
   restoreButtonText: {
     color: colors.red,
     fontSize: 13,
     fontWeight: '900',
+  },
+  restoreWarning: {
+    borderRadius: 8,
+    borderColor: colors.redSoft,
+    borderWidth: 1,
+    backgroundColor: '#FFF8F8',
+    padding: 12,
+    gap: 8,
+  },
+  restoreWarningTitle: {
+    color: colors.red,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  restoreWarningText: {
+    color: colors.ink,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 17,
+  },
+  restoreInput: {
+    minHeight: 40,
+    borderRadius: 8,
+    borderColor: colors.line,
+    borderWidth: 1,
+    backgroundColor: colors.panel,
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: '800',
+    paddingHorizontal: 10,
   },
   metricGrid: {
     flexDirection: 'row',
