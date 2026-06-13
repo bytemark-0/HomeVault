@@ -54,7 +54,7 @@ import { AddTaskScreen } from './src/screens/AddTaskScreen';
 import { AssetDetailScreen } from './src/screens/AssetDetailScreen';
 import { CompleteTaskScreen } from './src/screens/CompleteTaskScreen';
 import { DocumentDetailScreen } from './src/screens/DocumentDetailScreen';
-import { DocumentsScreen } from './src/screens/DocumentsScreen';
+import { DocumentsScreen, type DocumentReviewFilter } from './src/screens/DocumentsScreen';
 import { EditPropertyScreen } from './src/screens/EditPropertyScreen';
 import { ExportManifestScreen } from './src/screens/ExportManifestScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
@@ -144,6 +144,9 @@ export default function App() {
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [documentLinkTargetId, setDocumentLinkTargetId] = useState<string | null>(null);
+  const [documentReviewFilter, setDocumentReviewFilter] = useState<DocumentReviewFilter | null>(
+    null,
+  );
   const [assetReturnTarget, setAssetReturnTarget] =
     useState<AssetReturnTarget>('inventory');
   const [documentReturnTarget, setDocumentReturnTarget] =
@@ -302,6 +305,7 @@ export default function App() {
     setSelectedRoomId(null);
     setSelectedTaskId(null);
     setDocumentLinkTargetId(null);
+    setDocumentReviewFilter(null);
     setAssetReturnTarget('inventory');
     setDocumentReturnTarget('documents');
     setTaskReturnTarget('maintenance');
@@ -326,8 +330,6 @@ export default function App() {
     const firstUnlinkedDocument = appData?.documents.find(
       (document) => document.linkedRecordIds.length === 0,
     );
-    const firstDocumentWithoutFile = appData?.documents.find((document) => !document.filePath);
-    const firstUndocumentedAsset = appData?.assets.find((asset) => asset.documentCount === 0);
     const firstOpenTask = appData?.tasks.find((task) => task.state !== 'completed');
     const firstAsset = appData?.assets[0];
 
@@ -336,6 +338,7 @@ export default function App() {
     setSelectedRoomId(null);
     setSelectedTaskId(null);
     setDocumentLinkTargetId(null);
+    setDocumentReviewFilter(null);
     setAssetReturnTarget('inventory');
     setDocumentReturnTarget('documents');
     setTaskReturnTarget('maintenance');
@@ -366,25 +369,15 @@ export default function App() {
 
     if (fixId === 'attachments') {
       setActiveTab('documents');
-      if (firstDocumentWithoutFile) {
-        setSelectedDocumentId(firstDocumentWithoutFile.id);
-        setMode('editDocument');
-        return;
-      }
-
+      setDocumentReviewFilter('missingAttachments');
       setMode('tabs');
       return;
     }
 
     if (fixId === 'assetDocumentation') {
       setActiveTab('documents');
-      if (firstUndocumentedAsset) {
-        setSelectedAssetId(firstUndocumentedAsset.id);
-        setDocumentLinkTargetId(firstUndocumentedAsset.id);
-        setDocumentReturnTarget('assetDetail');
-      }
-
-      setMode('addDocument');
+      setDocumentReviewFilter('missingAssetDocumentation');
+      setMode('tabs');
       return;
     }
 
@@ -1196,9 +1189,21 @@ export default function App() {
               )}
               {activeTab === 'documents' && (
                 <DocumentsScreen
+                  assets={appData.assets}
                   documents={appData.documents}
                   documentCount={appData.documentCount}
-                  onAddDocument={() => setMode('addDocument')}
+                  reviewFilter={documentReviewFilter}
+                  onAddDocument={() => {
+                    setDocumentReviewFilter(null);
+                    setMode('addDocument');
+                  }}
+                  onAddDocumentForRecord={(recordId) => {
+                    setDocumentReviewFilter(null);
+                    setDocumentLinkTargetId(recordId);
+                    setDocumentReturnTarget('documents');
+                    setMode('addDocument');
+                  }}
+                  onClearReviewFilter={() => setDocumentReviewFilter(null)}
                   onDocumentPress={(documentId) => {
                     setSelectedDocumentId(documentId);
                     setDocumentReturnTarget('documents');

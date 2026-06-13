@@ -3,32 +3,48 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { SectionTitle } from '../components/SectionTitle';
 import { formatDocumentAttachmentStatus } from '../data/documentAttachmentLabels';
-import type { DocumentListItem } from '../data/homeVaultSampleData';
+import type { AssetListItem, DocumentListItem } from '../data/homeVaultSampleData';
 import { colors } from '../theme/colors';
 
+export type DocumentReviewFilter = 'missingAttachments' | 'missingAssetDocumentation';
+
 type DocumentsScreenProps = {
+  assets?: AssetListItem[];
   documents: DocumentListItem[];
   documentCount: number;
+  reviewFilter?: DocumentReviewFilter | null;
   onAddDocument: () => void;
+  onAddDocumentForRecord?: (recordId: string) => void;
+  onClearReviewFilter?: () => void;
   onDocumentPress: (documentId: string) => void;
 };
 
 const typeFilters = ['All', 'Receipt', 'Manual', 'Warranty', 'Invoice', 'Report'];
 
 export function DocumentsScreen({
+  assets = [],
   documents,
   documentCount,
+  reviewFilter,
   onAddDocument,
+  onAddDocumentForRecord,
+  onClearReviewFilter,
   onDocumentPress,
 }: DocumentsScreenProps) {
   const [query, setQuery] = useState('');
   const [activeType, setActiveType] = useState('All');
+  const missingDocumentAssets = useMemo(
+    () => assets.filter((asset) => asset.documentCount === 0),
+    [assets],
+  );
 
   const filteredDocuments = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
     return documents.filter((document) => {
       const matchesType = activeType === 'All' || document.typeLabel === activeType;
+      const matchesReviewFilter =
+        reviewFilter !== 'missingAttachments' || !getDocumentAttachmentUri(document);
       const searchableText = [
         document.title,
         document.typeLabel,
@@ -44,18 +60,32 @@ export function DocumentsScreen({
         .toLowerCase();
       const matchesQuery = normalizedQuery.length === 0 || searchableText.includes(normalizedQuery);
 
-      return matchesType && matchesQuery;
+      return matchesType && matchesReviewFilter && matchesQuery;
     });
-  }, [activeType, documents, query]);
+  }, [activeType, documents, query, reviewFilter]);
+  const isMissingAssetDocumentationFilter = reviewFilter === 'missingAssetDocumentation';
 
   return (
     <View style={styles.screen}>
       <View style={styles.documentVault}>
-        <Text style={styles.kicker}>Document vault</Text>
-        <Text style={styles.focusTitle}>{documentCount} files linked to the home</Text>
-        <Text style={styles.focusMeta}>
-          Receipts, warranties, manuals, reports, and service invoices
+        <Text style={styles.kicker}>
+          {reviewFilter ? 'Readiness review' : 'Document vault'}
         </Text>
+        <Text style={styles.focusTitle}>
+          {formatFocusTitle(reviewFilter, documentCount, missingDocumentAssets.length)}
+        </Text>
+        <Text style={styles.focusMeta}>
+          {formatFocusMeta(reviewFilter)}
+        </Text>
+        {reviewFilter && onClearReviewFilter ? (
+          <Pressable
+            onPress={onClearReviewFilter}
+            style={styles.clearReviewButton}
+            accessibilityRole="button"
+          >
+            <Text style={styles.clearReviewText}>Show all documents</Text>
+          </Pressable>
+        ) : null}
       </View>
 
       <View style={styles.searchBox}>
@@ -88,7 +118,39 @@ export function DocumentsScreen({
       </View>
 
       <SectionTitle title="Recently added" action="Import" onActionPress={onAddDocument} />
-      {documents.length === 0 ? (
+      {isMissingAssetDocumentationFilter ? (
+        missingDocumentAssets.length > 0 ? (
+          missingDocumentAssets.map((asset) => (
+            <View key={asset.id} style={styles.reviewRow}>
+              <View style={styles.rowBody}>
+                <Text style={styles.rowTitle}>{asset.name}</Text>
+                <Text style={styles.rowMeta}>
+                  {asset.category} · {asset.roomName}
+                </Text>
+                <Text style={styles.fileMeta}>No linked documents</Text>
+              </View>
+              <Pressable
+                onPress={() => {
+                  if (onAddDocumentForRecord) {
+                    onAddDocumentForRecord(asset.id);
+                  } else {
+                    onAddDocument();
+                  }
+                }}
+                style={styles.rowAction}
+                accessibilityRole="button"
+              >
+                <Text style={styles.rowActionText}>Add</Text>
+              </Pressable>
+            </View>
+          ))
+        ) : (
+          <View style={styles.emptyPanel}>
+            <Text style={styles.emptyTitle}>All assets have documents</Text>
+            <Text style={styles.emptyText}>Every asset currently has at least one linked document.</Text>
+          </View>
+        )
+      ) : documents.length === 0 ? (
         <View style={styles.emptyPanel}>
           <Text style={styles.emptyTitle}>Build the document vault</Text>
           <Text style={styles.emptyText}>
@@ -130,6 +192,38 @@ export function DocumentsScreen({
   );
 }
 
+function getDocumentAttachmentUri(document: DocumentListItem) {
+  return document.attachment?.storedUri ?? document.filePath;
+}
+
+function formatFocusTitle(
+  reviewFilter: DocumentReviewFilter | null | undefined,
+  documentCount: number,
+  missingAssetDocumentationCount: number,
+) {
+  if (reviewFilter === 'missingAttachments') {
+    return 'Documents missing files';
+  }
+
+  if (reviewFilter === 'missingAssetDocumentation') {
+    return `${missingAssetDocumentationCount} assets need documents`;
+  }
+
+  return `${documentCount} files linked to the home`;
+}
+
+function formatFocusMeta(reviewFilter: DocumentReviewFilter | null | undefined) {
+  if (reviewFilter === 'missingAttachments') {
+    return 'Attach source files so exported backups point to the right receipts, manuals, and reports.';
+  }
+
+  if (reviewFilter === 'missingAssetDocumentation') {
+    return 'Add a receipt, manual, warranty, invoice, or report for each uncovered asset.';
+  }
+
+  return 'Receipts, warranties, manuals, reports, and service invoices';
+}
+
 const styles = StyleSheet.create({
   screen: {
     gap: 14,
@@ -161,6 +255,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     lineHeight: 19,
+  },
+  clearReviewButton: {
+    alignSelf: 'flex-start',
+    minHeight: 34,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderColor: colors.green,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clearReviewText: {
+    color: colors.green,
+    fontSize: 12,
+    fontWeight: '900',
   },
   searchBox: {
     minHeight: 48,
@@ -212,6 +321,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
+  reviewRow: {
+    backgroundColor: colors.panel,
+    borderColor: colors.line,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   fileIcon: {
     width: 44,
     height: 52,
@@ -246,6 +365,19 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '900',
     lineHeight: 15,
+  },
+  rowAction: {
+    minHeight: 36,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: colors.green,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rowActionText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '900',
   },
   emptyPanel: {
     borderRadius: 8,
