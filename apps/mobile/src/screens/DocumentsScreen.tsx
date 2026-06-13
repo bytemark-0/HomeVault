@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { SectionTitle } from '../components/SectionTitle';
+import { formatDocumentAttachmentStatus } from '../data/documentAttachmentLabels';
 import type { DocumentListItem } from '../data/homeVaultSampleData';
 import { colors } from '../theme/colors';
 
@@ -35,6 +36,8 @@ export function DocumentsScreen({
         document.dateLabel,
         document.vendor ?? '',
         document.filePath ?? '',
+        document.attachment?.fileName ?? '',
+        document.attachment?.mimeType ?? '',
         document.ocrText ?? '',
       ]
         .join(' ')
@@ -112,7 +115,7 @@ export function DocumentsScreen({
                 {document.typeLabel} · {document.linkedToLabel} · {document.dateLabel}
               </Text>
               <Text style={styles.fileMeta}>
-                {document.filePath ? 'File attached' : 'Metadata only'}
+                {formatDocumentAttachmentStatus(document)}
               </Text>
             </View>
           </Pressable>

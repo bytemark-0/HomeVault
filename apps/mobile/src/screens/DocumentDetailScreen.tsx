@@ -1,5 +1,10 @@
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import {
+  formatDocumentAttachmentDetail,
+  formatDocumentAttachmentStatus,
+  formatDocumentAttachmentUri,
+} from '../data/documentAttachmentLabels';
 import type { DocumentListItem } from '../data/homeVaultSampleData';
 import { colors } from '../theme/colors';
 
@@ -45,7 +50,7 @@ export function DocumentDetailScreen({
         <Text style={styles.title}>{document.title}</Text>
         <View style={styles.statusPill}>
           <Text style={styles.statusText}>
-            {document.filePath ? 'File attached' : 'Metadata only'}
+            {formatDocumentAttachmentStatus(document)}
           </Text>
         </View>
       </View>
@@ -61,7 +66,9 @@ export function DocumentDetailScreen({
         <Text style={styles.sectionTitle}>Source</Text>
         <DetailLine label="Linked to" value={document.linkedToLabel} />
         <DetailLine label="Vendor" value={document.vendor ?? 'Not recorded'} />
-        <DetailLine label="File" value={document.filePath ?? 'Metadata only'} />
+        <DetailLine label="Attachment" value={formatDocumentAttachmentStatus(document)} />
+        <DetailLine label="File" value={formatDocumentAttachmentDetail(document)} />
+        <DetailLine label="Location" value={formatDocumentAttachmentUri(document)} />
       </View>
 
       <View style={styles.panel}>

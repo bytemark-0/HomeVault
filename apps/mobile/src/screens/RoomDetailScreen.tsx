@@ -8,6 +8,7 @@ import type {
   RoomListItem,
   TaskListItem,
 } from '../data/homeVaultSampleData';
+import { formatDocumentAttachmentStatus } from '../data/documentAttachmentLabels';
 import { getAssetStatusLabel } from '../data/homeVaultSampleData';
 import { colors } from '../theme/colors';
 
@@ -158,7 +159,7 @@ export function RoomDetailScreen({
                   {document.typeLabel} · {document.dateLabel}
                 </Text>
                 <Text style={styles.fileMeta}>
-                  {document.filePath ? 'File attached' : 'Metadata only'}
+                  {formatDocumentAttachmentStatus(document)}
                 </Text>
               </View>
               <Text style={styles.rowValue}>{document.linkedToLabel}</Text>

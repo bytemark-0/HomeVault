@@ -6,6 +6,7 @@ import type {
   AssetTaskCompletionListItem,
   RepairEventListItem,
 } from '../data/homeVaultSampleData';
+import { formatDocumentAttachmentStatus } from '../data/documentAttachmentLabels';
 import { getAssetStatusLabel } from '../data/homeVaultSampleData';
 import { colors } from '../theme/colors';
 
@@ -120,7 +121,7 @@ export function AssetDetailScreen({
                   {document.typeLabel} · {document.dateLabel}
                 </Text>
                 <Text style={styles.documentFileMeta}>
-                  {document.filePath ? 'File attached' : 'Metadata only'}
+                  {formatDocumentAttachmentStatus(document)}
                 </Text>
               </View>
             </Pressable>
