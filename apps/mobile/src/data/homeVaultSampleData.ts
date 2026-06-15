@@ -14,6 +14,8 @@ export type AssetListItem = Asset & {
   documentCount: number;
   lastServiceLabel: string;
   nextTaskLabel: string;
+  warrantyExpiryLabel?: string;
+  warrantyExpiringSoon: boolean;
 };
 
 export type RoomListItem = RoomArea & {
@@ -112,6 +114,7 @@ export const sampleAssets: AssetListItem[] = [
     documentCount: 4,
     lastServiceLabel: 'Apr 18, 2026',
     nextTaskLabel: 'Replace 20x25x1 filter',
+    warrantyExpiringSoon: false,
   },
   {
     id: 'asset-dishwasher',
@@ -122,11 +125,14 @@ export const sampleAssets: AssetListItem[] = [
     brand: 'Bosch',
     model: 'SHX78B75UC',
     serial: 'FD-0311-92841',
+    warrantyExpiry: '2026-08-01',
     status: 'warranty_soon',
     roomName: 'Kitchen',
     documentCount: 3,
     lastServiceLabel: 'Jan 9, 2026',
     nextTaskLabel: 'Check supply line',
+    warrantyExpiryLabel: 'Aug 1, 2026',
+    warrantyExpiringSoon: true,
   },
   {
     id: 'asset-water-heater',
@@ -142,6 +148,7 @@ export const sampleAssets: AssetListItem[] = [
     documentCount: 2,
     lastServiceLabel: 'Mar 2, 2026',
     nextTaskLabel: 'Flush tank',
+    warrantyExpiringSoon: false,
   },
 ];
 
@@ -327,6 +334,8 @@ export function toAssetListItem(
     documentCount,
     lastServiceLabel: latestRepair ? formatRecordDate(latestRepair.date) : 'Not serviced',
     nextTaskLabel: asset.id === 'asset-hvac' ? 'Replace 20x25x1 filter' : 'No task yet',
+    warrantyExpiryLabel: asset.warrantyExpiry ? formatRecordDate(asset.warrantyExpiry) : undefined,
+    warrantyExpiringSoon: asset.warrantyExpiry ? isWithin90Days(asset.warrantyExpiry) : false,
   };
 }
 
@@ -561,6 +570,20 @@ function formatRepairSummary(repairEvent: RepairEvent) {
   const cost = formatCurrency(repairEvent.costCents);
 
   return cost === 'No cost recorded' ? provider : `${provider} · ${cost}`;
+}
+
+function isWithin90Days(isoDate: string) {
+  const [year, month, day] = isoDate.split('-').map(Number);
+
+  if (!year || !month || !day) {
+    return false;
+  }
+
+  const target = new Date(year, month - 1, day).getTime();
+  const now = Date.now();
+  const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
+
+  return target > now && target - now <= ninetyDaysMs;
 }
 
 function formatRecordDate(value?: string) {

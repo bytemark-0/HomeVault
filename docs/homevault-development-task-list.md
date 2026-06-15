@@ -102,7 +102,7 @@ Attachment model note:
 ## P2: Inventory And Household Depth
 
 - [ ] Add asset photo support.
-- [ ] Add warranty-expiration tracking and alerts.
+- [x] Add warranty-expiration tracking and alerts. *(codex)*
 - [ ] Add model/serial lookup affordances.
 - [x] Add room-level summaries for documents, tasks, assets, and attention items. *(codex)*
 - [x] Add asset duplicate/copy flow for repeated fixtures or appliances. *(codex)*

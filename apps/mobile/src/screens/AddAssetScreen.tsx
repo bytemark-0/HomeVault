@@ -31,6 +31,7 @@ type FormState = {
   model: string;
   serial: string;
   status: Asset['status'];
+  warrantyExpiry: string;
   notes: string;
 };
 
@@ -72,6 +73,7 @@ export function AddAssetScreen({
     model: template?.model ?? '',
     serial: copyFrom ? '' : (asset?.serial ?? ''),
     status: template?.status ?? 'ready',
+    warrantyExpiry: copyFrom ? '' : (asset?.warrantyExpiry ?? ''),
     notes: copyFrom ? '' : (asset?.notes ?? ''),
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -79,13 +81,17 @@ export function AddAssetScreen({
     () => ({
       name: form.name.trim().length === 0 ? 'Name is required.' : undefined,
       category: form.category.trim().length === 0 ? 'Category is required.' : undefined,
+      warrantyExpiry:
+        form.warrantyExpiry.trim().length > 0 && !/^\d{4}-\d{2}-\d{2}$/.test(form.warrantyExpiry.trim())
+          ? 'Enter a date as YYYY-MM-DD.'
+          : undefined,
     }),
-    [form.category, form.name],
+    [form.category, form.name, form.warrantyExpiry],
   );
 
   const canSave = useMemo(
-    () => !errors.name && !errors.category && !isSaving,
-    [errors.category, errors.name, isSaving],
+    () => !errors.name && !errors.category && !errors.warrantyExpiry && !isSaving,
+    [errors.category, errors.name, errors.warrantyExpiry, isSaving],
   );
 
   async function handleSave() {
@@ -106,6 +112,7 @@ export function AddAssetScreen({
         model: cleanOptional(form.model),
         serial: cleanOptional(form.serial),
         status: form.status,
+        warrantyExpiry: cleanOptional(form.warrantyExpiry),
         notes: cleanOptional(form.notes),
       });
     } finally {
@@ -234,6 +241,13 @@ export function AddAssetScreen({
           </View>
         </View>
 
+        <Field
+          label="Warranty expiry"
+          value={form.warrantyExpiry}
+          placeholder="YYYY-MM-DD"
+          error={errors.warrantyExpiry}
+          onChangeText={(warrantyExpiry) => setForm((current) => ({ ...current, warrantyExpiry }))}
+        />
         <Field
           label="Notes"
           value={form.notes}

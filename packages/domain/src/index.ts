@@ -81,6 +81,7 @@ export type Asset = {
   serial?: string;
   installDate?: string;
   purchaseDate?: string;
+  warrantyExpiry?: string;
   costCents?: number;
   status: AssetStatus;
   notes?: string;

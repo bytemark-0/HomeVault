@@ -118,6 +118,12 @@ export function AssetDetailScreen({
         <DetailItem label="Brand" value={asset.brand ?? 'Not recorded'} />
         <DetailItem label="Model" value={asset.model ?? 'Not recorded'} />
         <DetailItem label="Serial" value={asset.serial ?? 'Not recorded'} />
+        {asset.warrantyExpiryLabel ? (
+          <DetailItem
+            label="Warranty expiry"
+            value={asset.warrantyExpiringSoon ? `${asset.warrantyExpiryLabel} · Expiring soon` : asset.warrantyExpiryLabel}
+          />
+        ) : null}
       </View>
 
       <View style={styles.panel}>
