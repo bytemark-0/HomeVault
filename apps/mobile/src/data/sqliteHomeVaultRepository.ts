@@ -1,5 +1,7 @@
 import { openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite';
 
+import { getTaskStateForDate } from '../utils/taskUtils';
+
 import type {
   Asset,
   DocumentRecord,
@@ -1164,6 +1166,15 @@ function parseAttachment(value: string | null): DocumentRecord['attachment'] {
 }
 
 function toTask(row: TaskRow): MaintenanceTask {
+  let state = row.state as MaintenanceTask['state'];
+
+  if (state === 'snoozed' && row.due_date) {
+    const today = new Date().toISOString().slice(0, 10);
+    if (row.due_date <= today) {
+      state = getTaskStateForDate(row.due_date);
+    }
+  }
+
   return {
     id: row.id,
     propertyId: row.property_id,
@@ -1174,7 +1185,7 @@ function toTask(row: TaskRow): MaintenanceTask {
     recurrenceKind: row.recurrence_kind,
     recurrenceLabel: row.recurrence_label,
     assigneeId: row.assignee_id ?? undefined,
-    state: row.state,
+    state,
     instructions: row.instructions ?? undefined,
   };
 }
