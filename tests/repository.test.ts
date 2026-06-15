@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { createMemoryHomeVaultRepository } from '../packages/database/src';
-import type { HomeVaultSnapshot } from '../packages/database/src';
+import { createMemoryHomeVaultRepository, type HomeVaultSnapshot } from '../packages/database/src';
 
 const baseProperty = {
   id: 'prop-1',

@@ -1,7 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import type { AssetListItem } from '../data/homeVaultSampleData';
-import { getAssetStatusLabel } from '../data/homeVaultSampleData';
+import { getAssetStatusLabel, type AssetListItem } from '../data/homeVaultSampleData';
 import { colors } from '../theme/colors';
 
 type AssetRowProps = {

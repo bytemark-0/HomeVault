@@ -13,9 +13,14 @@
     "test:packages": "tsc -p tsconfig.tests.json && node /private/tmp/homevault-package-tests/scripts/generateSampleBackup.js && node /private/tmp/homevault-package-tests/tests/exportPackage.test.js && node /private/tmp/homevault-package-tests/tests/repository.test.js && node /private/tmp/homevault-package-tests/tests/taskUtils.test.js",
     "typecheck": "npm run typecheck:packages && npm run typecheck --workspace=apps/mobile",
     "typecheck:app": "npm run typecheck --workspace=apps/mobile",
-    "typecheck:packages": "tsc --noEmit -p tsconfig.packages.json"
+    "typecheck:packages": "tsc --noEmit -p tsconfig.packages.json",
+    "lint": "eslint 'packages/*/src/**/*.ts' 'apps/mobile/src/**/*.{ts,tsx}' 'tests/**/*.ts'",
+    "lint:fix": "eslint --fix 'packages/*/src/**/*.ts' 'apps/mobile/src/**/*.{ts,tsx}' 'tests/**/*.ts'"
   },
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.61.0",
+    "@typescript-eslint/parser": "^8.61.0",
+    "eslint": "^9.39.4",
     "typescript": "~6.0.3"
   }
 }

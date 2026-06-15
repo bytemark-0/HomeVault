@@ -1,13 +1,13 @@
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import type {
-  AssetDocumentListItem,
-  AssetListItem,
-  AssetTaskCompletionListItem,
-  RepairEventListItem,
+import {
+  getAssetStatusLabel,
+  type AssetDocumentListItem,
+  type AssetListItem,
+  type AssetTaskCompletionListItem,
+  type RepairEventListItem,
 } from '../data/homeVaultSampleData';
 import { formatDocumentAttachmentStatus } from '../data/documentAttachmentLabels';
-import { getAssetStatusLabel } from '../data/homeVaultSampleData';
 import { colors } from '../theme/colors';
 
 type ServiceItem =

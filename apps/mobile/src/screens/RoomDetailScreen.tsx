@@ -1,15 +1,15 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import type {
-  AssetListItem,
-  DocumentListItem,
-  RepairEventListItem,
-  RoomServiceCompletionListItem,
-  RoomListItem,
-  TaskListItem,
+import {
+  getAssetStatusLabel,
+  type AssetListItem,
+  type DocumentListItem,
+  type RepairEventListItem,
+  type RoomServiceCompletionListItem,
+  type RoomListItem,
+  type TaskListItem,
 } from '../data/homeVaultSampleData';
 import { formatDocumentAttachmentStatus } from '../data/documentAttachmentLabels';
-import { getAssetStatusLabel } from '../data/homeVaultSampleData';
 import { colors } from '../theme/colors';
 
 type RoomDetailScreenProps = {

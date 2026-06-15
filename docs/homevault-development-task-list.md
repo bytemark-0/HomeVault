@@ -121,7 +121,7 @@ Attachment model note:
 
 - [x] Add screen-level tests for key flows where practical. *(codex — extracted pure utils from App.tsx into taskUtils.ts; 12 tests covering date math, recurrence, and currency formatting)*
 - [x] Add repository tests for SQLite parity with in-memory repository behavior. *(codex — 13 tests in tests/repository.test.ts covering CRUD, completions, snapshots, and dashboard)*
-- [ ] Add linting/formatting scripts if we want stricter CI hygiene.
+- [x] Add linting/formatting scripts if we want stricter CI hygiene. *(codex — ESLint v9 flat config with @typescript-eslint; 0 errors across packages, mobile src, and tests)*
 - [x] Add CI workflow for typecheck, tests, and web export. *(codex — .github/workflows/ci.yml runs typecheck:packages, typecheck:app, and npm test)*
 - [x] Document local development commands in the README. *(codex)*
 - [ ] Decide when to push branch and open a draft PR.
