@@ -108,6 +108,9 @@ export function ExportManifestScreen({
   const isBusy = operationState === 'validating' || operationState === 'restoring';
   const restoreReady = restoreConfirmText.trim() === 'RESTORE';
   const canRestore = restoreReady && operationState === 'ready';
+  const restoreConflicts = validatedPackage
+    ? buildRestoreConflicts(validatedPackage, manifest, property)
+    : [];
 
   async function handleDownloadManifest() {
     if (Platform.OS !== 'web') {
@@ -456,6 +459,17 @@ export function ExportManifestScreen({
               ) : null}
             </>
           ) : null}
+          {restoreConflicts.length > 0 ? (
+            <View style={styles.conflictPanel}>
+              <Text style={styles.conflictTitle}>Conflict warnings</Text>
+              {restoreConflicts.map((conflict) => (
+                <View key={conflict.id} style={styles.conflictRow}>
+                  <Text style={styles.conflictBullet}>!</Text>
+                  <Text style={styles.conflictText}>{conflict.message}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
           <Text style={styles.subsectionTitle}>Dry-run checklist</Text>
           <View style={styles.restoreChecklist}>
             <RestorePlanRow
@@ -468,9 +482,22 @@ export function ExportManifestScreen({
               detail="Current and backup record counts are shown above."
               state="ready"
             />
+            {restoreConflicts.length > 0 ? (
+              <RestorePlanRow
+                label="Conflicts acknowledged"
+                detail={`${restoreConflicts.length} conflict warning${restoreConflicts.length === 1 ? '' : 's'} — review before restoring.`}
+                state="pending"
+              />
+            ) : (
+              <RestorePlanRow
+                label="No conflicts detected"
+                detail="Backup property and record counts are compatible."
+                state="ready"
+              />
+            )}
             <RestorePlanRow
               label="Overwrite warning"
-              detail="Restore replaces the local preview dataset."
+              detail="Restore replaces all current local records."
               state="ready"
             />
             <RestorePlanRow
@@ -739,6 +766,50 @@ function formatOperationState(state: BackupOperationState) {
 
 function formatErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Unknown error';
+}
+
+type RestoreConflict = {
+  id: string;
+  message: string;
+};
+
+function buildRestoreConflicts(
+  pkg: HomeVaultExportPackage,
+  currentManifest: ReturnType<typeof buildHomeVaultExportManifest>,
+  currentProperty: Property,
+): RestoreConflict[] {
+  const conflicts: RestoreConflict[] = [];
+
+  if (pkg.records.property.id !== currentProperty.id) {
+    conflicts.push({
+      id: 'property_mismatch',
+      message: `Backup is from a different property ("${pkg.manifest.property.label}"). All current records will be replaced with data from the backup home.`,
+    });
+  }
+
+  const lossChecks: Array<{ key: keyof typeof currentManifest.recordCounts; label: string }> = [
+    { key: 'assets', label: 'assets' },
+    { key: 'rooms', label: 'rooms' },
+    { key: 'documents', label: 'documents' },
+    { key: 'tasks', label: 'maintenance tasks' },
+    { key: 'taskCompletions', label: 'service completions' },
+    { key: 'repairEvents', label: 'repair events' },
+  ];
+
+  for (const { key, label } of lossChecks) {
+    const currentCount = currentManifest.recordCounts[key];
+    const backupCount = pkg.manifest.recordCounts[key];
+    const loss = currentCount - backupCount;
+
+    if (loss > 0) {
+      conflicts.push({
+        id: `fewer_${key}`,
+        message: `Backup has ${loss} fewer ${label} than the current records. ${loss === 1 ? 'That record' : 'Those records'} will not be in the restored data.`,
+      });
+    }
+  }
+
+  return conflicts;
 }
 
 async function shareNativeBackup({
@@ -1242,6 +1313,37 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     paddingTop: 4,
+  },
+  conflictPanel: {
+    borderRadius: 8,
+    borderColor: colors.amberSoft,
+    borderWidth: 1,
+    backgroundColor: '#FFFBF0',
+    padding: 12,
+    gap: 10,
+  },
+  conflictTitle: {
+    color: colors.amber,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  conflictRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  conflictBullet: {
+    color: colors.amber,
+    fontSize: 13,
+    fontWeight: '900',
+    lineHeight: 18,
+  },
+  conflictText: {
+    color: colors.ink,
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
   },
   restoreChecklist: {
     borderRadius: 8,
