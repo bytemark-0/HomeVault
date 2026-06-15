@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import * as DocumentPicker from 'expo-document-picker';
+import { File, Paths } from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import {
   Alert,
   Platform,
@@ -65,9 +67,9 @@ export function ExportManifestScreen({
   onFixPress,
   onRestoreBackup,
 }: ExportManifestScreenProps) {
-  const [downloadStatus, setDownloadStatus] = useState<'idle' | 'downloaded' | 'unsupported'>(
-    'idle',
-  );
+  const [downloadStatus, setDownloadStatus] = useState<
+    'idle' | 'sharing' | 'downloaded' | 'unsupported'
+  >('idle');
   const [validationResult, setValidationResult] = useState<string | null>(null);
   const [importPreview, setImportPreview] = useState<HomeVaultImportPreview | null>(null);
   const [validatedPackage, setValidatedPackage] = useState<HomeVaultExportPackage | null>(null);
@@ -107,7 +109,22 @@ export function ExportManifestScreen({
   const restoreReady = restoreConfirmText.trim() === 'RESTORE';
   const canRestore = restoreReady && operationState === 'ready';
 
-  function handleDownloadManifest() {
+  async function handleDownloadManifest() {
+    if (Platform.OS !== 'web') {
+      await shareNativeBackup({
+        fileName: exportFileName,
+        text: packageText,
+        onStart: () => setDownloadStatus('sharing'),
+        onDone: () => {
+          setDownloadStatus('downloaded');
+          onBackupCreated(exportPackage, exportFileName);
+        },
+        onError: () => setDownloadStatus('unsupported'),
+      });
+
+      return;
+    }
+
     const didDownload = downloadTextFile({
       fileName: exportFileName,
       mimeType: 'application/json',
@@ -288,17 +305,28 @@ export function ExportManifestScreen({
           <Text style={styles.downloadMeta}>
             {downloadStatus === 'downloaded'
               ? `${exportFileName} was generated.`
-              : downloadStatus === 'unsupported'
-                ? 'Download is available in the web preview. Native sharing comes next.'
-                : 'Save manifest and local records as a JSON backup package.'}
+              : downloadStatus === 'sharing'
+                ? 'Opening share sheet...'
+                : downloadStatus === 'unsupported'
+                  ? 'Sharing is not available on this device. Try downloading from the web preview.'
+                  : Platform.OS === 'web'
+                    ? 'Save manifest and local records as a JSON backup package.'
+                    : 'Share or save the backup JSON package to Files or another app.'}
           </Text>
         </View>
         <Pressable
-          onPress={handleDownloadManifest}
-          style={styles.primaryButton}
+          onPress={() => void handleDownloadManifest()}
+          disabled={downloadStatus === 'sharing'}
+          style={[styles.primaryButton, downloadStatus === 'sharing' && styles.primaryButtonBusy]}
           accessibilityRole="button"
         >
-          <Text style={styles.primaryButtonText}>Download JSON</Text>
+          <Text style={styles.primaryButtonText}>
+            {downloadStatus === 'sharing'
+              ? 'Sharing...'
+              : Platform.OS === 'web'
+                ? 'Download JSON'
+                : 'Share backup'}
+          </Text>
         </Pressable>
       </View>
 
@@ -651,6 +679,42 @@ function formatErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Unknown error';
 }
 
+async function shareNativeBackup({
+  fileName,
+  text,
+  onStart,
+  onDone,
+  onError,
+}: {
+  fileName: string;
+  text: string;
+  onStart: () => void;
+  onDone: () => void;
+  onError: () => void;
+}) {
+  const isAvailable = await Sharing.isAvailableAsync();
+
+  if (!isAvailable) {
+    onError();
+    return;
+  }
+
+  onStart();
+
+  try {
+    const file = new File(Paths.cache, fileName);
+    file.write(text);
+    await Sharing.shareAsync(file.uri, {
+      mimeType: 'application/json',
+      dialogTitle: 'Save HomeVault backup',
+      UTI: 'public.json',
+    });
+    onDone();
+  } catch {
+    onError();
+  }
+}
+
 function downloadTextFile({
   fileName,
   mimeType,
@@ -788,6 +852,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.green,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  primaryButtonBusy: {
+    opacity: 0.55,
   },
   primaryButtonText: {
     color: '#FFFFFF',
