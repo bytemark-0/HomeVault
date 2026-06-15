@@ -41,6 +41,9 @@ export function AssetRow({ asset, onPress }: AssetRowProps) {
         <Text style={styles.rowMeta}>
           {[asset.serial ? `Serial ${asset.serial}` : null, `${asset.documentCount} doc${asset.documentCount === 1 ? '' : 's'}`].filter(Boolean).join(' · ')}
         </Text>
+        {asset.nextTaskLabel !== 'No open tasks' ? (
+          <Text style={styles.rowTask} numberOfLines={1}>{asset.nextTaskLabel}</Text>
+        ) : null}
       </View>
     </Pressable>
   );
@@ -95,6 +98,12 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 12,
     fontWeight: '600',
+    lineHeight: 17,
+  },
+  rowTask: {
+    color: colors.blue,
+    fontSize: 12,
+    fontWeight: '700',
     lineHeight: 17,
   },
   statusPill: {
