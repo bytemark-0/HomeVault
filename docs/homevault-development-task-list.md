@@ -1,6 +1,6 @@
 # HomeVault Development Task List
 
-Last reviewed: 2026-06-13
+Last reviewed: 2026-06-14
 
 ## Current State
 
@@ -70,7 +70,7 @@ No missing primary edit affordances were found in the currently exposed flows.
 - [x] Allow documents to link to multiple records, not just one asset/room/property.
 - [x] Add a “missing attachment” filtered view from export readiness.
 - [x] Add a “missing asset documentation” filtered view from export readiness.
-- [ ] Add document search/filter by type, linked record, vendor, and date.
+- [x] Add document search/filter by type, linked record, vendor, and date. *(codex)*
 
 Attachment model note:
 - Documents preserve backward-compatible `filePath` values and optional structured attachment metadata.
@@ -82,11 +82,11 @@ Attachment model note:
 
 ## P1: Export, Restore, And Trust
 
-- [ ] Add a full export package download path for native platforms.
-- [ ] Add restore preview diff details beyond record counts.
-- [ ] Add restore conflict warnings when current data would be replaced.
-- [ ] Add backup package version compatibility messaging.
-- [ ] Add import error states for malformed JSON, unsupported versions, and partial records.
+- [x] Add a full export package download path for native platforms. *(codex)*
+- [x] Add restore preview diff details beyond record counts. *(codex)*
+- [x] Add restore conflict warnings when current data would be replaced. *(codex)*
+- [x] Add backup package version compatibility messaging. *(codex)*
+- [x] Add import error states for malformed JSON, unsupported versions, and partial records. *(codex — covered by errorKind classification in version compatibility slice)*
 - [ ] Add tests for checklist action routing and restore confirmation edge cases.
 - [ ] Decide whether backup packages should include copied attachment payloads or references only.
 
