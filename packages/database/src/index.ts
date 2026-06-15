@@ -31,6 +31,7 @@ export type HomeVaultRepository = {
   updateProperty(input: UpdatePropertyInput): Promise<Property>;
   createRoom(input: CreateRoomInput): Promise<RoomArea>;
   updateRoom(input: UpdateRoomInput): Promise<RoomArea>;
+  deleteRoom(roomId: EntityId): Promise<void>;
   createAsset(input: CreateAssetInput): Promise<Asset>;
   updateAsset(input: UpdateAssetInput): Promise<Asset>;
   deleteAsset(assetId: EntityId): Promise<void>;
@@ -180,6 +181,36 @@ export function createMemoryHomeVaultRepository(
       snapshot.rooms[roomIndex] = { ...input };
 
       return { ...input };
+    },
+    async deleteRoom(roomId) {
+      const roomIndex = snapshot.rooms.findIndex((room) => room.id === roomId);
+
+      if (roomIndex === -1) {
+        throw new Error(`Room ${roomId} was not found in the local store.`);
+      }
+
+      snapshot.rooms.splice(roomIndex, 1);
+
+      const assetIds = new Set(
+        snapshot.assets.filter((asset) => asset.roomId === roomId).map((asset) => asset.id),
+      );
+
+      const deletedTaskIds = new Set(
+        snapshot.tasks
+          .filter(
+            (task) =>
+              (task.scope === 'asset' && assetIds.has(task.scopeId)) ||
+              (task.scope === 'room' && task.scopeId === roomId),
+          )
+          .map((task) => task.id),
+      );
+
+      snapshot.tasks = snapshot.tasks.filter((task) => !deletedTaskIds.has(task.id));
+      snapshot.taskCompletions = snapshot.taskCompletions.filter(
+        (c) => !deletedTaskIds.has(c.taskId),
+      );
+      snapshot.repairEvents = snapshot.repairEvents.filter((r) => !assetIds.has(r.assetId));
+      snapshot.assets = snapshot.assets.filter((asset) => asset.roomId !== roomId);
     },
     async createAsset(input) {
       const asset = {

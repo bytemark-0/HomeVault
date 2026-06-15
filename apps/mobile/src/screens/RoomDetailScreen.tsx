@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import {
   getAssetStatusLabel,
@@ -24,6 +24,7 @@ type RoomDetailScreenProps = {
   onAddTask: () => void;
   onAssetPress: (assetId: string) => void;
   onBack: () => void;
+  onDelete: () => void;
   onDocumentPress: (documentId: string) => void;
   onEdit: () => void;
   onTaskPress: (taskId: string) => void;
@@ -41,6 +42,7 @@ export function RoomDetailScreen({
   onAddTask,
   onAssetPress,
   onBack,
+  onDelete,
   onDocumentPress,
   onEdit,
   onTaskPress,
@@ -227,7 +229,40 @@ export function RoomDetailScreen({
           <Text style={styles.emptyText}>No completed maintenance recorded for this room.</Text>
         )}
       </View>
+
+      <View style={styles.dangerPanel}>
+        <Pressable
+          onPress={() => confirmDeleteRoom(room.name, assets.length, onDelete)}
+          style={styles.deleteButton}
+          accessibilityRole="button"
+          accessibilityLabel="Delete room"
+        >
+          <Text style={styles.deleteButtonText}>Delete room</Text>
+        </Pressable>
+        <Text style={styles.deleteHint}>
+          {assets.length > 0
+            ? `Deletes this room and its ${assets.length} asset${assets.length === 1 ? '' : 's'}, along with their tasks and repair history.`
+            : 'Deletes this room and its tasks. No assets are currently linked.'}
+          {' Documents stay in your library.'}
+        </Text>
+      </View>
     </ScrollView>
+  );
+}
+
+function confirmDeleteRoom(name: string, assetCount: number, onConfirm: () => void) {
+  const assetWarning =
+    assetCount > 0
+      ? ` This will also delete ${assetCount} asset${assetCount === 1 ? '' : 's'} and their tasks and repair history.`
+      : '';
+
+  Alert.alert(
+    'Delete room?',
+    `"${name}" will be permanently removed.${assetWarning} Documents linked to this room's assets will remain in your library.`,
+    [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: onConfirm },
+    ],
   );
 }
 
@@ -462,5 +497,34 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '900',
+  },
+  dangerPanel: {
+    borderRadius: 8,
+    borderColor: colors.redSoft,
+    borderWidth: 1,
+    backgroundColor: colors.panel,
+    padding: 14,
+    gap: 10,
+  },
+  deleteButton: {
+    minHeight: 42,
+    borderRadius: 8,
+    borderColor: colors.red,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 16,
+  },
+  deleteButtonText: {
+    color: colors.red,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  deleteHint: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 17,
   },
 });

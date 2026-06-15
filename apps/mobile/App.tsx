@@ -753,6 +753,19 @@ export default function App() {
     }
   }
 
+  async function handleDeleteRoom(roomId: string) {
+    try {
+      const homeVaultRepository = await getHomeVaultRepository();
+      await homeVaultRepository.deleteRoom(roomId);
+      showToast('Room deleted', 'error');
+      await loadHomeVault();
+      setActiveTab('household');
+      setMode('tabs');
+    } catch {
+      showToast('Could not delete room. Please try again.', 'error');
+    }
+  }
+
   function handleHomeActivityPress(activity: HomeActivityItem) {
     if (activity.kind === 'document') {
       setSelectedDocumentId(activity.targetId);
@@ -962,6 +975,7 @@ export default function App() {
             setDocumentReturnTarget('roomDetail');
             setMode('documentDetail');
           }}
+          onDelete={() => void handleDeleteRoom(selectedRoom.id)}
           onEdit={() => setMode('editRoom')}
           onTaskPress={(taskId) => openTaskDetail(taskId, 'roomDetail')}
         />

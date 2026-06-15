@@ -203,6 +203,9 @@ export async function createSQLiteHomeVaultRepository(
     async updateRoom(input) {
       return updateRoom(db, input);
     },
+    async deleteRoom(roomId) {
+      return deleteRoom(db, roomId);
+    },
     async createAsset(input) {
       return createAsset(db, input);
     },
@@ -729,6 +732,28 @@ async function updateRoom(db: SQLiteDatabase, input: UpdateRoomInput): Promise<R
   );
 
   return input;
+}
+
+async function deleteRoom(db: SQLiteDatabase, roomId: EntityId): Promise<void> {
+  await db.withTransactionAsync(async () => {
+    await db.runAsync(
+      `DELETE FROM task_completions
+       WHERE task_id IN (
+         SELECT id FROM maintenance_tasks
+         WHERE (scope = 'asset' AND scope_id IN (SELECT id FROM assets WHERE room_id = ?))
+            OR (scope = 'room' AND scope_id = ?)
+       )`,
+      [roomId, roomId],
+    );
+    await db.runAsync(
+      `DELETE FROM maintenance_tasks
+       WHERE (scope = 'asset' AND scope_id IN (SELECT id FROM assets WHERE room_id = ?))
+          OR (scope = 'room' AND scope_id = ?)`,
+      [roomId, roomId],
+    );
+    await db.runAsync('DELETE FROM assets WHERE room_id = ?', [roomId]);
+    await db.runAsync('DELETE FROM rooms WHERE id = ?', [roomId]);
+  });
 }
 
 async function updateAsset(db: SQLiteDatabase, input: UpdateAssetInput): Promise<Asset> {
