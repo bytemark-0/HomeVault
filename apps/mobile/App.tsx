@@ -67,6 +67,7 @@ import { MaintenanceScreen } from './src/screens/MaintenanceScreen';
 import { QuickAddScreen } from './src/screens/QuickAddScreen';
 import { RoomDetailScreen } from './src/screens/RoomDetailScreen';
 import { TaskDetailScreen } from './src/screens/TaskDetailScreen';
+import { Toast } from './src/components/Toast';
 import { colors } from './src/theme/colors';
 
 type TabKey = 'home' | 'inventory' | 'maintenance' | 'documents' | 'household';
@@ -162,6 +163,7 @@ export default function App() {
   const [repairReturnTarget, setRepairReturnTarget] =
     useState<'assetDetail' | 'maintenance'>('assetDetail');
   const [copyFromAssetId, setCopyFromAssetId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; kind: 'success' | 'error' | 'info' } | null>(null);
   const [appData, setAppData] = useState<AppData | null>(null);
   const [backupSummary, setBackupSummary] = useState<BackupSummary | null>(null);
   const [restoreSummary, setRestoreSummary] = useState<RestoreSummary | null>(null);
@@ -459,6 +461,7 @@ export default function App() {
       recordCounts: { ...backupPackage.manifest.recordCounts },
       restoredAt: new Date().toISOString(),
     });
+    showToast('Backup restored');
     setActiveTab('household');
     setMode('tabs');
   }
@@ -499,7 +502,12 @@ export default function App() {
           dueDate: nextDueDate,
           state: getTaskStateForDate(nextDueDate),
         });
+        showToast('Task completed — next due date scheduled');
+      } else {
+        showToast('Task completed');
       }
+    } else {
+      showToast('Task completed');
     }
 
     await loadHomeVault();
@@ -533,6 +541,7 @@ export default function App() {
       state: 'snoozed',
     });
     await loadHomeVault();
+    showToast('Task snoozed', 'info');
     setSelectedTaskId(taskId);
     setActiveTab('maintenance');
     setMode('taskDetail');
@@ -573,6 +582,7 @@ export default function App() {
     const homeVaultRepository = await getHomeVaultRepository();
     await homeVaultRepository.deleteDocument(documentId);
     await loadHomeVault();
+    showToast('Document deleted', 'error');
     setSelectedDocumentId(null);
 
     if (documentReturnTarget === 'roomDetail' && selectedRoom) {
@@ -630,6 +640,7 @@ export default function App() {
     const homeVaultRepository = await getHomeVaultRepository();
     await homeVaultRepository.deleteTask(taskId);
     await loadHomeVault();
+    showToast('Task deleted', 'error');
     setSelectedTaskId(null);
 
     if (taskReturnTarget === 'roomDetail' && selectedRoom) {
@@ -651,6 +662,7 @@ export default function App() {
     const homeVaultRepository = await getHomeVaultRepository();
     await homeVaultRepository.createRepairEvent(input);
     await loadHomeVault();
+    showToast('Repair recorded');
 
     if (repairReturnTarget === 'maintenance') {
       setMode('tabs');
@@ -664,6 +676,7 @@ export default function App() {
   async function handleDeleteRepairEvent(repairEventId: string) {
     const homeVaultRepository = await getHomeVaultRepository();
     await homeVaultRepository.deleteRepairEvent(repairEventId);
+    showToast('Repair deleted', 'error');
     await loadHomeVault();
     setMode('assetDetail');
   }
@@ -685,6 +698,10 @@ export default function App() {
 
     setSelectedTaskId(activity.targetId);
     setMode('taskDetail');
+  }
+
+  function showToast(message: string, kind: 'success' | 'error' | 'info' = 'success') {
+    setToast({ message, kind });
   }
 
   function handleViewServiceHistory() {
@@ -1169,8 +1186,10 @@ export default function App() {
 
   if (mode === 'assetDetail' && selectedAsset) {
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar style="dark" />
+      <>
+        <Toast message={toast?.message ?? null} kind={toast?.kind} onDismiss={() => setToast(null)} />
+        <SafeAreaView style={styles.safeArea}>
+          <StatusBar style="dark" />
         <AssetDetailScreen
           asset={selectedAsset}
           documents={selectedAssetDocuments}
@@ -1206,14 +1225,17 @@ export default function App() {
             setMode('addRepairEvent');
           }}
         />
-      </SafeAreaView>
+        </SafeAreaView>
+      </>
     );
   }
 
   if (mode === 'taskDetail' && selectedTask) {
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar style="dark" />
+      <>
+        <Toast message={toast?.message ?? null} kind={toast?.kind} onDismiss={() => setToast(null)} />
+        <SafeAreaView style={styles.safeArea}>
+          <StatusBar style="dark" />
         <TaskDetailScreen
           task={selectedTask}
           completions={selectedTaskCompletions}
@@ -1237,12 +1259,15 @@ export default function App() {
           onSnooze={handleSnoozeTask}
           onEdit={() => setMode('editTask')}
         />
-      </SafeAreaView>
+        </SafeAreaView>
+      </>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <>
+      <Toast message={toast?.message ?? null} kind={toast?.kind} onDismiss={() => setToast(null)} />
+      <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
       <View style={styles.appFrame}>
         <View style={styles.topBar}>
@@ -1391,6 +1416,7 @@ export default function App() {
         </View>
       </View>
     </SafeAreaView>
+    </>
   );
 }
 

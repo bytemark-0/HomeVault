@@ -113,7 +113,7 @@ Attachment model note:
 - [ ] Replace letter-only tab icons with real icons.
 - [ ] Tighten mobile layout spacing and text wrapping across small screens.
 - [ ] Add loading, saving, and error states for all async actions.
-- [ ] Add toast/banner feedback after saves, deletes, exports, and restores.
+- [x] Add toast/banner feedback after saves, deletes, exports, and restores. *(codex)*
 - [ ] Add accessibility labels for icon-only and compact controls.
 - [ ] Verify with in-app browser screenshots once browser access policy allows it.
 
