@@ -45,6 +45,8 @@ export type HomeVaultRepository = {
   updateRepairEvent(input: UpdateRepairEventInput): Promise<RepairEvent>;
   deleteRepairEvent(repairEventId: EntityId): Promise<void>;
   completeTask(input: CompleteTaskInput): Promise<TaskCompletion>;
+  updateTaskCompletion(input: UpdateTaskCompletionInput): Promise<TaskCompletion>;
+  deleteTaskCompletion(completionId: EntityId): Promise<void>;
   resetDemoData?(): Promise<void>;
   restoreSnapshot?(snapshot: HomeVaultSnapshot): Promise<void>;
 };
@@ -80,6 +82,8 @@ export type CreateRepairEventInput = Omit<RepairEvent, 'id'> & {
 };
 
 export type UpdateRepairEventInput = RepairEvent;
+
+export type UpdateTaskCompletionInput = TaskCompletion;
 
 export type CompleteTaskInput = {
   taskId: EntityId;
@@ -391,6 +395,26 @@ export function createMemoryHomeVaultRepository(
       task.state = 'completed';
 
       return { ...completion };
+    },
+    async updateTaskCompletion(input) {
+      const index = snapshot.taskCompletions.findIndex((c) => c.id === input.id);
+
+      if (index === -1) {
+        throw new Error(`Task completion ${input.id} was not found in the local store.`);
+      }
+
+      snapshot.taskCompletions[index] = { ...input };
+
+      return { ...input };
+    },
+    async deleteTaskCompletion(completionId) {
+      const index = snapshot.taskCompletions.findIndex((c) => c.id === completionId);
+
+      if (index === -1) {
+        throw new Error(`Task completion ${completionId} was not found in the local store.`);
+      }
+
+      snapshot.taskCompletions.splice(index, 1);
     },
     async resetDemoData() {
       const freshSnapshot = cloneSnapshot(initialSnapshot);

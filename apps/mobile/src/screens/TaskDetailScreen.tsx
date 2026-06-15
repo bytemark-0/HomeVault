@@ -11,6 +11,8 @@ type TaskDetailScreenProps = {
   onDelete: () => Promise<void>;
   onSnooze: (taskId: string) => void;
   onEdit: () => void;
+  onEditCompletion: (completionId: string) => void;
+  onDeleteCompletion: (completionId: string) => Promise<void>;
   onViewScope?: () => void;
 };
 
@@ -22,6 +24,8 @@ export function TaskDetailScreen({
   onDelete,
   onSnooze,
   onEdit,
+  onEditCompletion,
+  onDeleteCompletion,
   onViewScope,
 }: TaskDetailScreenProps) {
   const isCompleted = task.state === 'completed';
@@ -103,7 +107,25 @@ export function TaskDetailScreen({
             <View key={completion.id} style={styles.completionRow}>
               <View style={styles.completionHeader}>
                 <Text style={styles.completionDate}>{completion.completedAtLabel}</Text>
-                <Text style={styles.completionCost}>{completion.costLabel}</Text>
+                <View style={styles.completionHeaderRight}>
+                  <Text style={styles.completionCost}>{completion.costLabel}</Text>
+                  <Pressable
+                    onPress={() => onEditCompletion(completion.id)}
+                    style={styles.completionEditButton}
+                    accessibilityRole="button"
+                    accessibilityLabel="Edit completion"
+                  >
+                    <Text style={styles.completionEditText}>Edit</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => confirmDeleteCompletion(completion.completedAtLabel, () => onDeleteCompletion(completion.id))}
+                    style={styles.completionDeleteButton}
+                    accessibilityRole="button"
+                    accessibilityLabel="Delete completion"
+                  >
+                    <Text style={styles.completionDeleteText}>Delete</Text>
+                  </Pressable>
+                </View>
               </View>
               <Text style={styles.completionNotes}>
                 {completion.notes ?? 'No notes recorded.'}
@@ -159,6 +181,23 @@ function formatTaskState(state: TaskListItem['state']) {
     default:
       return 'Upcoming';
   }
+}
+
+function confirmDeleteCompletion(dateLabel: string, onConfirm: () => Promise<void>) {
+  Alert.alert(
+    'Delete completion?',
+    `The completion recorded on ${dateLabel} will be removed.`,
+    [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          void onConfirm();
+        },
+      },
+    ],
+  );
 }
 
 function confirmDeleteTask(
@@ -355,11 +394,44 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '900',
   },
+  completionHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   completionCost: {
     color: colors.green,
     fontSize: 13,
     fontWeight: '900',
     textAlign: 'right',
+  },
+  completionEditButton: {
+    minHeight: 26,
+    paddingHorizontal: 8,
+    borderRadius: 7,
+    backgroundColor: colors.panel,
+    borderColor: colors.line,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  completionEditText: {
+    color: colors.blue,
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  completionDeleteButton: {
+    minHeight: 26,
+    paddingHorizontal: 8,
+    borderRadius: 7,
+    backgroundColor: colors.redSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  completionDeleteText: {
+    color: colors.red,
+    fontSize: 11,
+    fontWeight: '900',
   },
   completionNotes: {
     color: colors.muted,

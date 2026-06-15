@@ -27,6 +27,7 @@ import type {
   UpdatePropertyInput,
   UpdateRepairEventInput,
   UpdateRoomInput,
+  UpdateTaskCompletionInput,
   UpdateTaskInput,
 } from '@homevault/database';
 
@@ -248,6 +249,12 @@ export async function createSQLiteHomeVaultRepository(
     },
     async completeTask(input) {
       return completeTask(db, input);
+    },
+    async updateTaskCompletion(input) {
+      return updateTaskCompletion(db, input);
+    },
+    async deleteTaskCompletion(completionId) {
+      return deleteTaskCompletion(db, completionId);
     },
     async resetDemoData() {
       await resetDemoData(db, initialSnapshot);
@@ -1079,6 +1086,33 @@ async function completeTask(
   });
 
   return completion;
+}
+
+async function updateTaskCompletion(
+  db: SQLiteDatabase,
+  input: UpdateTaskCompletionInput,
+): Promise<TaskCompletion> {
+  await db.runAsync(
+    `UPDATE task_completions
+     SET completed_at = ?,
+         cost_cents = ?,
+         notes = ?,
+         photo_uri = ?
+     WHERE id = ?`,
+    [
+      input.completedAt,
+      input.costCents ?? null,
+      input.notes ?? null,
+      input.photoUri ?? null,
+      input.id,
+    ],
+  );
+
+  return { ...input };
+}
+
+async function deleteTaskCompletion(db: SQLiteDatabase, completionId: EntityId): Promise<void> {
+  await db.runAsync(`DELETE FROM task_completions WHERE id = ?`, [completionId]);
 }
 
 function createEntityId(prefix: string) {

@@ -757,6 +757,17 @@ export default function App() {
     }
   }
 
+  async function handleDeleteTaskCompletion(completionId: string) {
+    try {
+      const homeVaultRepository = await getHomeVaultRepository();
+      await homeVaultRepository.deleteTaskCompletion(completionId);
+      await loadHomeVault();
+      showToast('Completion deleted');
+    } catch {
+      showToast('Could not delete completion. Please try again.', 'error');
+    }
+  }
+
   async function handleDeleteRepairEvent(repairEventId: string) {
     const homeVaultRepository = await getHomeVaultRepository();
     await homeVaultRepository.deleteRepairEvent(repairEventId);
@@ -1421,6 +1432,7 @@ export default function App() {
             setSelectedCompletionId(completionId);
             setMode('editTaskCompletion');
           }}
+          onDeleteCompletion={handleDeleteTaskCompletion}
           onViewScope={
             selectedTask.scope === 'asset'
               ? () => { setSelectedAssetId(selectedTask.scopeId); setMode('assetDetail'); }
