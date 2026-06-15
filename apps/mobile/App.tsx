@@ -1354,6 +1354,7 @@ export default function App() {
                   healthScore={appData.healthScore}
                   recentActivity={appData.recentActivity}
                   dueTasks={appData.dueTasks}
+                  warrantyAlerts={appData.assets.filter((a) => a.warrantyExpiringSoon)}
                   onActivityPress={handleHomeActivityPress}
                   onAssetPress={openAssetDetail}
                   onTaskPress={openTaskDetail}

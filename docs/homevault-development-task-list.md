@@ -4,7 +4,7 @@ Last reviewed: 2026-06-14
 
 ## Current State
 
-HomeVault is a working Expo/React Native app with local persistence, demo household data, core household/inventory/documents/maintenance screens, export manifest generation, backup validation, sample restore flow, restore confirmation/audit feedback, export readiness routing, empty states, form validation, Household backup status, demo workspace onboarding, document search/filter, asset duplicate/copy flow, richer asset categories, service history timeline, cost summaries, recurring task generation, snooze controls, repair event entry from maintenance, warranty expiration tracking, asset photo support (camera/library picker), geometric tab icons, accessibility labels, loading/error states, toast feedback, model lookup affordance, in-memory repository tests (13 cases), task utility tests (12 cases), ESLint v9 CI hygiene, and a CI workflow.
+HomeVault is a working Expo/React Native app with local persistence, demo household data, core household/inventory/documents/maintenance screens, export manifest generation, backup validation, sample restore flow, restore confirmation/audit feedback, export readiness routing, empty states, form validation, Household backup status, demo workspace onboarding, document search/filter, asset duplicate/copy flow, richer asset categories, service history timeline, cost summaries, recurring task generation, snooze controls, repair event entry from maintenance, warranty expiration tracking with home dashboard alerts, asset photo support (camera/library picker), geometric tab icons, accessibility labels, loading/error states, toast feedback, model lookup affordance, in-memory repository tests (13 cases), task utility tests (12 cases), ESLint v9 CI hygiene, and a CI workflow.
 
 Current branch: `codex/homevault-stabilization`
 
@@ -88,7 +88,7 @@ Attachment model note:
 - [x] Add backup package version compatibility messaging. *(codex)*
 - [x] Add import error states for malformed JSON, unsupported versions, and partial records. *(codex — covered by errorKind classification in version compatibility slice)*
 - [x] Add tests for checklist action routing and restore confirmation edge cases. *(codex)*
-- [ ] Decide whether backup packages should include copied attachment payloads or references only.
+- [x] Decide whether backup packages should include copied attachment payloads or references only. *(decision: references only for this release — attachment files can be large, the JSON format is not suitable for embedding binary data, and users on the same device always have access to app-owned copies; a zip-bundled backup format is a future feature)*
 
 ## P1: Maintenance Workflow
 
@@ -126,8 +126,11 @@ Attachment model note:
 - [x] Document local development commands in the README. *(codex)*
 - [ ] Decide when to push branch and open a draft PR.
 
-## Suggested Next Three Slices
+## Suggested Next Slices
 
-1. Define and implement real document attachment storage semantics.
-2. Add attachment presence/status filters from export readiness.
-3. Add native export package download support.
+All P0, P1, and P2 engineering tasks are complete. Remaining open questions for the next phase:
+
+1. **Account/sync** — stay local-first for the first usable release, or start backend work now?
+2. **Asset/room delete** — expose delete flows for assets and rooms (currently only documents, tasks, and repairs can be deleted).
+3. **Zip-bundled export** — pack document attachments and asset photos into a zip archive alongside the JSON manifest for true portable backups.
+4. **Onboarding polish** — add first-launch walkthrough or empty-state coach marks before the first household record is added.

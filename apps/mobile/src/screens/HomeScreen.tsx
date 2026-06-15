@@ -20,6 +20,7 @@ type HomeScreenProps = {
   roomCount: number;
   savedCostLabel: string;
   dueTasks: TaskListItem[];
+  warrantyAlerts: AssetListItem[];
   onActivityPress: (activity: HomeActivityItem) => void;
   onAssetPress: (assetId: string) => void;
   onTaskPress: (taskId: string) => void;
@@ -39,6 +40,7 @@ export function HomeScreen({
   roomCount,
   savedCostLabel,
   dueTasks,
+  warrantyAlerts,
   onActivityPress,
   onAssetPress,
   onTaskPress,
@@ -81,6 +83,29 @@ export function HomeScreen({
           <Text style={styles.emptyTitle}>No urgent tasks</Text>
           <Text style={styles.emptyText}>Upcoming work stays in the maintenance list.</Text>
         </View>
+      )}
+
+      {warrantyAlerts.length > 0 && (
+        <>
+          <SectionTitle title="Warranties expiring" action="View all" onActionPress={onViewInventory} />
+          {warrantyAlerts.map((asset) => (
+            <Pressable
+              key={asset.id}
+              onPress={() => onAssetPress(asset.id)}
+              style={styles.warrantyRow}
+              accessibilityRole="button"
+            >
+              <View style={styles.warrantyDot} />
+              <View style={styles.warrantyBody}>
+                <Text style={styles.warrantyTitle}>{asset.name}</Text>
+                <Text style={styles.warrantyMeta}>
+                  {asset.warrantyExpiryLabel ?? 'Expiring soon'} · {asset.roomName}
+                </Text>
+              </View>
+              <Text style={styles.warrantyChevron}>›</Text>
+            </Pressable>
+          ))}
+        </>
       )}
 
       <SectionTitle title="Recent activity" action="View all" onActionPress={onViewServiceHistory} />
@@ -180,6 +205,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
+  },
+  warrantyRow: {
+    backgroundColor: colors.panel,
+    borderColor: colors.amber,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  warrantyDot: {
+    width: 10,
+    borderRadius: 5,
+    alignSelf: 'stretch',
+    backgroundColor: colors.amber,
+  },
+  warrantyBody: {
+    flex: 1,
+    gap: 3,
+  },
+  warrantyTitle: {
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: '900',
+    lineHeight: 19,
+  },
+  warrantyMeta: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 17,
+  },
+  warrantyChevron: {
+    color: colors.muted,
+    fontSize: 18,
+    fontWeight: '500',
   },
   activityRow: {
     backgroundColor: colors.panel,
