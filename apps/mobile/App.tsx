@@ -735,6 +735,24 @@ export default function App() {
     setMode('assetDetail');
   }
 
+  async function handleDeleteAsset(assetId: string) {
+    try {
+      const homeVaultRepository = await getHomeVaultRepository();
+      await homeVaultRepository.deleteAsset(assetId);
+      showToast('Asset deleted', 'error');
+      await loadHomeVault();
+      if (assetReturnTarget === 'roomDetail' && selectedAssetRoom) {
+        setSelectedRoomId(selectedAssetRoom.id);
+        setMode('roomDetail');
+      } else {
+        setActiveTab('inventory');
+        setMode('tabs');
+      }
+    } catch {
+      showToast('Could not delete asset. Please try again.', 'error');
+    }
+  }
+
   function handleHomeActivityPress(activity: HomeActivityItem) {
     if (activity.kind === 'document') {
       setSelectedDocumentId(activity.targetId);
@@ -1272,6 +1290,7 @@ export default function App() {
             setDocumentReturnTarget('assetDetail');
             setMode('documentDetail');
           }}
+          onDelete={() => void handleDeleteAsset(selectedAsset.id)}
           onDuplicate={handleDuplicateAsset}
           onDeleteRepair={handleDeleteRepairEvent}
           onRecordRepair={() => {

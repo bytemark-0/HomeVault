@@ -39,6 +39,7 @@ type AssetDetailScreenProps = {
   onBack: () => void;
   onAddDocument: () => void;
   onAddTask: () => void;
+  onDelete: () => void;
   onDocumentPress: (documentId: string) => void;
   onDuplicate: () => void;
   onEdit: () => void;
@@ -54,6 +55,7 @@ export function AssetDetailScreen({
   onBack,
   onAddDocument,
   onAddTask,
+  onDelete,
   onDocumentPress,
   onDuplicate,
   onEdit,
@@ -269,6 +271,20 @@ export function AssetDetailScreen({
           />
         )}
       </View>
+
+      <View style={styles.dangerPanel}>
+        <Pressable
+          onPress={() => confirmDeleteAsset(asset.name, onDelete)}
+          style={styles.deleteButton}
+          accessibilityRole="button"
+          accessibilityLabel="Delete asset"
+        >
+          <Text style={styles.deleteButtonText}>Delete asset</Text>
+        </Pressable>
+        <Text style={styles.deleteHint}>
+          Deletes this asset along with its tasks and repair history. Documents stay in your library.
+        </Text>
+      </View>
     </ScrollView>
   );
 }
@@ -337,6 +353,17 @@ function EmptyAssetSection({
         <Text style={styles.emptyActionText}>{actionLabel}</Text>
       </Pressable>
     </View>
+  );
+}
+
+function confirmDeleteAsset(name: string, onConfirm: () => void) {
+  Alert.alert(
+    'Delete asset?',
+    `"${name}" and its tasks and repair history will be permanently removed. Documents linked to this asset will remain in your library.`,
+    [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: onConfirm },
+    ],
   );
 }
 
@@ -707,5 +734,34 @@ const styles = StyleSheet.create({
     color: colors.red,
     fontSize: 11,
     fontWeight: '900',
+  },
+  dangerPanel: {
+    borderRadius: 8,
+    borderColor: colors.redSoft,
+    borderWidth: 1,
+    backgroundColor: colors.panel,
+    padding: 14,
+    gap: 10,
+  },
+  deleteButton: {
+    minHeight: 42,
+    borderRadius: 8,
+    borderColor: colors.red,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 16,
+  },
+  deleteButtonText: {
+    color: colors.red,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  deleteHint: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 17,
   },
 });

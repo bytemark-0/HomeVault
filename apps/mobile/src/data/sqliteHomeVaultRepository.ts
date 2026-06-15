@@ -209,6 +209,9 @@ export async function createSQLiteHomeVaultRepository(
     async updateAsset(input) {
       return updateAsset(db, input);
     },
+    async deleteAsset(assetId) {
+      return deleteAsset(db, assetId);
+    },
     async createDocument(input) {
       return createDocument(db, input);
     },
@@ -766,6 +769,23 @@ async function updateAsset(db: SQLiteDatabase, input: UpdateAssetInput): Promise
   );
 
   return input;
+}
+
+async function deleteAsset(db: SQLiteDatabase, assetId: EntityId): Promise<void> {
+  await db.withTransactionAsync(async () => {
+    await db.runAsync(
+      `DELETE FROM task_completions
+       WHERE task_id IN (
+         SELECT id FROM maintenance_tasks WHERE scope = 'asset' AND scope_id = ?
+       )`,
+      [assetId],
+    );
+    await db.runAsync(
+      `DELETE FROM maintenance_tasks WHERE scope = 'asset' AND scope_id = ?`,
+      [assetId],
+    );
+    await db.runAsync('DELETE FROM assets WHERE id = ?', [assetId]);
+  });
 }
 
 async function createDocument(

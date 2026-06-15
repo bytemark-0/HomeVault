@@ -33,6 +33,7 @@ export type HomeVaultRepository = {
   updateRoom(input: UpdateRoomInput): Promise<RoomArea>;
   createAsset(input: CreateAssetInput): Promise<Asset>;
   updateAsset(input: UpdateAssetInput): Promise<Asset>;
+  deleteAsset(assetId: EntityId): Promise<void>;
   createDocument(input: CreateDocumentInput): Promise<DocumentRecord>;
   updateDocument(input: UpdateDocumentInput): Promise<DocumentRecord>;
   deleteDocument(documentId: EntityId): Promise<void>;
@@ -200,6 +201,26 @@ export function createMemoryHomeVaultRepository(
       snapshot.assets[assetIndex] = { ...input };
 
       return { ...input };
+    },
+    async deleteAsset(assetId) {
+      const assetIndex = snapshot.assets.findIndex((asset) => asset.id === assetId);
+
+      if (assetIndex === -1) {
+        throw new Error(`Asset ${assetId} was not found in the local store.`);
+      }
+
+      snapshot.assets.splice(assetIndex, 1);
+
+      const deletedTaskIds = new Set(
+        snapshot.tasks
+          .filter((task) => task.scope === 'asset' && task.scopeId === assetId)
+          .map((task) => task.id),
+      );
+      snapshot.tasks = snapshot.tasks.filter((task) => !deletedTaskIds.has(task.id));
+      snapshot.taskCompletions = snapshot.taskCompletions.filter(
+        (c) => !deletedTaskIds.has(c.taskId),
+      );
+      snapshot.repairEvents = snapshot.repairEvents.filter((r) => r.assetId !== assetId);
     },
     async createDocument(input) {
       const document: DocumentRecord = {
