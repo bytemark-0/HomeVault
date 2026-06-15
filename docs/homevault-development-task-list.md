@@ -112,7 +112,7 @@ Attachment model note:
 
 - [x] Replace letter-only tab icons with real icons. *(codex)*
 - [ ] Tighten mobile layout spacing and text wrapping across small screens.
-- [ ] Add loading, saving, and error states for all async actions.
+- [x] Add loading, saving, and error states for all async actions. *(codex)*
 - [x] Add toast/banner feedback after saves, deletes, exports, and restores. *(codex)*
 - [x] Add accessibility labels for icon-only and compact controls. *(codex)*
 - [ ] Verify with in-app browser screenshots once browser access policy allows it.

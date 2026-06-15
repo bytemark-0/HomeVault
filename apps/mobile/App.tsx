@@ -166,6 +166,7 @@ export default function App() {
   const [copyFromAssetId, setCopyFromAssetId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; kind: 'success' | 'error' | 'info' } | null>(null);
   const [appData, setAppData] = useState<AppData | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const [backupSummary, setBackupSummary] = useState<BackupSummary | null>(null);
   const [restoreSummary, setRestoreSummary] = useState<RestoreSummary | null>(null);
 
@@ -245,10 +246,12 @@ export default function App() {
     let isMounted = true;
 
     async function loadIfMounted() {
-      await loadHomeVault();
-
-      if (!isMounted) {
-        return;
+      try {
+        await loadHomeVault();
+      } catch {
+        if (isMounted) {
+          setLoadError(true);
+        }
       }
     }
 
@@ -260,47 +263,59 @@ export default function App() {
   }, []);
 
   async function handleCreateAsset(input: CreateAssetInput) {
-    const homeVaultRepository = await getHomeVaultRepository();
-    await homeVaultRepository.createAsset(input);
-    await loadHomeVault();
+    try {
+      const homeVaultRepository = await getHomeVaultRepository();
+      await homeVaultRepository.createAsset(input);
+      await loadHomeVault();
 
-    if (mode === 'addRoomAsset' && input.roomId) {
-      setSelectedRoomId(input.roomId);
-      setActiveTab('household');
-      setMode('roomDetail');
-      return;
+      if (mode === 'addRoomAsset' && input.roomId) {
+        setSelectedRoomId(input.roomId);
+        setActiveTab('household');
+        setMode('roomDetail');
+        return;
+      }
+
+      setSelectedRoomId(null);
+      setActiveTab('inventory');
+      setMode('tabs');
+    } catch {
+      showToast('Could not save asset. Please try again.', 'error');
     }
-
-    setSelectedRoomId(null);
-    setActiveTab('inventory');
-    setMode('tabs');
   }
 
   async function handleCreateRoom(input: CreateRoomInput | UpdateRoomInput) {
-    const homeVaultRepository = await getHomeVaultRepository();
+    try {
+      const homeVaultRepository = await getHomeVaultRepository();
 
-    if (input.id) {
-      await homeVaultRepository.updateRoom({ ...input, id: input.id });
-      setSelectedRoomId(input.id);
+      if (input.id) {
+        await homeVaultRepository.updateRoom({ ...input, id: input.id });
+        setSelectedRoomId(input.id);
+        await loadHomeVault();
+        setActiveTab('household');
+        setMode('roomDetail');
+        return;
+      } else {
+        await homeVaultRepository.createRoom(input);
+      }
+
       await loadHomeVault();
       setActiveTab('household');
-      setMode('roomDetail');
-      return;
-    } else {
-      await homeVaultRepository.createRoom(input);
+      setMode('tabs');
+    } catch {
+      showToast('Could not save room. Please try again.', 'error');
     }
-
-    await loadHomeVault();
-    setActiveTab('household');
-    setMode('tabs');
   }
 
   async function handleUpdateProperty(input: UpdatePropertyInput) {
-    const homeVaultRepository = await getHomeVaultRepository();
-    await homeVaultRepository.updateProperty(input);
-    await loadHomeVault();
-    setActiveTab('household');
-    setMode('tabs');
+    try {
+      const homeVaultRepository = await getHomeVaultRepository();
+      await homeVaultRepository.updateProperty(input);
+      await loadHomeVault();
+      setActiveTab('household');
+      setMode('tabs');
+    } catch {
+      showToast('Could not save property. Please try again.', 'error');
+    }
   }
 
   async function handleResetDemoData() {
@@ -425,46 +440,50 @@ export default function App() {
   }
 
   async function handleRestoreBackup(backupPackage: HomeVaultExportPackage) {
-    const homeVaultRepository = await getHomeVaultRepository();
+    try {
+      const homeVaultRepository = await getHomeVaultRepository();
 
-    if (!homeVaultRepository.restoreSnapshot) {
-      return;
+      if (!homeVaultRepository.restoreSnapshot) {
+        return;
+      }
+
+      await homeVaultRepository.restoreSnapshot({
+        properties: [backupPackage.records.property],
+        rooms: backupPackage.records.rooms,
+        assets: backupPackage.records.assets,
+        documents: backupPackage.records.documents,
+        tasks: backupPackage.records.tasks,
+        taskCompletions: backupPackage.records.taskCompletions,
+        repairEvents: backupPackage.records.repairEvents,
+      });
+      await loadHomeVault();
+      setSelectedAssetId(null);
+      setSelectedDocumentId(null);
+      setSelectedRoomId(null);
+      setSelectedTaskId(null);
+      setDocumentLinkTargetId(null);
+      setAssetReturnTarget('inventory');
+      setDocumentReturnTarget('documents');
+      setTaskReturnTarget('maintenance');
+      setBackupSummary({
+        generatedAt: backupPackage.manifest.generatedAt,
+        kind: 'restored',
+        propertyLabel: backupPackage.manifest.property.label,
+        recordCounts: { ...backupPackage.manifest.recordCounts },
+        updatedAt: new Date().toISOString(),
+      });
+      setRestoreSummary({
+        generatedAt: backupPackage.manifest.generatedAt,
+        propertyLabel: backupPackage.manifest.property.label,
+        recordCounts: { ...backupPackage.manifest.recordCounts },
+        restoredAt: new Date().toISOString(),
+      });
+      showToast('Backup restored');
+      setActiveTab('household');
+      setMode('tabs');
+    } catch {
+      showToast('Could not restore backup. Please try again.', 'error');
     }
-
-    await homeVaultRepository.restoreSnapshot({
-      properties: [backupPackage.records.property],
-      rooms: backupPackage.records.rooms,
-      assets: backupPackage.records.assets,
-      documents: backupPackage.records.documents,
-      tasks: backupPackage.records.tasks,
-      taskCompletions: backupPackage.records.taskCompletions,
-      repairEvents: backupPackage.records.repairEvents,
-    });
-    await loadHomeVault();
-    setSelectedAssetId(null);
-    setSelectedDocumentId(null);
-    setSelectedRoomId(null);
-    setSelectedTaskId(null);
-    setDocumentLinkTargetId(null);
-    setAssetReturnTarget('inventory');
-    setDocumentReturnTarget('documents');
-    setTaskReturnTarget('maintenance');
-    setBackupSummary({
-      generatedAt: backupPackage.manifest.generatedAt,
-      kind: 'restored',
-      propertyLabel: backupPackage.manifest.property.label,
-      recordCounts: { ...backupPackage.manifest.recordCounts },
-      updatedAt: new Date().toISOString(),
-    });
-    setRestoreSummary({
-      generatedAt: backupPackage.manifest.generatedAt,
-      propertyLabel: backupPackage.manifest.property.label,
-      recordCounts: { ...backupPackage.manifest.recordCounts },
-      restoredAt: new Date().toISOString(),
-    });
-    showToast('Backup restored');
-    setActiveTab('household');
-    setMode('tabs');
   }
 
   async function handleUpdateAsset(input: CreateAssetInput) {
@@ -472,16 +491,20 @@ export default function App() {
       throw new Error('Cannot update an asset without an id.');
     }
 
-    const homeVaultRepository = await getHomeVaultRepository();
-    await homeVaultRepository.updateAsset({ ...input, id: input.id });
-    await loadHomeVault();
-    setSelectedAssetId(input.id);
+    try {
+      const homeVaultRepository = await getHomeVaultRepository();
+      await homeVaultRepository.updateAsset({ ...input, id: input.id });
+      await loadHomeVault();
+      setSelectedAssetId(input.id);
 
-    if (assetReturnTarget === 'roomDetail') {
-      setSelectedRoomId(input.roomId ?? null);
+      if (assetReturnTarget === 'roomDetail') {
+        setSelectedRoomId(input.roomId ?? null);
+      }
+
+      setMode('assetDetail');
+    } catch {
+      showToast('Could not save asset. Please try again.', 'error');
     }
-
-    setMode('assetDetail');
   }
 
   function openCompleteTask(taskId: string) {
@@ -490,31 +513,35 @@ export default function App() {
   }
 
   async function handleCompleteTask(input: CompleteTaskInput) {
-    const homeVaultRepository = await getHomeVaultRepository();
-    const task = appData?.tasks.find((candidate) => candidate.id === input.taskId);
-    await homeVaultRepository.completeTask(input);
+    try {
+      const homeVaultRepository = await getHomeVaultRepository();
+      const task = appData?.tasks.find((candidate) => candidate.id === input.taskId);
+      await homeVaultRepository.completeTask(input);
 
-    if (task && task.recurrenceKind !== 'one_time') {
-      const nextDueDate = computeNextDueDate(task.recurrenceLabel, input.completedAt);
+      if (task && task.recurrenceKind !== 'one_time') {
+        const nextDueDate = computeNextDueDate(task.recurrenceLabel, input.completedAt);
 
-      if (nextDueDate) {
-        await homeVaultRepository.updateTask({
-          ...task,
-          dueDate: nextDueDate,
-          state: getTaskStateForDate(nextDueDate),
-        });
-        showToast('Task completed — next due date scheduled');
+        if (nextDueDate) {
+          await homeVaultRepository.updateTask({
+            ...task,
+            dueDate: nextDueDate,
+            state: getTaskStateForDate(nextDueDate),
+          });
+          showToast('Task completed — next due date scheduled');
+        } else {
+          showToast('Task completed');
+        }
       } else {
         showToast('Task completed');
       }
-    } else {
-      showToast('Task completed');
-    }
 
-    await loadHomeVault();
-    setSelectedTaskId(input.taskId);
-    setActiveTab('maintenance');
-    setMode('taskDetail');
+      await loadHomeVault();
+      setSelectedTaskId(input.taskId);
+      setActiveTab('maintenance');
+      setMode('taskDetail');
+    } catch {
+      showToast('Could not save completion. Please try again.', 'error');
+    }
   }
 
   function handleSnoozeTask(taskId: string) {
@@ -535,48 +562,56 @@ export default function App() {
       return;
     }
 
-    const homeVaultRepository = await getHomeVaultRepository();
-    await homeVaultRepository.updateTask({
-      ...task,
-      dueDate,
-      state: 'snoozed',
-    });
-    await loadHomeVault();
-    showToast('Task snoozed', 'info');
-    setSelectedTaskId(taskId);
-    setActiveTab('maintenance');
-    setMode('taskDetail');
+    try {
+      const homeVaultRepository = await getHomeVaultRepository();
+      await homeVaultRepository.updateTask({
+        ...task,
+        dueDate,
+        state: 'snoozed',
+      });
+      await loadHomeVault();
+      showToast('Task snoozed', 'info');
+      setSelectedTaskId(taskId);
+      setActiveTab('maintenance');
+      setMode('taskDetail');
+    } catch {
+      showToast('Could not snooze task. Please try again.', 'error');
+    }
   }
 
   async function handleCreateDocument(input: CreateDocumentInput | UpdateDocumentInput) {
-    const homeVaultRepository = await getHomeVaultRepository();
+    try {
+      const homeVaultRepository = await getHomeVaultRepository();
 
-    if (input.id) {
-      await homeVaultRepository.updateDocument({ ...input, id: input.id });
-    } else {
-      await homeVaultRepository.createDocument(input);
+      if (input.id) {
+        await homeVaultRepository.updateDocument({ ...input, id: input.id });
+      } else {
+        await homeVaultRepository.createDocument(input);
+      }
+
+      await loadHomeVault();
+
+      const linkedRoom = appData?.rooms.find((room) => room.id === documentLinkTargetId);
+
+      if (input.id) {
+        setSelectedDocumentId(input.id);
+        setMode('documentDetail');
+      } else if (linkedRoom) {
+        setSelectedRoomId(linkedRoom.id);
+        setActiveTab('household');
+        setMode('roomDetail');
+      } else if (documentLinkTargetId && documentLinkTargetId !== appData?.property.id) {
+        setSelectedAssetId(documentLinkTargetId);
+        setMode('assetDetail');
+      } else {
+        setActiveTab('documents');
+        setMode('tabs');
+      }
+
+      setDocumentLinkTargetId(null);
+    } catch {
+      showToast('Could not save document. Please try again.', 'error');
     }
-
-    await loadHomeVault();
-
-    const linkedRoom = appData?.rooms.find((room) => room.id === documentLinkTargetId);
-
-    if (input.id) {
-      setSelectedDocumentId(input.id);
-      setMode('documentDetail');
-    } else if (linkedRoom) {
-      setSelectedRoomId(linkedRoom.id);
-      setActiveTab('household');
-      setMode('roomDetail');
-    } else if (documentLinkTargetId && documentLinkTargetId !== appData?.property.id) {
-      setSelectedAssetId(documentLinkTargetId);
-      setMode('assetDetail');
-    } else {
-      setActiveTab('documents');
-      setMode('tabs');
-    }
-
-    setDocumentLinkTargetId(null);
   }
 
   async function handleDeleteDocument(documentId: string) {
@@ -602,27 +637,31 @@ export default function App() {
   }
 
   async function handleCreateTask(input: CreateTaskInput) {
-    const homeVaultRepository = await getHomeVaultRepository();
-    const task = await homeVaultRepository.createTask(input);
-    await loadHomeVault();
+    try {
+      const homeVaultRepository = await getHomeVaultRepository();
+      const task = await homeVaultRepository.createTask(input);
+      await loadHomeVault();
 
-    if (mode === 'addRoomTask' && input.scope === 'room') {
-      setSelectedRoomId(input.scopeId);
-      setActiveTab('household');
-      setMode('roomDetail');
-      return;
+      if (mode === 'addRoomTask' && input.scope === 'room') {
+        setSelectedRoomId(input.scopeId);
+        setActiveTab('household');
+        setMode('roomDetail');
+        return;
+      }
+
+      if (mode === 'addAssetTask' && input.scope === 'asset') {
+        setSelectedAssetId(input.scopeId);
+        setSelectedTaskId(task.id);
+        setTaskReturnTarget('assetDetail');
+        setMode('taskDetail');
+        return;
+      }
+
+      setActiveTab('maintenance');
+      setMode('tabs');
+    } catch {
+      showToast('Could not save task. Please try again.', 'error');
     }
-
-    if (mode === 'addAssetTask' && input.scope === 'asset') {
-      setSelectedAssetId(input.scopeId);
-      setSelectedTaskId(task.id);
-      setTaskReturnTarget('assetDetail');
-      setMode('taskDetail');
-      return;
-    }
-
-    setActiveTab('maintenance');
-    setMode('tabs');
   }
 
   async function handleUpdateTask(input: CreateTaskInput | UpdateTaskInput) {
@@ -630,11 +669,15 @@ export default function App() {
       throw new Error('Cannot update a task without an id.');
     }
 
-    const homeVaultRepository = await getHomeVaultRepository();
-    await homeVaultRepository.updateTask({ ...input, id: input.id });
-    await loadHomeVault();
-    setSelectedTaskId(input.id);
-    setMode('taskDetail');
+    try {
+      const homeVaultRepository = await getHomeVaultRepository();
+      await homeVaultRepository.updateTask({ ...input, id: input.id });
+      await loadHomeVault();
+      setSelectedTaskId(input.id);
+      setMode('taskDetail');
+    } catch {
+      showToast('Could not save task. Please try again.', 'error');
+    }
   }
 
   async function handleDeleteTask(taskId: string) {
@@ -660,17 +703,21 @@ export default function App() {
   }
 
   async function handleCreateRepairEvent(input: CreateRepairEventInput) {
-    const homeVaultRepository = await getHomeVaultRepository();
-    await homeVaultRepository.createRepairEvent(input);
-    await loadHomeVault();
-    showToast('Repair recorded');
+    try {
+      const homeVaultRepository = await getHomeVaultRepository();
+      await homeVaultRepository.createRepairEvent(input);
+      await loadHomeVault();
+      showToast('Repair recorded');
 
-    if (repairReturnTarget === 'maintenance') {
-      setMode('tabs');
-      setActiveTab('maintenance');
-    } else {
-      setSelectedAssetId(input.assetId);
-      setMode('assetDetail');
+      if (repairReturnTarget === 'maintenance') {
+        setMode('tabs');
+        setActiveTab('maintenance');
+      } else {
+        setSelectedAssetId(input.assetId);
+        setMode('assetDetail');
+      }
+    } catch {
+      showToast('Could not save repair. Please try again.', 'error');
     }
   }
 
@@ -1386,6 +1433,22 @@ export default function App() {
                 />
               )}
             </>
+          ) : loadError ? (
+            <View style={styles.loadingPanel}>
+              <Text style={styles.loadingTitle}>Could not load data</Text>
+              <Text style={styles.loadingText}>HomeVault could not read your local records.</Text>
+              <Pressable
+                onPress={() => {
+                  setLoadError(false);
+                  loadHomeVault().catch(() => setLoadError(true));
+                }}
+                style={styles.retryButton}
+                accessibilityRole="button"
+                accessibilityLabel="Retry loading"
+              >
+                <Text style={styles.retryButtonText}>Retry</Text>
+              </Pressable>
+            </View>
           ) : (
             <View style={styles.loadingPanel}>
               <Text style={styles.loadingTitle}>Loading HomeVault</Text>
@@ -1489,6 +1552,21 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 13,
     fontWeight: '700',
+  },
+  retryButton: {
+    marginTop: 12,
+    minHeight: 40,
+    borderRadius: 8,
+    backgroundColor: colors.green,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    alignSelf: 'flex-start',
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '900',
   },
   tabBar: {
     minHeight: 74,
