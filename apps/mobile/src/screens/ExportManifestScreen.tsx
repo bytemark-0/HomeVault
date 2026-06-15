@@ -383,7 +383,13 @@ export function ExportManifestScreen({
             label="Repair events"
             value={String(importPreview.recordCounts.repairEvents)}
           />
-          <Text style={styles.subsectionTitle}>Restore comparison</Text>
+          <Text style={styles.subsectionTitle}>Property</Text>
+          <CompareLine
+            label="Home label"
+            currentText={property.label}
+            backupText={importPreview.propertyLabel}
+          />
+          <Text style={styles.subsectionTitle}>Record counts</Text>
           <CompareLine
             label="Rooms & areas"
             currentValue={manifest.recordCounts.rooms}
@@ -414,6 +420,42 @@ export function ExportManifestScreen({
             currentValue={manifest.recordCounts.repairEvents}
             backupValue={importPreview.recordCounts.repairEvents}
           />
+          {validatedPackage?.manifest.coverage ? (
+            <>
+              <Text style={styles.subsectionTitle}>Coverage</Text>
+              <CompareLine
+                label="Documented assets"
+                currentValue={manifest.coverage.documentedAssetCount}
+                backupValue={validatedPackage.manifest.coverage.documentedAssetCount}
+              />
+              <CompareLine
+                label="Attached files"
+                currentValue={manifest.coverage.attachedDocumentCount}
+                backupValue={validatedPackage.manifest.coverage.attachedDocumentCount}
+              />
+              <CompareLine
+                label="Linked documents"
+                currentValue={manifest.coverage.linkedDocumentCount}
+                backupValue={validatedPackage.manifest.coverage.linkedDocumentCount}
+              />
+            </>
+          ) : null}
+          {validatedPackage?.records.assets && validatedPackage.records.assets.length > 0 ? (
+            <>
+              <Text style={styles.subsectionTitle}>Assets in backup</Text>
+              {validatedPackage.records.assets.slice(0, 4).map((asset) => (
+                <View key={asset.id} style={styles.backupAssetRow}>
+                  <Text style={styles.backupAssetName}>{asset.name}</Text>
+                  <Text style={styles.backupAssetMeta}>{asset.category}</Text>
+                </View>
+              ))}
+              {validatedPackage.records.assets.length > 4 ? (
+                <Text style={styles.backupAssetOverflow}>
+                  +{validatedPackage.records.assets.length - 4} more
+                </Text>
+              ) : null}
+            </>
+          ) : null}
           <Text style={styles.subsectionTitle}>Dry-run checklist</Text>
           <View style={styles.restoreChecklist}>
             <RestorePlanRow
@@ -579,15 +621,35 @@ function FixRow({
   );
 }
 
-function CompareLine({
-  label,
-  currentValue,
-  backupValue,
-}: {
-  label: string;
-  currentValue: number;
-  backupValue: number;
-}) {
+function CompareLine(
+  props:
+    | { label: string; currentValue: number; backupValue: number; currentText?: undefined; backupText?: undefined }
+    | { label: string; currentText: string; backupText: string; currentValue?: undefined; backupValue?: undefined },
+) {
+  const { label } = props;
+
+  if (props.currentText !== undefined) {
+    const same = props.currentText === props.backupText;
+
+    return (
+      <View style={styles.compareLine}>
+        <Text style={styles.compareLabel}>{label}</Text>
+        <View style={styles.compareValues}>
+          <Text style={styles.compareValue}>{props.currentText}</Text>
+          <Text style={styles.compareArrow}>→</Text>
+          <Text style={[styles.compareValue, !same && styles.compareValueChanged]}>
+            {props.backupText}
+          </Text>
+          {same ? null : (
+            <Text style={styles.compareDeltaNegative}>Different</Text>
+          )}
+        </View>
+      </View>
+    );
+  }
+
+  const currentValue = props.currentValue ?? 0;
+  const backupValue = props.backupValue ?? 0;
   const delta = backupValue - currentValue;
   const deltaLabel = delta === 0 ? 'No change' : `${delta > 0 ? '+' : ''}${delta}`;
 
@@ -1151,6 +1213,35 @@ const styles = StyleSheet.create({
   },
   compareDeltaPositive: {
     color: colors.green,
+  },
+  compareValueChanged: {
+    color: colors.amber,
+  },
+  backupAssetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+    borderTopColor: colors.line,
+    borderTopWidth: 1,
+    gap: 10,
+  },
+  backupAssetName: {
+    color: colors.ink,
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  backupAssetMeta: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  backupAssetOverflow: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '800',
+    paddingTop: 4,
   },
   restoreChecklist: {
     borderRadius: 8,
