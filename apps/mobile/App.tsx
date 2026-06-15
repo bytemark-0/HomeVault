@@ -1300,6 +1300,14 @@ export default function App() {
           assets={appData.assets}
           rooms={appData.rooms}
           onBack={() => setMode('tabs')}
+          onAssetPress={(assetId) => {
+            openAssetDetail(assetId);
+          }}
+          onRoomPress={(roomId) => {
+            setSelectedRoomId(roomId);
+            setActiveTab('household');
+            setMode('roomDetail');
+          }}
         />
       </SafeAreaView>
     );

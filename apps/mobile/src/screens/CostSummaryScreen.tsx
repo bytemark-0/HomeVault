@@ -17,6 +17,8 @@ type CostSummaryScreenProps = {
   assets: AssetListItem[];
   rooms: RoomListItem[];
   onBack: () => void;
+  onAssetPress?: (assetId: string) => void;
+  onRoomPress?: (roomId: string) => void;
 };
 
 type CostGroup = {
@@ -37,6 +39,8 @@ export function CostSummaryScreen({
   assets,
   rooms,
   onBack,
+  onAssetPress,
+  onRoomPress,
 }: CostSummaryScreenProps) {
   const [dimension, setDimension] = useState<DimensionFilter>('By year');
 
@@ -197,12 +201,15 @@ export function CostSummaryScreen({
         <View style={styles.list}>
           {groups.map((group, index) => {
             const pct = totalCents > 0 ? group.totalCents / totalCents : 0;
-
-            return (
-              <View
-                key={group.id}
-                style={[styles.groupRow, index === groups.length - 1 && styles.groupRowLast]}
-              >
+            const isLast = index === groups.length - 1;
+            const handlePress =
+              dimension === 'By asset' && group.id !== 'unknown' && onAssetPress
+                ? () => onAssetPress(group.id)
+                : dimension === 'By room' && group.id !== 'unknown' && onRoomPress
+                  ? () => onRoomPress(group.id)
+                  : undefined;
+            const rowContent = (
+              <>
                 <View style={styles.groupMeta}>
                   <Text style={styles.groupLabel}>{group.label}</Text>
                   <Text style={styles.groupCount}>
@@ -210,11 +217,33 @@ export function CostSummaryScreen({
                   </Text>
                 </View>
                 <View style={styles.groupRight}>
-                  <Text style={styles.groupTotal}>{group.totalLabel}</Text>
+                  <Text style={[styles.groupTotal, handlePress && styles.groupTotalLink]}>{group.totalLabel}</Text>
                   <View style={styles.barTrack}>
                     <View style={[styles.barFill, { width: `${Math.round(pct * 100)}%` }]} />
                   </View>
                 </View>
+              </>
+            );
+
+            if (handlePress) {
+              return (
+                <Pressable
+                  key={group.id}
+                  onPress={handlePress}
+                  style={[styles.groupRow, isLast && styles.groupRowLast]}
+                  accessibilityRole="button"
+                >
+                  {rowContent}
+                </Pressable>
+              );
+            }
+
+            return (
+              <View
+                key={group.id}
+                style={[styles.groupRow, isLast && styles.groupRowLast]}
+              >
+                {rowContent}
               </View>
             );
           })}
@@ -394,6 +423,9 @@ const styles = StyleSheet.create({
     color: colors.green,
     fontSize: 16,
     fontWeight: '900',
+  },
+  groupTotalLink: {
+    textDecorationLine: 'underline',
   },
   barTrack: {
     width: 80,
