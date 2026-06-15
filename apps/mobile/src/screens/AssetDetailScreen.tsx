@@ -19,6 +19,7 @@ type ServiceItem =
       dateSort: string;
       costLabel: string;
       notes: string | undefined;
+      photoUri: string | undefined;
     }
   | {
       kind: 'repair';
@@ -73,6 +74,7 @@ export function AssetDetailScreen({
       dateSort: c.completedAt,
       costLabel: c.costLabel,
       notes: c.notes,
+      photoUri: c.photoUri,
     })),
     ...repairEvents.map((r) => ({
       kind: 'repair' as const,
@@ -279,6 +281,14 @@ export function AssetDetailScreen({
               ) : null}
               {item.kind === 'maintenance' && item.notes ? (
                 <Text style={styles.serviceDetail}>{item.notes}</Text>
+              ) : null}
+              {item.kind === 'maintenance' && item.photoUri ? (
+                <Image
+                  source={{ uri: item.photoUri }}
+                  style={styles.servicePhoto}
+                  resizeMode="cover"
+                  accessibilityLabel="Completion photo"
+                />
               ) : null}
             </View>
           ))
@@ -762,6 +772,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     lineHeight: 19,
+  },
+  servicePhoto: {
+    width: '100%',
+    height: 150,
+    borderRadius: 6,
+    marginTop: 6,
   },
   serviceRowActions: {
     flexDirection: 'row',

@@ -24,24 +24,30 @@ export function InventoryScreen({ assets, onAddAsset, onAssetPress }: InventoryS
   const filteredAssets = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return assets.filter((asset) => {
-      const matchesRoom = activeRoom === 'All' || asset.roomName === activeRoom;
-      const searchableText = [
-        asset.name,
-        asset.category,
-        asset.roomName,
-        asset.brand ?? '',
-        asset.model ?? '',
-        asset.serial ?? '',
-        asset.notes ?? '',
-        `${asset.documentCount} docs`,
-      ]
-        .join(' ')
-        .toLowerCase();
-      const matchesQuery = normalizedQuery.length === 0 || searchableText.includes(normalizedQuery);
+    return assets
+      .filter((asset) => {
+        const matchesRoom = activeRoom === 'All' || asset.roomName === activeRoom;
+        const searchableText = [
+          asset.name,
+          asset.category,
+          asset.roomName,
+          asset.brand ?? '',
+          asset.model ?? '',
+          asset.serial ?? '',
+          asset.notes ?? '',
+          `${asset.documentCount} docs`,
+        ]
+          .join(' ')
+          .toLowerCase();
+        const matchesQuery = normalizedQuery.length === 0 || searchableText.includes(normalizedQuery);
 
-      return matchesRoom && matchesQuery;
-    });
+        return matchesRoom && matchesQuery;
+      })
+      .sort((a, b) => {
+        if (a.status !== 'ready' && b.status === 'ready') return -1;
+        if (a.status === 'ready' && b.status !== 'ready') return 1;
+        return a.name.localeCompare(b.name);
+      });
   }, [activeRoom, assets, query]);
 
   return (
