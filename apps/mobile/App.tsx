@@ -159,6 +159,8 @@ export default function App() {
     useState<DocumentReturnTarget>('documents');
   const [taskReturnTarget, setTaskReturnTarget] =
     useState<TaskReturnTarget>('maintenance');
+  const [repairReturnTarget, setRepairReturnTarget] =
+    useState<'assetDetail' | 'maintenance'>('assetDetail');
   const [appData, setAppData] = useState<AppData | null>(null);
   const [backupSummary, setBackupSummary] = useState<BackupSummary | null>(null);
   const [restoreSummary, setRestoreSummary] = useState<RestoreSummary | null>(null);
@@ -409,6 +411,7 @@ export default function App() {
     if (firstAsset) {
       setActiveTab('inventory');
       setSelectedAssetId(firstAsset.id);
+      setRepairReturnTarget('assetDetail');
       setMode('addRepairEvent');
       return;
     }
@@ -647,8 +650,14 @@ export default function App() {
     const homeVaultRepository = await getHomeVaultRepository();
     await homeVaultRepository.createRepairEvent(input);
     await loadHomeVault();
-    setSelectedAssetId(input.assetId);
-    setMode('assetDetail');
+
+    if (repairReturnTarget === 'maintenance') {
+      setMode('tabs');
+      setActiveTab('maintenance');
+    } else {
+      setSelectedAssetId(input.assetId);
+      setMode('assetDetail');
+    }
   }
 
   async function handleDeleteRepairEvent(repairEventId: string) {
@@ -916,6 +925,7 @@ export default function App() {
           onRecordRepair={() => {
             if (quickRepairAsset) {
               setSelectedAssetId(quickRepairAsset.id);
+              setRepairReturnTarget('assetDetail');
               setMode('addRepairEvent');
             } else {
               setMode('addAsset');
@@ -1122,13 +1132,21 @@ export default function App() {
     );
   }
 
-  if (mode === 'addRepairEvent' && selectedAsset) {
+  if (mode === 'addRepairEvent' && appData) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <StatusBar style="dark" />
         <AddRepairEventScreen
-          asset={selectedAsset}
-          onCancel={() => setMode('assetDetail')}
+          asset={selectedAsset ?? undefined}
+          assets={appData.assets}
+          propertyId={appData.property.id}
+          onCancel={() => {
+            if (repairReturnTarget === 'maintenance') {
+              setMode('tabs');
+            } else {
+              setMode('assetDetail');
+            }
+          }}
           onSave={handleCreateRepairEvent}
         />
       </SafeAreaView>
@@ -1168,7 +1186,10 @@ export default function App() {
             setMode('documentDetail');
           }}
           onDeleteRepair={handleDeleteRepairEvent}
-          onRecordRepair={() => setMode('addRepairEvent')}
+          onRecordRepair={() => {
+            setRepairReturnTarget('assetDetail');
+            setMode('addRepairEvent');
+          }}
         />
       </SafeAreaView>
     );
@@ -1266,6 +1287,11 @@ export default function App() {
                   tasks={appData.tasks}
                   onAddTask={() => setMode('addTask')}
                   onCompleteTask={openCompleteTask}
+                  onRecordRepair={() => {
+                    setSelectedAssetId(null);
+                    setRepairReturnTarget('maintenance');
+                    setMode('addRepairEvent');
+                  }}
                   onSnoozeTask={handleSnoozeTask}
                   onTaskPress={openTaskDetail}
                 />

@@ -10,6 +10,7 @@ type MaintenanceScreenProps = {
   tasks: TaskListItem[];
   onAddTask: () => void;
   onCompleteTask: (taskId: string) => void;
+  onRecordRepair: () => void;
   onSnoozeTask: (taskId: string) => void;
   onTaskPress: (taskId: string) => void;
 };
@@ -20,6 +21,7 @@ export function MaintenanceScreen({
   tasks,
   onAddTask,
   onCompleteTask,
+  onRecordRepair,
   onSnoozeTask,
   onTaskPress,
 }: MaintenanceScreenProps) {
@@ -87,6 +89,13 @@ export function MaintenanceScreen({
             accessibilityRole="button"
           >
             <Text style={styles.secondaryActionText}>Snooze</Text>
+          </Pressable>
+          <Pressable
+            style={styles.repairAction}
+            onPress={onRecordRepair}
+            accessibilityRole="button"
+          >
+            <Text style={styles.repairActionText}>Repair</Text>
           </Pressable>
         </View>
       </View>
@@ -254,6 +263,21 @@ const styles = StyleSheet.create({
   },
   secondaryActionText: {
     color: colors.blue,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  repairAction: {
+    minHeight: 44,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    borderColor: colors.line,
+    borderWidth: 1,
+    backgroundColor: colors.amberSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  repairActionText: {
+    color: colors.amber,
     fontSize: 14,
     fontWeight: '900',
   },

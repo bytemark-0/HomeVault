@@ -14,7 +14,9 @@ import type { AssetListItem } from '../data/homeVaultSampleData';
 import { colors } from '../theme/colors';
 
 type AddRepairEventScreenProps = {
-  asset: AssetListItem;
+  asset?: AssetListItem;
+  assets: AssetListItem[];
+  propertyId: string;
   onCancel: () => void;
   onSave: (input: CreateRepairEventInput) => Promise<void>;
 };
@@ -28,7 +30,14 @@ type FormState = {
   date: string;
 };
 
-export function AddRepairEventScreen({ asset, onCancel, onSave }: AddRepairEventScreenProps) {
+export function AddRepairEventScreen({
+  asset,
+  assets,
+  propertyId,
+  onCancel,
+  onSave,
+}: AddRepairEventScreenProps) {
+  const [selectedAssetId, setSelectedAssetId] = useState<string | null>(asset?.id ?? null);
   const [form, setForm] = useState<FormState>({
     issue: '',
     provider: '',
@@ -38,8 +47,12 @@ export function AddRepairEventScreen({ asset, onCancel, onSave }: AddRepairEvent
     date: toDateInputValue(new Date()),
   });
   const [isSaving, setIsSaving] = useState(false);
+
+  const resolvedAsset = asset ?? assets.find((a) => a.id === selectedAssetId);
+
   const errors = useMemo(
     () => ({
+      asset: !resolvedAsset ? 'Select an asset.' : undefined,
       issue: form.issue.trim().length === 0 ? 'Issue is required.' : undefined,
       date:
         form.date.trim().length === 0
@@ -52,16 +65,16 @@ export function AddRepairEventScreen({ asset, onCancel, onSave }: AddRepairEvent
           ? 'Enter a valid cost.'
           : undefined,
     }),
-    [form.cost, form.date, form.issue],
+    [form.cost, form.date, form.issue, resolvedAsset],
   );
 
   const canSave = useMemo(
-    () => !errors.issue && !errors.date && !errors.cost && !isSaving,
-    [errors.cost, errors.date, errors.issue, isSaving],
+    () => !errors.asset && !errors.issue && !errors.date && !errors.cost && !isSaving,
+    [errors.asset, errors.cost, errors.date, errors.issue, isSaving],
   );
 
   async function handleSave() {
-    if (!canSave) {
+    if (!canSave || !resolvedAsset) {
       return;
     }
 
@@ -69,8 +82,8 @@ export function AddRepairEventScreen({ asset, onCancel, onSave }: AddRepairEvent
 
     try {
       await onSave({
-        propertyId: asset.propertyId,
-        assetId: asset.id,
+        propertyId,
+        assetId: resolvedAsset.id,
         issue: form.issue.trim(),
         provider: cleanOptional(form.provider),
         diagnosis: cleanOptional(form.diagnosis),
@@ -94,12 +107,46 @@ export function AddRepairEventScreen({ asset, onCancel, onSave }: AddRepairEvent
         <View>
           <Text style={styles.kicker}>Repair history</Text>
           <Text style={styles.title}>Record repair</Text>
-          <Text style={styles.subtitle}>{asset.name}</Text>
+          {resolvedAsset ? (
+            <Text style={styles.subtitle}>{resolvedAsset.name}</Text>
+          ) : null}
         </View>
         <Pressable onPress={onCancel} style={styles.cancelButton} accessibilityRole="button">
           <Text style={styles.cancelText}>Cancel</Text>
         </Pressable>
       </View>
+
+      {!asset && assets.length > 0 ? (
+        <View style={styles.panel}>
+          <Text style={styles.sectionLabel}>Asset</Text>
+          <View style={styles.assetGrid}>
+            {assets.map((a) => {
+              const isSelected = a.id === selectedAssetId;
+
+              return (
+                <Pressable
+                  key={a.id}
+                  onPress={() => setSelectedAssetId(a.id)}
+                  style={[styles.assetPill, isSelected && styles.assetPillActive]}
+                  accessibilityRole="button"
+                >
+                  <Text
+                    style={[styles.assetPillText, isSelected && styles.assetPillTextActive]}
+                    numberOfLines={1}
+                  >
+                    {a.name}
+                  </Text>
+                  {isSelected ? null : (
+                    <Text style={styles.assetPillMeta} numberOfLines={1}>
+                      {a.category}
+                    </Text>
+                  )}
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      ) : null}
 
       <View style={styles.panel}>
         <Field
@@ -297,6 +344,45 @@ const styles = StyleSheet.create({
     backgroundColor: colors.panel,
     padding: 14,
     gap: 14,
+  },
+  sectionLabel: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  assetGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  assetPill: {
+    maxWidth: '48%',
+    minHeight: 44,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderColor: colors.line,
+    borderWidth: 1,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  assetPillActive: {
+    borderColor: colors.green,
+    backgroundColor: colors.greenSoft,
+  },
+  assetPillText: {
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  assetPillTextActive: {
+    color: colors.green,
+  },
+  assetPillMeta: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '700',
   },
   fieldGroup: {
     gap: 7,

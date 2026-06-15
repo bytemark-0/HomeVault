@@ -95,7 +95,7 @@ Attachment model note:
 - [x] Add recurring task generation from completed tasks. *(codex)*
 - [x] Add better snooze controls: date picker, common presets, and reason/note. *(codex)*
 - [x] Add service history timeline by asset and by household. *(codex)*
-- [ ] Add cost summaries by year, room, asset, and category.
+- [x] Add cost summaries by year, room, asset, and category. *(codex)*
 - [ ] Add repair event entry from maintenance history without requiring users to first open an asset.
 - [x] Add task filters for overdue, due soon, snoozed, completed, and assigned. *(codex — All/Urgent/Upcoming/Snoozed/Completed pills already present; assigned N/A in local-only mode)*
 
