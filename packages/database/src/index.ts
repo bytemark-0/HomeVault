@@ -115,7 +115,19 @@ export function createMemoryHomeVaultRepository(
       return snapshot.documents.filter((document) => document.propertyId === propertyId);
     },
     async getTasks(propertyId) {
-      return snapshot.tasks.filter((task) => task.propertyId === propertyId);
+      const today = new Date().toISOString().slice(0, 10);
+
+      return snapshot.tasks
+        .filter((task) => task.propertyId === propertyId)
+        .map((task) => {
+          if (task.state !== 'snoozed' || !task.dueDate || task.dueDate > today) {
+            return task;
+          }
+
+          const state = task.dueDate < today ? 'overdue' : 'due_today';
+
+          return { ...task, state };
+        });
     },
     async getTaskCompletions(propertyId) {
       const taskIds = new Set(
