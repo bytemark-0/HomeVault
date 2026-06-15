@@ -59,6 +59,7 @@ import { DocumentsScreen, type DocumentReviewFilter } from './src/screens/Docume
 import { EditPropertyScreen } from './src/screens/EditPropertyScreen';
 import { ExportManifestScreen } from './src/screens/ExportManifestScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
+import { ServiceHistoryScreen } from './src/screens/ServiceHistoryScreen';
 import { HouseholdScreen } from './src/screens/HouseholdScreen';
 import { InventoryScreen } from './src/screens/InventoryScreen';
 import { MaintenanceScreen } from './src/screens/MaintenanceScreen';
@@ -93,7 +94,8 @@ type AppMode =
   | 'editTask'
   | 'completeTask'
   | 'snoozeTask'
-  | 'addRepairEvent';
+  | 'addRepairEvent'
+  | 'serviceHistory';
 
 const tabs: Array<{ key: TabKey; label: string; icon: string }> = [
   { key: 'home', label: 'Home', icon: 'H' },
@@ -673,6 +675,10 @@ export default function App() {
     setMode('taskDetail');
   }
 
+  function handleViewServiceHistory() {
+    setMode('serviceHistory');
+  }
+
   function openAssetDetail(assetId: string, returnTarget: AssetReturnTarget = 'inventory') {
     setSelectedAssetId(assetId);
     setAssetReturnTarget(returnTarget);
@@ -1076,6 +1082,24 @@ export default function App() {
     );
   }
 
+  if (mode === 'serviceHistory' && appData) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar style="dark" />
+        <ServiceHistoryScreen
+          repairEvents={appData.repairEvents}
+          taskCompletions={appData.taskCompletions}
+          tasks={appData.tasks}
+          assets={appData.assets}
+          onBack={() => setMode('tabs')}
+          onAssetPress={(assetId) => {
+            openAssetDetail(assetId);
+          }}
+        />
+      </SafeAreaView>
+    );
+  }
+
   if (mode === 'addRepairEvent' && selectedAsset) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -1198,6 +1222,7 @@ export default function App() {
                   onTaskPress={openTaskDetail}
                   onViewInventory={() => setActiveTab('inventory')}
                   onViewMaintenance={() => setActiveTab('maintenance')}
+                  onViewServiceHistory={handleViewServiceHistory}
                   recentAssets={appData.recentAssets}
                   roomCount={appData.roomCount}
                   savedCostLabel={appData.savedCostLabel}

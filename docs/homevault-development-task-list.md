@@ -93,7 +93,7 @@ Attachment model note:
 ## P1: Maintenance Workflow
 
 - [x] Add recurring task generation from completed tasks. *(codex)*
-- [ ] Add better snooze controls: date picker, common presets, and reason/note.
+- [x] Add better snooze controls: date picker, common presets, and reason/note. *(codex)*
 - [ ] Add service history timeline by asset and by household.
 - [ ] Add cost summaries by year, room, asset, and category.
 - [ ] Add repair event entry from maintenance history without requiring users to first open an asset.

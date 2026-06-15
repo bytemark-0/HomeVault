@@ -10,6 +10,27 @@ import { formatDocumentAttachmentStatus } from '../data/documentAttachmentLabels
 import { getAssetStatusLabel } from '../data/homeVaultSampleData';
 import { colors } from '../theme/colors';
 
+type ServiceItem =
+  | {
+      kind: 'maintenance';
+      id: string;
+      title: string;
+      dateLabel: string;
+      dateSort: string;
+      costLabel: string;
+      notes: string | undefined;
+    }
+  | {
+      kind: 'repair';
+      id: string;
+      repairId: string;
+      title: string;
+      dateLabel: string;
+      dateSort: string;
+      summaryLabel: string;
+      resolution: string | undefined;
+    };
+
 type AssetDetailScreenProps = {
   asset: AssetListItem;
   documents: AssetDocumentListItem[];
@@ -37,6 +58,28 @@ export function AssetDetailScreen({
   onDeleteRepair,
   onRecordRepair,
 }: AssetDetailScreenProps) {
+  const serviceItems: ServiceItem[] = [
+    ...taskCompletions.map((c) => ({
+      kind: 'maintenance' as const,
+      id: `c-${c.id}`,
+      title: c.taskTitle,
+      dateLabel: c.completedAtLabel,
+      dateSort: c.completedAt,
+      costLabel: c.costLabel,
+      notes: c.notes,
+    })),
+    ...repairEvents.map((r) => ({
+      kind: 'repair' as const,
+      id: `r-${r.id}`,
+      repairId: r.id,
+      title: r.issue,
+      dateLabel: r.dateLabel,
+      dateSort: r.date,
+      summaryLabel: r.summaryLabel,
+      resolution: r.resolution,
+    })),
+  ].sort((a, b) => b.dateSort.localeCompare(a.dateSort));
+
   return (
     <ScrollView
       style={styles.screen}
@@ -137,71 +180,71 @@ export function AssetDetailScreen({
       </View>
 
       <View style={styles.panel}>
-        <Text style={styles.sectionTitle}>Service completions</Text>
-        {taskCompletions.length > 0 ? (
-          taskCompletions.map((completion) => (
-            <View key={completion.id} style={styles.serviceRow}>
-              <View style={styles.serviceRowHeader}>
-                <Text style={styles.serviceTitle}>{completion.taskTitle}</Text>
-                <Text style={styles.serviceDate}>{completion.completedAtLabel}</Text>
-              </View>
-              <Text style={styles.serviceSummary}>{completion.costLabel}</Text>
-              <Text style={styles.serviceDetail}>
-                {completion.notes ?? 'No notes recorded.'}
-              </Text>
-            </View>
-          ))
-        ) : (
-          <EmptyAssetSection
-            title="No service completions"
-            detail="Create a maintenance task for this asset, then complete it to build service history."
-            actionLabel="Add task"
-            onActionPress={onAddTask}
-          />
-        )}
-      </View>
-
-      <View style={styles.panel}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Repair history</Text>
-          <Pressable
-            onPress={onRecordRepair}
-            style={styles.linkButton}
-            accessibilityRole="button"
-          >
-            <Text style={styles.linkButtonText}>Add</Text>
-          </Pressable>
+          <Text style={styles.sectionTitle}>Service history</Text>
+          <View style={styles.sectionActions}>
+            <Pressable onPress={onAddTask} style={styles.linkButton} accessibilityRole="button">
+              <Text style={styles.linkButtonText}>Task</Text>
+            </Pressable>
+            <Pressable onPress={onRecordRepair} style={styles.linkButton} accessibilityRole="button">
+              <Text style={styles.linkButtonText}>Repair</Text>
+            </Pressable>
+          </View>
         </View>
-        {repairEvents.length > 0 ? (
-          repairEvents.map((repairEvent) => (
-            <View key={repairEvent.id} style={styles.repairRow}>
-              <View style={styles.repairRowHeader}>
-                <Text style={styles.repairIssue}>{repairEvent.issue}</Text>
-                <View style={styles.repairActions}>
-                  <Text style={styles.repairDate}>{repairEvent.dateLabel}</Text>
-                  <Pressable
-                    onPress={() =>
-                      confirmDeleteRepair(repairEvent.issue, () => onDeleteRepair(repairEvent.id))
-                    }
-                    style={styles.inlineDangerButton}
-                    accessibilityRole="button"
+        {serviceItems.length > 0 ? (
+          serviceItems.map((item) => (
+            <View key={item.id} style={styles.serviceRow}>
+              <View style={styles.serviceRowHeader}>
+                <View style={styles.serviceRowLeft}>
+                  <View
+                    style={[
+                      styles.kindBadge,
+                      item.kind === 'repair' ? styles.repairBadge : styles.maintenanceBadge,
+                    ]}
                   >
-                    <Text style={styles.inlineDangerText}>Delete</Text>
-                  </Pressable>
+                    <Text
+                      style={[
+                        styles.kindText,
+                        item.kind === 'repair' ? styles.repairText : styles.maintenanceText,
+                      ]}
+                    >
+                      {item.kind === 'repair' ? 'Repair' : 'Maintenance'}
+                    </Text>
+                  </View>
+                  <Text style={styles.serviceTitle}>{item.title}</Text>
+                </View>
+                <View style={styles.serviceRowRight}>
+                  <Text style={styles.serviceDate}>{item.dateLabel}</Text>
+                  {item.kind === 'repair' ? (
+                    <Pressable
+                      onPress={() =>
+                        confirmDeleteRepair(item.title, () => onDeleteRepair(item.repairId))
+                      }
+                      style={styles.inlineDangerButton}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.inlineDangerText}>Delete</Text>
+                    </Pressable>
+                  ) : null}
                 </View>
               </View>
-              <Text style={styles.repairSummary}>{repairEvent.summaryLabel}</Text>
-              {repairEvent.resolution ? (
-                <Text style={styles.repairDetail}>{repairEvent.resolution}</Text>
+              <Text style={styles.serviceSummary}>
+                {item.kind === 'repair' ? item.summaryLabel : item.costLabel}
+              </Text>
+              {item.kind === 'repair' && item.resolution ? (
+                <Text style={styles.serviceDetail}>{item.resolution}</Text>
+              ) : null}
+              {item.kind === 'maintenance' && item.notes ? (
+                <Text style={styles.serviceDetail}>{item.notes}</Text>
               ) : null}
             </View>
           ))
         ) : (
           <EmptyAssetSection
-            title="No repairs recorded"
-            detail="Record one-off repairs, contractor visits, parts, and costs for this asset."
-            actionLabel="Record repair"
-            onActionPress={onRecordRepair}
+            title="No service history"
+            detail="Complete maintenance tasks or record repairs to build a history for this asset."
+            actionLabel="Add task"
+            onActionPress={onAddTask}
           />
         )}
       </View>
@@ -409,6 +452,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '900',
   },
+  sectionActions: {
+    flexDirection: 'row',
+    gap: 6,
+  },
   detailLine: {
     minHeight: 34,
     flexDirection: 'row',
@@ -512,26 +559,57 @@ const styles = StyleSheet.create({
     borderTopColor: colors.line,
     borderTopWidth: 1,
     paddingTop: 12,
-    gap: 5,
+    gap: 6,
   },
   serviceRowHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: 10,
+  },
+  serviceRowLeft: {
+    flex: 1,
+    gap: 5,
+  },
+  serviceRowRight: {
+    alignItems: 'flex-end',
+    gap: 6,
+  },
+  kindBadge: {
+    alignSelf: 'flex-start',
+    minHeight: 22,
+    paddingHorizontal: 7,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  maintenanceBadge: {
+    backgroundColor: colors.greenSoft,
+  },
+  repairBadge: {
+    backgroundColor: colors.amberSoft,
+  },
+  kindText: {
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  maintenanceText: {
+    color: colors.green,
+  },
+  repairText: {
+    color: colors.amber,
   },
   serviceTitle: {
     color: colors.ink,
-    flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '900',
-    lineHeight: 20,
+    lineHeight: 19,
   },
   serviceDate: {
     color: colors.muted,
     fontSize: 12,
     fontWeight: '800',
-    lineHeight: 20,
+    lineHeight: 19,
     textAlign: 'right',
   },
   serviceSummary: {
@@ -545,36 +623,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 19,
   },
-  repairRow: {
-    borderTopColor: colors.line,
-    borderTopWidth: 1,
-    paddingTop: 12,
-    gap: 5,
-  },
-  repairRowHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  repairActions: {
-    alignItems: 'flex-end',
-    gap: 6,
-  },
-  repairIssue: {
-    color: colors.ink,
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '900',
-    lineHeight: 20,
-  },
-  repairDate: {
-    color: colors.muted,
-    fontSize: 12,
-    fontWeight: '800',
-    lineHeight: 20,
-    textAlign: 'right',
-  },
   inlineDangerButton: {
     minHeight: 26,
     paddingHorizontal: 8,
@@ -587,16 +635,5 @@ const styles = StyleSheet.create({
     color: colors.red,
     fontSize: 11,
     fontWeight: '900',
-  },
-  repairSummary: {
-    color: colors.green,
-    fontSize: 13,
-    fontWeight: '900',
-  },
-  repairDetail: {
-    color: colors.muted,
-    fontSize: 13,
-    fontWeight: '700',
-    lineHeight: 19,
   },
 });

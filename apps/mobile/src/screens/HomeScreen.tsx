@@ -25,6 +25,7 @@ type HomeScreenProps = {
   onTaskPress: (taskId: string) => void;
   onViewInventory: () => void;
   onViewMaintenance: () => void;
+  onViewServiceHistory: () => void;
   recentAssets: AssetListItem[];
 };
 
@@ -42,6 +43,7 @@ export function HomeScreen({
   onTaskPress,
   onViewInventory,
   onViewMaintenance,
+  onViewServiceHistory,
   recentAssets,
 }: HomeScreenProps) {
   const heroTitle =
@@ -79,7 +81,7 @@ export function HomeScreen({
         </View>
       )}
 
-      <SectionTitle title="Recent activity" action="Latest" />
+      <SectionTitle title="Recent activity" action="View all" onActionPress={onViewServiceHistory} />
       {recentActivity.length > 0 ? (
         recentActivity.map((activity) => (
           <Pressable
