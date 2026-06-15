@@ -135,6 +135,9 @@ export function AssetDetailScreen({
         {asset.purchaseDate ? (
           <DetailItem label="Purchased" value={formatDateLabel(asset.purchaseDate)} />
         ) : null}
+        {asset.costCents != null ? (
+          <DetailItem label="Purchase cost" value={formatCents(asset.costCents)} />
+        ) : null}
         {asset.warrantyExpiryLabel ? (
           <DetailItem
             label="Warranty expiry"
@@ -388,6 +391,10 @@ function confirmDeleteRepair(issue: string, onConfirm: () => Promise<void>) {
       },
     ],
   );
+}
+
+function formatCents(cents: number) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
 }
 
 function formatDateLabel(isoDate: string) {

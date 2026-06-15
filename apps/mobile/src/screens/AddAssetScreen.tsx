@@ -37,6 +37,7 @@ type FormState = {
   serial: string;
   installDate: string;
   purchaseDate: string;
+  cost: string;
   status: Asset['status'];
   warrantyExpiry: string;
   photoUri: string;
@@ -82,6 +83,7 @@ export function AddAssetScreen({
     serial: copyFrom ? '' : (asset?.serial ?? ''),
     installDate: copyFrom ? '' : (asset?.installDate ?? ''),
     purchaseDate: copyFrom ? '' : (asset?.purchaseDate ?? ''),
+    cost: copyFrom ? '' : (asset?.costCents != null ? String(asset.costCents / 100) : ''),
     status: template?.status ?? 'ready',
     warrantyExpiry: copyFrom ? '' : (asset?.warrantyExpiry ?? ''),
     photoUri: copyFrom ? '' : (asset?.photoUri ?? ''),
@@ -101,12 +103,16 @@ export function AddAssetScreen({
         form.purchaseDate.trim().length > 0 && !datePattern.test(form.purchaseDate.trim())
           ? 'Enter a date as YYYY-MM-DD.'
           : undefined,
+      cost:
+        form.cost.trim().length > 0 && (isNaN(parseFloat(form.cost.trim())) || parseFloat(form.cost.trim()) < 0)
+          ? 'Enter a positive dollar amount.'
+          : undefined,
       warrantyExpiry:
         form.warrantyExpiry.trim().length > 0 && !datePattern.test(form.warrantyExpiry.trim())
           ? 'Enter a date as YYYY-MM-DD.'
           : undefined,
     }),
-    [form.category, form.installDate, form.name, form.purchaseDate, form.warrantyExpiry],
+    [form.category, form.cost, form.installDate, form.name, form.purchaseDate, form.warrantyExpiry],
   );
 
   const canSave = useMemo(
@@ -115,9 +121,10 @@ export function AddAssetScreen({
       !errors.category &&
       !errors.installDate &&
       !errors.purchaseDate &&
+      !errors.cost &&
       !errors.warrantyExpiry &&
       !isSaving,
-    [errors.category, errors.installDate, errors.name, errors.purchaseDate, errors.warrantyExpiry, isSaving],
+    [errors.category, errors.cost, errors.installDate, errors.name, errors.purchaseDate, errors.warrantyExpiry, isSaving],
   );
 
   async function handleSave() {
@@ -139,6 +146,7 @@ export function AddAssetScreen({
         serial: cleanOptional(form.serial),
         installDate: cleanOptional(form.installDate),
         purchaseDate: cleanOptional(form.purchaseDate),
+        costCents: form.cost.trim().length > 0 ? Math.round(parseFloat(form.cost.trim()) * 100) : undefined,
         status: form.status,
         warrantyExpiry: cleanOptional(form.warrantyExpiry),
         photoUri: form.photoUri || undefined,
@@ -303,6 +311,14 @@ export function AddAssetScreen({
           error={errors.purchaseDate}
           onChangeText={(purchaseDate) => setForm((current) => ({ ...current, purchaseDate }))}
         />
+        <Field
+          label="Purchase cost"
+          value={form.cost}
+          placeholder="0.00"
+          error={errors.cost}
+          keyboardType="decimal-pad"
+          onChangeText={(cost) => setForm((current) => ({ ...current, cost }))}
+        />
 
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>Status</Text>
@@ -395,6 +411,7 @@ type FieldProps = {
   onChangeText: (value: string) => void;
   error?: string;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  keyboardType?: 'default' | 'decimal-pad' | 'numeric' | 'email-address';
   multiline?: boolean;
 };
 
@@ -405,6 +422,7 @@ function Field({
   onChangeText,
   error,
   autoCapitalize,
+  keyboardType,
   multiline,
 }: FieldProps) {
   return (
@@ -415,6 +433,7 @@ function Field({
         placeholder={placeholder}
         onChangeText={onChangeText}
         autoCapitalize={autoCapitalize}
+        keyboardType={keyboardType}
         multiline={multiline}
         style={[styles.input, error && styles.inputError, multiline && styles.multilineInput]}
         placeholderTextColor={colors.muted}
