@@ -329,19 +329,24 @@ export function toAssetListItem(
   rooms: RoomArea[],
   documents: DocumentRecord[] = [],
   repairEvents: RepairEvent[] = [],
+  tasks: MaintenanceTask[] = [],
 ): AssetListItem {
   const room = rooms.find((candidate) => candidate.id === asset.roomId);
   const documentCount = documents.filter((document) =>
     document.linkedRecordIds.includes(asset.id),
   ).length;
   const latestRepair = getLatestRepairEvent(asset.id, repairEvents);
+  const nextTask = tasks
+    .filter((task) => task.scope === 'asset' && task.scopeId === asset.id && task.state !== 'completed')
+    .sort((a, b) => (a.dueDate ?? '').localeCompare(b.dueDate ?? ''))
+    .at(0);
 
   return {
     ...asset,
     roomName: room?.name ?? 'Unassigned',
     documentCount,
     lastServiceLabel: latestRepair ? formatRecordDate(latestRepair.date) : 'Not serviced',
-    nextTaskLabel: asset.id === 'asset-hvac' ? 'Replace 20x25x1 filter' : 'No task yet',
+    nextTaskLabel: nextTask?.title ?? 'No open tasks',
     warrantyExpiryLabel: asset.warrantyExpiry ? formatRecordDate(asset.warrantyExpiry) : undefined,
     warrantyExpiringSoon: asset.warrantyExpiry ? isWithin90Days(asset.warrantyExpiry) : false,
   };
