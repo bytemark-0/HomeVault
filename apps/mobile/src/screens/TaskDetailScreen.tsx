@@ -11,6 +11,7 @@ type TaskDetailScreenProps = {
   onDelete: () => Promise<void>;
   onSnooze: (taskId: string) => void;
   onEdit: () => void;
+  onViewScope?: () => void;
 };
 
 export function TaskDetailScreen({
@@ -21,6 +22,7 @@ export function TaskDetailScreen({
   onDelete,
   onSnooze,
   onEdit,
+  onViewScope,
 }: TaskDetailScreenProps) {
   const isCompleted = task.state === 'completed';
 
@@ -85,7 +87,7 @@ export function TaskDetailScreen({
       <View style={styles.detailGrid}>
         <DetailItem label="Due date" value={task.dueDate} />
         <DetailItem label="Repeats" value={task.recurrenceLabel} />
-        <DetailItem label="Scope" value={task.scopeLabel} />
+        <DetailItem label="Scope" value={task.scopeLabel} onPress={onViewScope} />
         <DetailItem label="State" value={formatTaskState(task.state)} />
       </View>
 
@@ -116,13 +118,23 @@ export function TaskDetailScreen({
   );
 }
 
-function DetailItem({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.detailItem}>
+function DetailItem({ label, value, onPress }: { label: string; value: string; onPress?: () => void }) {
+  const content = (
+    <>
       <Text style={styles.detailLabel}>{label}</Text>
-      <Text style={styles.detailValue}>{value}</Text>
-    </View>
+      <Text style={[styles.detailValue, onPress && styles.detailValueLink]}>{value}</Text>
+    </>
   );
+
+  if (onPress) {
+    return (
+      <Pressable style={styles.detailItem} onPress={onPress} accessibilityRole="button">
+        {content}
+      </Pressable>
+    );
+  }
+
+  return <View style={styles.detailItem}>{content}</View>;
 }
 
 function formatTaskState(state: TaskListItem['state']) {
@@ -292,6 +304,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '900',
     lineHeight: 20,
+  },
+  detailValueLink: {
+    color: colors.blue,
+    textDecorationLine: 'underline',
   },
   panel: {
     borderRadius: 8,

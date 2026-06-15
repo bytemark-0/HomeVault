@@ -1345,6 +1345,13 @@ export default function App() {
           onDelete={() => handleDeleteTask(selectedTask.id)}
           onSnooze={handleSnoozeTask}
           onEdit={() => setMode('editTask')}
+          onViewScope={
+            selectedTask.scope === 'asset'
+              ? () => { setSelectedAssetId(selectedTask.scopeId); setMode('assetDetail'); }
+              : selectedTask.scope === 'room'
+                ? () => { setSelectedRoomId(selectedTask.scopeId); setActiveTab('household'); setMode('roomDetail'); }
+                : undefined
+          }
         />
         </SafeAreaView>
       </>
