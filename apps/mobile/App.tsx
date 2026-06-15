@@ -21,6 +21,7 @@ import type {
   UpdateDocumentInput,
   UpdatePropertyInput,
   UpdateRepairEventInput,
+  UpdateTaskCompletionInput,
   UpdateRoomInput,
   UpdateTaskInput,
 } from '@homevault/database';
@@ -103,6 +104,7 @@ type AppMode =
   | 'taskDetail'
   | 'editTask'
   | 'completeTask'
+  | 'editTaskCompletion'
   | 'snoozeTask'
   | 'addRepairEvent'
   | 'editRepairEvent'
@@ -172,6 +174,7 @@ export default function App() {
   const [repairReturnTarget, setRepairReturnTarget] =
     useState<'assetDetail' | 'maintenance'>('assetDetail');
   const [selectedRepairEventId, setSelectedRepairEventId] = useState<string | null>(null);
+  const [selectedCompletionId, setSelectedCompletionId] = useState<string | null>(null);
   const [copyFromAssetId, setCopyFromAssetId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; kind: 'success' | 'error' | 'info' } | null>(null);
   const [appData, setAppData] = useState<AppData | null>(null);
@@ -739,6 +742,18 @@ export default function App() {
       setMode('assetDetail');
     } catch {
       showToast('Could not update repair. Please try again.', 'error');
+    }
+  }
+
+  async function handleUpdateTaskCompletion(input: UpdateTaskCompletionInput) {
+    try {
+      const homeVaultRepository = await getHomeVaultRepository();
+      await homeVaultRepository.updateTaskCompletion(input);
+      await loadHomeVault();
+      showToast('Completion updated');
+      setMode('taskDetail');
+    } catch {
+      showToast('Could not update completion. Please try again.', 'error');
     }
   }
 
@@ -1356,6 +1371,24 @@ export default function App() {
     );
   }
 
+  if (mode === 'editTaskCompletion' && appData && selectedTask && selectedCompletionId) {
+    const completionToEdit = appData.taskCompletions.find((c) => c.id === selectedCompletionId);
+
+    if (completionToEdit) {
+      return (
+        <SafeAreaView style={styles.safeArea}>
+          <StatusBar style="dark" />
+          <CompleteTaskScreen
+            task={selectedTask}
+            completion={completionToEdit}
+            onCancel={() => setMode('taskDetail')}
+            onSave={(input) => handleUpdateTaskCompletion(input as UpdateTaskCompletionInput)}
+          />
+        </SafeAreaView>
+      );
+    }
+  }
+
   if (mode === 'taskDetail' && selectedTask) {
     return (
       <>
@@ -1384,6 +1417,10 @@ export default function App() {
           onDelete={() => handleDeleteTask(selectedTask.id)}
           onSnooze={handleSnoozeTask}
           onEdit={() => setMode('editTask')}
+          onEditCompletion={(completionId) => {
+            setSelectedCompletionId(completionId);
+            setMode('editTaskCompletion');
+          }}
           onViewScope={
             selectedTask.scope === 'asset'
               ? () => { setSelectedAssetId(selectedTask.scopeId); setMode('assetDetail'); }
