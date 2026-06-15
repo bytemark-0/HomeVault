@@ -199,11 +199,17 @@ export function HouseholdScreen({
               </View>
               <View style={styles.roomCounts}>
                 <Text style={styles.readinessValue}>{formatCount(room.assetCount, 'asset')}</Text>
-                <Text style={styles.roomCountMeta}>
-                  {room.activeTaskCount > 0
-                    ? formatCount(room.activeTaskCount, 'task')
-                    : 'No open tasks'}
-                </Text>
+                {room.attentionCount > 0 ? (
+                  <Text style={styles.roomAttentionMeta}>
+                    {formatCount(room.attentionCount, 'needs attention')}
+                  </Text>
+                ) : (
+                  <Text style={styles.roomCountMeta}>
+                    {room.activeTaskCount > 0
+                      ? formatCount(room.activeTaskCount, 'task')
+                      : 'No open tasks'}
+                  </Text>
+                )}
               </View>
             </Pressable>
           ))}
@@ -597,6 +603,11 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 11,
     fontWeight: '700',
+  },
+  roomAttentionMeta: {
+    color: colors.amber,
+    fontSize: 11,
+    fontWeight: '900',
   },
   resetButton: {
     minHeight: 32,
