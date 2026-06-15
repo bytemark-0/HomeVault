@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../theme/colors';
 
@@ -6,15 +6,21 @@ type MetricCardProps = {
   label: string;
   value: string;
   detail: string;
+  onPress?: () => void;
 };
 
-export function MetricCard({ label, value, detail }: MetricCardProps) {
+export function MetricCard({ label, value, detail, onPress }: MetricCardProps) {
   return (
-    <View style={styles.metricCard}>
+    <Pressable
+      style={styles.metricCard}
+      onPress={onPress}
+      disabled={!onPress}
+      accessibilityRole={onPress ? 'button' : 'none'}
+    >
       <Text style={styles.metricValue}>{value}</Text>
       <Text style={styles.metricLabel}>{label}</Text>
       <Text style={styles.metricDetail}>{detail}</Text>
-    </View>
+    </Pressable>
   );
 }
 

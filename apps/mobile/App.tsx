@@ -58,6 +58,7 @@ import { DocumentDetailScreen } from './src/screens/DocumentDetailScreen';
 import { DocumentsScreen, type DocumentReviewFilter } from './src/screens/DocumentsScreen';
 import { EditPropertyScreen } from './src/screens/EditPropertyScreen';
 import { ExportManifestScreen } from './src/screens/ExportManifestScreen';
+import { CostSummaryScreen } from './src/screens/CostSummaryScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { ServiceHistoryScreen } from './src/screens/ServiceHistoryScreen';
 import { HouseholdScreen } from './src/screens/HouseholdScreen';
@@ -95,7 +96,8 @@ type AppMode =
   | 'completeTask'
   | 'snoozeTask'
   | 'addRepairEvent'
-  | 'serviceHistory';
+  | 'serviceHistory'
+  | 'costSummary';
 
 const tabs: Array<{ key: TabKey; label: string; icon: string }> = [
   { key: 'home', label: 'Home', icon: 'H' },
@@ -679,6 +681,10 @@ export default function App() {
     setMode('serviceHistory');
   }
 
+  function handleViewCostSummary() {
+    setMode('costSummary');
+  }
+
   function openAssetDetail(assetId: string, returnTarget: AssetReturnTarget = 'inventory') {
     setSelectedAssetId(assetId);
     setAssetReturnTarget(returnTarget);
@@ -1100,6 +1106,22 @@ export default function App() {
     );
   }
 
+  if (mode === 'costSummary' && appData) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar style="dark" />
+        <CostSummaryScreen
+          repairEvents={appData.repairEvents}
+          taskCompletions={appData.taskCompletions}
+          tasks={appData.tasks}
+          assets={appData.assets}
+          rooms={appData.rooms}
+          onBack={() => setMode('tabs')}
+        />
+      </SafeAreaView>
+    );
+  }
+
   if (mode === 'addRepairEvent' && selectedAsset) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -1220,6 +1242,7 @@ export default function App() {
                   onActivityPress={handleHomeActivityPress}
                   onAssetPress={openAssetDetail}
                   onTaskPress={openTaskDetail}
+                  onViewCostSummary={handleViewCostSummary}
                   onViewInventory={() => setActiveTab('inventory')}
                   onViewMaintenance={() => setActiveTab('maintenance')}
                   onViewServiceHistory={handleViewServiceHistory}
