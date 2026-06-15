@@ -4,11 +4,11 @@ Last reviewed: 2026-06-14
 
 ## Current State
 
-HomeVault is a working Expo/React Native app with local persistence, demo household data, core household/inventory/documents/maintenance screens, export manifest generation, backup validation, sample restore flow, restore confirmation/audit feedback, export readiness routing, empty states, form validation, Household backup status, and demo workspace onboarding.
+HomeVault is a working Expo/React Native app with local persistence, demo household data, core household/inventory/documents/maintenance screens, export manifest generation, backup validation, sample restore flow, restore confirmation/audit feedback, export readiness routing, empty states, form validation, Household backup status, demo workspace onboarding, document search/filter, asset duplicate/copy flow, richer asset categories, service history timeline, cost summaries, recurring task generation, snooze controls, repair event entry from maintenance, warranty expiration tracking, geometric tab icons, accessibility labels, loading/error states, toast feedback, model lookup affordance, in-memory repository tests (13 cases), task utility tests (12 cases), and a CI workflow.
 
 Current branch: `codex/homevault-stabilization`
 
-Latest committed slice before this review: `5f039a3 Explain demo workspace on household`
+Latest slice before this update: `99245ed Extract task utilities and add 12 unit tests`
 
 ## Review Questions
 
