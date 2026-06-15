@@ -134,3 +134,4 @@ All P0, P1, and P2 engineering tasks are complete. Remaining open questions for 
 2. **Room delete** — done. *(codex — deleteRoom cascades through assets, their tasks/completions/repairs; confirmation alert shows asset count; documents preserved)*
 3. **Zip-bundled export** — pack document attachments and asset photos into a zip archive alongside the JSON manifest for true portable backups.
 4. **Onboarding polish** — done. *(codex — Home tab shows a 3-step getting-started card when vault is empty; Household demo banner is hidden once the property label is renamed away from the default; property initials derive from label; asset form shows a hint when no rooms exist yet)*
+5. **Asset lifecycle fields** — done. *(codex — install date (shown with age), purchase date, and purchase cost added to asset form and detail screen; Field gains optional keyboardType prop)*
