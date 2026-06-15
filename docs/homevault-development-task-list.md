@@ -103,7 +103,7 @@ Attachment model note:
 
 - [ ] Add asset photo support.
 - [x] Add warranty-expiration tracking and alerts. *(codex)*
-- [ ] Add model/serial lookup affordances.
+- [x] Add model/serial lookup affordances. *(codex — "Look up" chip on model field opens web search for brand + model)*
 - [x] Add room-level summaries for documents, tasks, assets, and attention items. *(codex)*
 - [x] Add asset duplicate/copy flow for repeated fixtures or appliances. *(codex)*
 - [x] Add richer asset categories and category-specific fields. *(codex — 11 preset categories with custom fallback; domain type remains string for backward compatibility)*
@@ -122,7 +122,7 @@ Attachment model note:
 - [ ] Add screen-level tests for key flows where practical.
 - [ ] Add repository tests for SQLite parity with in-memory repository behavior.
 - [ ] Add linting/formatting scripts if we want stricter CI hygiene.
-- [ ] Add CI workflow for typecheck, tests, and web export.
+- [x] Add CI workflow for typecheck, tests, and web export. *(codex — .github/workflows/ci.yml runs typecheck:packages, typecheck:app, and npm test)*
 - [x] Document local development commands in the README. *(codex)*
 - [ ] Decide when to push branch and open a draft PR.
 

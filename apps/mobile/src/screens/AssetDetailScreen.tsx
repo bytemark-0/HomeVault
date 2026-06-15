@@ -1,4 +1,4 @@
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type {
   AssetDocumentListItem,
@@ -116,7 +116,7 @@ export function AssetDetailScreen({
       <View style={styles.detailGrid}>
         <DetailItem label="Room" value={asset.roomName} />
         <DetailItem label="Brand" value={asset.brand ?? 'Not recorded'} />
-        <DetailItem label="Model" value={asset.model ?? 'Not recorded'} />
+        <ModelDetailItem label="Model" model={asset.model} brand={asset.brand} />
         <DetailItem label="Serial" value={asset.serial ?? 'Not recorded'} />
         {asset.warrantyExpiryLabel ? (
           <DetailItem
@@ -269,6 +269,33 @@ function DetailItem({ label, value }: { label: string; value: string }) {
     <View style={styles.detailItem}>
       <Text style={styles.detailLabel}>{label}</Text>
       <Text style={styles.detailValue}>{value}</Text>
+    </View>
+  );
+}
+
+function ModelDetailItem({ label, model, brand }: { label: string; model?: string; brand?: string }) {
+  function handleLookup() {
+    const query = [brand, model].filter(Boolean).join(' ');
+    const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+    Linking.openURL(url).catch(() => {});
+  }
+
+  return (
+    <View style={styles.detailItem}>
+      <Text style={styles.detailLabel}>{label}</Text>
+      <View style={styles.modelRow}>
+        <Text style={styles.detailValue}>{model ?? 'Not recorded'}</Text>
+        {model ? (
+          <Pressable
+            onPress={handleLookup}
+            style={styles.lookupChip}
+            accessibilityRole="button"
+            accessibilityLabel={`Look up ${model} online`}
+          >
+            <Text style={styles.lookupChipText}>Look up</Text>
+          </Pressable>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -430,6 +457,24 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '900',
     lineHeight: 20,
+  },
+  modelRow: {
+    gap: 6,
+  },
+  lookupChip: {
+    alignSelf: 'flex-start',
+    minHeight: 24,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    borderColor: colors.blue,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lookupChipText: {
+    color: colors.blue,
+    fontSize: 11,
+    fontWeight: '900',
   },
   panel: {
     borderRadius: 8,
