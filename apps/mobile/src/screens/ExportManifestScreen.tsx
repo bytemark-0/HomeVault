@@ -22,6 +22,7 @@ import {
   formatHomeVaultExportManifest,
   formatHomeVaultImportPreview,
   type HomeVaultExportPackage,
+  type HomeVaultExportValidationErrorKind,
   type HomeVaultImportPreview,
   parseHomeVaultExportPackage,
   validateHomeVaultExportPackage,
@@ -71,6 +72,8 @@ export function ExportManifestScreen({
     'idle' | 'sharing' | 'downloaded' | 'unsupported'
   >('idle');
   const [validationResult, setValidationResult] = useState<string | null>(null);
+  const [validationErrorKind, setValidationErrorKind] =
+    useState<HomeVaultExportValidationErrorKind | null>(null);
   const [importPreview, setImportPreview] = useState<HomeVaultImportPreview | null>(null);
   const [validatedPackage, setValidatedPackage] = useState<HomeVaultExportPackage | null>(null);
   const [restoreConfirmText, setRestoreConfirmText] = useState('');
@@ -159,11 +162,13 @@ export function ExportManifestScreen({
       const [asset] = result.assets;
       setImportPreview(null);
       setValidatedPackage(null);
+      setValidationErrorKind(null);
       setRestoreConfirmText('');
 
       if (!asset.file) {
         setOperationState('error');
-        setValidationResult('Backup validation is available for downloaded JSON files in the web preview.');
+        setValidationErrorKind('not_homevault');
+        setValidationResult('Backup validation requires a downloaded JSON file. Try the web preview or pick the file from your device.');
         return;
       }
 
@@ -172,20 +177,23 @@ export function ExportManifestScreen({
       if (parsed.ok) {
         setImportPreview(parsed.preview);
         setValidatedPackage(parsed.package);
+        setValidationErrorKind(null);
         setRestoreConfirmText('');
         setOperationState('ready');
       } else {
         setOperationState('error');
+        setValidationErrorKind(parsed.errorKind);
       }
 
       setValidationResult(
         parsed.ok
           ? `Valid HomeVault backup: ${parsed.summary}.`
-          : `Backup needs review: ${parsed.errors.join(' ')}`,
+          : parsed.errors.join(' '),
       );
     } catch (error) {
       setImportPreview(null);
       setValidatedPackage(null);
+      setValidationErrorKind(null);
       setRestoreConfirmText('');
       setOperationState('error');
       setValidationResult(`Backup validation failed: ${formatErrorMessage(error)}`);
@@ -195,6 +203,7 @@ export function ExportManifestScreen({
   function handleLoadSampleBackup() {
     setImportPreview(null);
     setValidatedPackage(null);
+    setValidationErrorKind(null);
     setRestoreConfirmText('');
     setOperationState('validating');
 
@@ -203,15 +212,17 @@ export function ExportManifestScreen({
     if (parsed.ok) {
       setImportPreview(parsed.preview);
       setValidatedPackage(parsed.package);
+      setValidationErrorKind(null);
       setOperationState('ready');
     } else {
       setOperationState('error');
+      setValidationErrorKind(parsed.errorKind);
     }
 
     setValidationResult(
       parsed.ok
         ? `Sample backup loaded: ${parsed.summary}.`
-        : `Sample backup needs review: ${parsed.errors.join(' ')}`,
+        : parsed.errors.join(' '),
     );
   }
 
@@ -339,6 +350,11 @@ export function ExportManifestScreen({
           <Text style={styles.downloadMeta}>
             {validationResult ?? 'Choose a HomeVault JSON package and check its manifest counts.'}
           </Text>
+          {validationErrorKind ? (
+            <Text style={styles.validationErrorKind}>
+              {formatValidationErrorKind(validationErrorKind)}
+            </Text>
+          ) : null}
           <Text
             style={[
               styles.operationStatus,
@@ -748,6 +764,19 @@ function formatDateTime(value: string) {
   }).format(date);
 }
 
+function formatValidationErrorKind(kind: HomeVaultExportValidationErrorKind) {
+  switch (kind) {
+    case 'not_json':
+      return 'The selected file is not a JSON file. Choose a .json file exported from HomeVault.';
+    case 'not_homevault':
+      return 'This file does not appear to be a HomeVault backup. Choose a file exported from the HomeVault app.';
+    case 'version_unsupported':
+      return 'This backup was created with a newer version of HomeVault. Update the app to restore from this backup.';
+    case 'malformed':
+      return 'The backup file is missing required fields. The file may be corrupted or incomplete.';
+  }
+}
+
 function formatOperationState(state: BackupOperationState) {
   switch (state) {
     case 'validating':
@@ -1020,6 +1049,12 @@ const styles = StyleSheet.create({
   },
   operationStatusReady: {
     color: colors.green,
+  },
+  validationErrorKind: {
+    color: colors.amber,
+    fontSize: 12,
+    fontWeight: '800',
+    lineHeight: 17,
   },
   actionGroup: {
     gap: 8,

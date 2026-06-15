@@ -64,6 +64,12 @@ export type HomeVaultExportAttachment = {
   type: DocumentRecord['type'];
 };
 
+export type HomeVaultExportValidationErrorKind =
+  | 'not_json'
+  | 'not_homevault'
+  | 'version_unsupported'
+  | 'malformed';
+
 export type HomeVaultExportPackageValidation =
   | {
       ok: true;
@@ -73,6 +79,7 @@ export type HomeVaultExportPackageValidation =
     }
   | {
       ok: false;
+      errorKind: HomeVaultExportValidationErrorKind;
       errors: string[];
     };
 
@@ -213,7 +220,7 @@ export function parseHomeVaultExportPackage(
   try {
     parsed = JSON.parse(source);
   } catch {
-    return { ok: false, errors: ['The selected file is not valid JSON.'] };
+    return { ok: false, errorKind: 'not_json', errors: ['The selected file is not valid JSON.'] };
   }
 
   return validateHomeVaultExportPackage(parsed);
@@ -225,7 +232,7 @@ export function validateHomeVaultExportPackage(
   const errors: string[] = [];
 
   if (!isRecord(candidate)) {
-    return { ok: false, errors: ['The package must be a JSON object.'] };
+    return { ok: false, errorKind: 'not_homevault', errors: ['The package must be a JSON object.'] };
   }
 
   const manifest = candidate.manifest;
@@ -245,15 +252,27 @@ export function validateHomeVaultExportPackage(
   }
 
   if (errors.length > 0 || !isRecord(manifest) || !isRecord(records) || !Array.isArray(attachments)) {
-    return { ok: false, errors };
+    return { ok: false, errorKind: 'not_homevault', errors };
   }
 
   if (manifest.app !== 'HomeVault') {
-    errors.push('Manifest app must be HomeVault.');
+    return {
+      ok: false,
+      errorKind: 'not_homevault',
+      errors: ['This file does not appear to be a HomeVault backup.'],
+    };
   }
 
   if (manifest.version !== 1) {
-    errors.push('Only HomeVault export version 1 is supported.');
+    const versionLabel = typeof manifest.version === 'number' ? `version ${manifest.version}` : 'an unknown version';
+
+    return {
+      ok: false,
+      errorKind: 'version_unsupported',
+      errors: [
+        `This backup uses ${versionLabel} of the HomeVault format. Only version 1 is supported by this app. Update HomeVault to restore from this backup.`,
+      ],
+    };
   }
 
   if (!isRecord(manifest.recordCounts)) {
@@ -277,7 +296,7 @@ export function validateHomeVaultExportPackage(
   }
 
   if (errors.length > 0) {
-    return { ok: false, errors };
+    return { ok: false, errorKind: 'malformed', errors };
   }
 
   return {
