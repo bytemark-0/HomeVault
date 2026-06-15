@@ -1190,6 +1190,8 @@ export default function App() {
               {activeTab === 'documents' && (
                 <DocumentsScreen
                   assets={appData.assets}
+                  rooms={appData.rooms}
+                  propertyId={appData.property.id}
                   documents={appData.documents}
                   documentCount={appData.documentCount}
                   reviewFilter={documentReviewFilter}

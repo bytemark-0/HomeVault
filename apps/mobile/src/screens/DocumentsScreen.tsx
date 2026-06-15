@@ -1,15 +1,17 @@
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { SectionTitle } from '../components/SectionTitle';
 import { formatDocumentAttachmentStatus } from '../data/documentAttachmentLabels';
-import type { AssetListItem, DocumentListItem } from '../data/homeVaultSampleData';
+import type { AssetListItem, DocumentListItem, RoomListItem } from '../data/homeVaultSampleData';
 import { colors } from '../theme/colors';
 
 export type DocumentReviewFilter = 'missingAttachments' | 'missingAssetDocumentation';
 
 type DocumentsScreenProps = {
   assets?: AssetListItem[];
+  rooms?: RoomListItem[];
+  propertyId?: string;
   documents: DocumentListItem[];
   documentCount: number;
   reviewFilter?: DocumentReviewFilter | null;
@@ -23,6 +25,8 @@ const typeFilters = ['All', 'Receipt', 'Manual', 'Warranty', 'Invoice', 'Report'
 
 export function DocumentsScreen({
   assets = [],
+  rooms = [],
+  propertyId,
   documents,
   documentCount,
   reviewFilter,
@@ -33,16 +37,42 @@ export function DocumentsScreen({
 }: DocumentsScreenProps) {
   const [query, setQuery] = useState('');
   const [activeType, setActiveType] = useState('All');
+  const [activeLinkedRecordId, setActiveLinkedRecordId] = useState('');
   const missingDocumentAssets = useMemo(
     () => assets.filter((asset) => asset.documentCount === 0),
     [assets],
   );
+
+  const linkedRecordOptions = useMemo(() => {
+    const linkedIds = new Set(documents.flatMap((d) => d.linkedRecordIds));
+    const options: Array<{ id: string; label: string }> = [{ id: '', label: 'All' }];
+
+    for (const asset of assets) {
+      if (linkedIds.has(asset.id)) {
+        options.push({ id: asset.id, label: asset.name });
+      }
+    }
+
+    for (const room of rooms) {
+      if (linkedIds.has(room.id)) {
+        options.push({ id: room.id, label: room.name });
+      }
+    }
+
+    if (propertyId && linkedIds.has(propertyId)) {
+      options.push({ id: propertyId, label: 'Property' });
+    }
+
+    return options;
+  }, [assets, documents, propertyId, rooms]);
 
   const filteredDocuments = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
     return documents.filter((document) => {
       const matchesType = activeType === 'All' || document.typeLabel === activeType;
+      const matchesLinkedRecord =
+        activeLinkedRecordId === '' || document.linkedRecordIds.includes(activeLinkedRecordId);
       const matchesReviewFilter =
         reviewFilter !== 'missingAttachments' || !getDocumentAttachmentUri(document);
       const searchableText = [
@@ -60,9 +90,9 @@ export function DocumentsScreen({
         .toLowerCase();
       const matchesQuery = normalizedQuery.length === 0 || searchableText.includes(normalizedQuery);
 
-      return matchesType && matchesReviewFilter && matchesQuery;
+      return matchesType && matchesLinkedRecord && matchesReviewFilter && matchesQuery;
     });
-  }, [activeType, documents, query, reviewFilter]);
+  }, [activeLinkedRecordId, activeType, documents, query, reviewFilter]);
   const isMissingAssetDocumentationFilter = reviewFilter === 'missingAssetDocumentation';
 
   return (
@@ -116,6 +146,31 @@ export function DocumentsScreen({
           );
         })}
       </View>
+
+      {linkedRecordOptions.length > 1 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.linkedRecordRow}
+        >
+          {linkedRecordOptions.map((option) => {
+            const isActive = option.id === activeLinkedRecordId;
+
+            return (
+              <Pressable
+                key={option.id}
+                onPress={() => setActiveLinkedRecordId(option.id)}
+                style={[styles.filterPill, isActive && styles.filterPillActive]}
+                accessibilityRole="button"
+              >
+                <Text style={[styles.filterText, isActive && styles.filterTextActive]}>
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      )}
 
       <SectionTitle title="Recently added" action="Import" onActionPress={onAddDocument} />
       {isMissingAssetDocumentationFilter ? (
@@ -289,6 +344,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+  },
+  linkedRecordRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingVertical: 2,
   },
   filterPill: {
     minHeight: 34,
