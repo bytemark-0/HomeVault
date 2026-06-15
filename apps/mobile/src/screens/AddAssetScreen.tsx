@@ -35,6 +35,8 @@ type FormState = {
   brand: string;
   model: string;
   serial: string;
+  installDate: string;
+  purchaseDate: string;
   status: Asset['status'];
   warrantyExpiry: string;
   photoUri: string;
@@ -78,27 +80,44 @@ export function AddAssetScreen({
     brand: template?.brand ?? '',
     model: template?.model ?? '',
     serial: copyFrom ? '' : (asset?.serial ?? ''),
+    installDate: copyFrom ? '' : (asset?.installDate ?? ''),
+    purchaseDate: copyFrom ? '' : (asset?.purchaseDate ?? ''),
     status: template?.status ?? 'ready',
     warrantyExpiry: copyFrom ? '' : (asset?.warrantyExpiry ?? ''),
     photoUri: copyFrom ? '' : (asset?.photoUri ?? ''),
     notes: copyFrom ? '' : (asset?.notes ?? ''),
   });
   const [isSaving, setIsSaving] = useState(false);
+  const datePattern = /^\d{4}-\d{2}-\d{2}$/;
   const errors = useMemo(
     () => ({
       name: form.name.trim().length === 0 ? 'Name is required.' : undefined,
       category: form.category.trim().length === 0 ? 'Category is required.' : undefined,
+      installDate:
+        form.installDate.trim().length > 0 && !datePattern.test(form.installDate.trim())
+          ? 'Enter a date as YYYY-MM-DD.'
+          : undefined,
+      purchaseDate:
+        form.purchaseDate.trim().length > 0 && !datePattern.test(form.purchaseDate.trim())
+          ? 'Enter a date as YYYY-MM-DD.'
+          : undefined,
       warrantyExpiry:
-        form.warrantyExpiry.trim().length > 0 && !/^\d{4}-\d{2}-\d{2}$/.test(form.warrantyExpiry.trim())
+        form.warrantyExpiry.trim().length > 0 && !datePattern.test(form.warrantyExpiry.trim())
           ? 'Enter a date as YYYY-MM-DD.'
           : undefined,
     }),
-    [form.category, form.name, form.warrantyExpiry],
+    [form.category, form.installDate, form.name, form.purchaseDate, form.warrantyExpiry],
   );
 
   const canSave = useMemo(
-    () => !errors.name && !errors.category && !errors.warrantyExpiry && !isSaving,
-    [errors.category, errors.name, errors.warrantyExpiry, isSaving],
+    () =>
+      !errors.name &&
+      !errors.category &&
+      !errors.installDate &&
+      !errors.purchaseDate &&
+      !errors.warrantyExpiry &&
+      !isSaving,
+    [errors.category, errors.installDate, errors.name, errors.purchaseDate, errors.warrantyExpiry, isSaving],
   );
 
   async function handleSave() {
@@ -118,6 +137,8 @@ export function AddAssetScreen({
         brand: cleanOptional(form.brand),
         model: cleanOptional(form.model),
         serial: cleanOptional(form.serial),
+        installDate: cleanOptional(form.installDate),
+        purchaseDate: cleanOptional(form.purchaseDate),
         status: form.status,
         warrantyExpiry: cleanOptional(form.warrantyExpiry),
         photoUri: form.photoUri || undefined,
@@ -267,6 +288,20 @@ export function AddAssetScreen({
           placeholder="Serial number"
           autoCapitalize="characters"
           onChangeText={(serial) => setForm((current) => ({ ...current, serial }))}
+        />
+        <Field
+          label="Install date"
+          value={form.installDate}
+          placeholder="YYYY-MM-DD"
+          error={errors.installDate}
+          onChangeText={(installDate) => setForm((current) => ({ ...current, installDate }))}
+        />
+        <Field
+          label="Purchase date"
+          value={form.purchaseDate}
+          placeholder="YYYY-MM-DD"
+          error={errors.purchaseDate}
+          onChangeText={(purchaseDate) => setForm((current) => ({ ...current, purchaseDate }))}
         />
 
         <View style={styles.fieldGroup}>

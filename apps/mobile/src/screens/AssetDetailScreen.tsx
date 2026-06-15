@@ -129,6 +129,12 @@ export function AssetDetailScreen({
         <DetailItem label="Brand" value={asset.brand ?? 'Not recorded'} />
         <ModelDetailItem label="Model" model={asset.model} brand={asset.brand} />
         <DetailItem label="Serial" value={asset.serial ?? 'Not recorded'} />
+        {asset.installDate ? (
+          <DetailItem label="Installed" value={formatDateWithAge(asset.installDate)} />
+        ) : null}
+        {asset.purchaseDate ? (
+          <DetailItem label="Purchased" value={formatDateLabel(asset.purchaseDate)} />
+        ) : null}
         {asset.warrantyExpiryLabel ? (
           <DetailItem
             label="Warranty expiry"
@@ -382,6 +388,23 @@ function confirmDeleteRepair(issue: string, onConfirm: () => Promise<void>) {
       },
     ],
   );
+}
+
+function formatDateLabel(isoDate: string) {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function formatDateWithAge(isoDate: string) {
+  const label = formatDateLabel(isoDate);
+  const [year, month, day] = isoDate.split('-').map(Number);
+  const installed = new Date(year, month - 1, day);
+  const now = new Date();
+  const years = now.getFullYear() - installed.getFullYear() -
+    (now < new Date(now.getFullYear(), installed.getMonth(), installed.getDate()) ? 1 : 0);
+  if (years <= 0) return label;
+  return `${label} · ${years} ${years === 1 ? 'year' : 'years'} old`;
 }
 
 const styles = StyleSheet.create({
