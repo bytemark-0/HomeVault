@@ -44,6 +44,7 @@ type AssetDetailScreenProps = {
   onDuplicate: () => void;
   onEdit: () => void;
   onDeleteRepair: (repairEventId: string) => Promise<void>;
+  onEditRepair: (repairEventId: string) => void;
   onRecordRepair: () => void;
 };
 
@@ -60,6 +61,7 @@ export function AssetDetailScreen({
   onDuplicate,
   onEdit,
   onDeleteRepair,
+  onEditRepair,
   onRecordRepair,
 }: AssetDetailScreenProps) {
   const serviceItems: ServiceItem[] = [
@@ -248,15 +250,24 @@ export function AssetDetailScreen({
                 <View style={styles.serviceRowRight}>
                   <Text style={styles.serviceDate}>{item.dateLabel}</Text>
                   {item.kind === 'repair' ? (
-                    <Pressable
-                      onPress={() =>
-                        confirmDeleteRepair(item.title, () => onDeleteRepair(item.repairId))
-                      }
-                      style={styles.inlineDangerButton}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.inlineDangerText}>Delete</Text>
-                    </Pressable>
+                    <View style={styles.serviceRowActions}>
+                      <Pressable
+                        onPress={() => onEditRepair(item.repairId)}
+                        style={styles.inlineSecondaryButton}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.inlineSecondaryText}>Edit</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() =>
+                          confirmDeleteRepair(item.title, () => onDeleteRepair(item.repairId))
+                        }
+                        style={styles.inlineDangerButton}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.inlineDangerText}>Delete</Text>
+                      </Pressable>
+                    </View>
                   ) : null}
                 </View>
               </View>
@@ -751,6 +762,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     lineHeight: 19,
+  },
+  serviceRowActions: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  inlineSecondaryButton: {
+    minHeight: 26,
+    paddingHorizontal: 8,
+    borderRadius: 7,
+    backgroundColor: colors.panel,
+    borderColor: colors.line,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inlineSecondaryText: {
+    color: colors.blue,
+    fontSize: 11,
+    fontWeight: '900',
   },
   inlineDangerButton: {
     minHeight: 26,

@@ -25,6 +25,7 @@ import type {
   UpdateAssetInput,
   UpdateDocumentInput,
   UpdatePropertyInput,
+  UpdateRepairEventInput,
   UpdateRoomInput,
   UpdateTaskInput,
 } from '@homevault/database';
@@ -237,6 +238,9 @@ export async function createSQLiteHomeVaultRepository(
     },
     async createRepairEvent(input) {
       return createRepairEvent(db, input);
+    },
+    async updateRepairEvent(input) {
+      return updateRepairEvent(db, input);
     },
     async deleteRepairEvent(repairEventId) {
       return deleteRepairEvent(db, repairEventId);
@@ -990,6 +994,30 @@ async function createRepairEvent(
   );
 
   return repairEvent;
+}
+
+async function updateRepairEvent(
+  db: SQLiteDatabase,
+  input: UpdateRepairEventInput,
+): Promise<RepairEvent> {
+  await db.runAsync(
+    `UPDATE repair_events SET
+      issue = ?, provider = ?, diagnosis = ?, resolution = ?,
+      cost_cents = ?, date = ?, document_ids_json = ?
+    WHERE id = ?`,
+    [
+      input.issue,
+      input.provider ?? null,
+      input.diagnosis ?? null,
+      input.resolution ?? null,
+      input.costCents ?? null,
+      input.date,
+      JSON.stringify(input.documentIds),
+      input.id,
+    ],
+  );
+
+  return { ...input, documentIds: [...input.documentIds] };
 }
 
 async function deleteRepairEvent(

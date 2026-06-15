@@ -8,7 +8,8 @@ import {
   View,
 } from 'react-native';
 
-import type { CreateRepairEventInput } from '@homevault/database';
+import type { CreateRepairEventInput, UpdateRepairEventInput } from '@homevault/database';
+import type { RepairEvent } from '@homevault/domain';
 
 import type { AssetListItem } from '../data/homeVaultSampleData';
 import { colors } from '../theme/colors';
@@ -17,8 +18,9 @@ type AddRepairEventScreenProps = {
   asset?: AssetListItem;
   assets: AssetListItem[];
   propertyId: string;
+  repairEvent?: RepairEvent;
   onCancel: () => void;
-  onSave: (input: CreateRepairEventInput) => Promise<void>;
+  onSave: (input: CreateRepairEventInput | UpdateRepairEventInput) => Promise<void>;
 };
 
 type FormState = {
@@ -34,17 +36,19 @@ export function AddRepairEventScreen({
   asset,
   assets,
   propertyId,
+  repairEvent,
   onCancel,
   onSave,
 }: AddRepairEventScreenProps) {
+  const isEditing = repairEvent !== undefined;
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(asset?.id ?? null);
   const [form, setForm] = useState<FormState>({
-    issue: '',
-    provider: '',
-    diagnosis: '',
-    resolution: '',
-    cost: '',
-    date: toDateInputValue(new Date()),
+    issue: repairEvent?.issue ?? '',
+    provider: repairEvent?.provider ?? '',
+    diagnosis: repairEvent?.diagnosis ?? '',
+    resolution: repairEvent?.resolution ?? '',
+    cost: repairEvent?.costCents != null ? String(repairEvent.costCents / 100) : '',
+    date: repairEvent?.date ?? toDateInputValue(new Date()),
   });
   const [isSaving, setIsSaving] = useState(false);
 
@@ -81,17 +85,29 @@ export function AddRepairEventScreen({
     setIsSaving(true);
 
     try {
-      await onSave({
-        propertyId,
-        assetId: resolvedAsset.id,
-        issue: form.issue.trim(),
-        provider: cleanOptional(form.provider),
-        diagnosis: cleanOptional(form.diagnosis),
-        resolution: cleanOptional(form.resolution),
-        costCents: parseAmountCents(form.cost),
-        date: form.date.trim(),
-        documentIds: [],
-      });
+      if (isEditing && repairEvent) {
+        await onSave({
+          ...repairEvent,
+          issue: form.issue.trim(),
+          provider: cleanOptional(form.provider),
+          diagnosis: cleanOptional(form.diagnosis),
+          resolution: cleanOptional(form.resolution),
+          costCents: parseAmountCents(form.cost),
+          date: form.date.trim(),
+        });
+      } else {
+        await onSave({
+          propertyId,
+          assetId: resolvedAsset.id,
+          issue: form.issue.trim(),
+          provider: cleanOptional(form.provider),
+          diagnosis: cleanOptional(form.diagnosis),
+          resolution: cleanOptional(form.resolution),
+          costCents: parseAmountCents(form.cost),
+          date: form.date.trim(),
+          documentIds: [],
+        });
+      }
     } finally {
       setIsSaving(false);
     }
@@ -107,7 +123,7 @@ export function AddRepairEventScreen({
       <View style={styles.header}>
         <View>
           <Text style={styles.kicker}>Repair history</Text>
-          <Text style={styles.title}>Record repair</Text>
+          <Text style={styles.title}>{isEditing ? 'Edit repair' : 'Record repair'}</Text>
           {resolvedAsset ? (
             <Text style={styles.subtitle}>{resolvedAsset.name}</Text>
           ) : null}
@@ -117,7 +133,7 @@ export function AddRepairEventScreen({
         </Pressable>
       </View>
 
-      {!asset && assets.length > 0 ? (
+      {!isEditing && !asset && assets.length > 0 ? (
         <View style={styles.panel}>
           <Text style={styles.sectionLabel}>Asset</Text>
           <View style={styles.assetGrid}>
@@ -200,7 +216,7 @@ export function AddRepairEventScreen({
         style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
         accessibilityRole="button"
       >
-        <Text style={styles.saveText}>{isSaving ? 'Saving' : 'Save repair'}</Text>
+        <Text style={styles.saveText}>{isSaving ? 'Saving' : isEditing ? 'Save changes' : 'Save repair'}</Text>
       </Pressable>
     </ScrollView>
   );

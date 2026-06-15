@@ -20,6 +20,7 @@ import type {
   CompleteTaskInput,
   UpdateDocumentInput,
   UpdatePropertyInput,
+  UpdateRepairEventInput,
   UpdateRoomInput,
   UpdateTaskInput,
 } from '@homevault/database';
@@ -104,6 +105,7 @@ type AppMode =
   | 'completeTask'
   | 'snoozeTask'
   | 'addRepairEvent'
+  | 'editRepairEvent'
   | 'serviceHistory'
   | 'costSummary';
 
@@ -169,6 +171,7 @@ export default function App() {
     useState<TaskReturnTarget>('maintenance');
   const [repairReturnTarget, setRepairReturnTarget] =
     useState<'assetDetail' | 'maintenance'>('assetDetail');
+  const [selectedRepairEventId, setSelectedRepairEventId] = useState<string | null>(null);
   const [copyFromAssetId, setCopyFromAssetId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; kind: 'success' | 'error' | 'info' } | null>(null);
   const [appData, setAppData] = useState<AppData | null>(null);
@@ -727,6 +730,18 @@ export default function App() {
     }
   }
 
+  async function handleUpdateRepairEvent(input: UpdateRepairEventInput) {
+    try {
+      const homeVaultRepository = await getHomeVaultRepository();
+      await homeVaultRepository.updateRepairEvent(input);
+      await loadHomeVault();
+      showToast('Repair updated');
+      setMode('assetDetail');
+    } catch {
+      showToast('Could not update repair. Please try again.', 'error');
+    }
+  }
+
   async function handleDeleteRepairEvent(repairEventId: string) {
     const homeVaultRepository = await getHomeVaultRepository();
     await homeVaultRepository.deleteRepairEvent(repairEventId);
@@ -1249,6 +1264,26 @@ export default function App() {
     );
   }
 
+  if (mode === 'editRepairEvent' && appData && selectedRepairEventId) {
+    const repairEventToEdit = appData.repairEvents.find((r) => r.id === selectedRepairEventId);
+
+    if (repairEventToEdit) {
+      return (
+        <SafeAreaView style={styles.safeArea}>
+          <StatusBar style="dark" />
+          <AddRepairEventScreen
+            asset={selectedAsset ?? undefined}
+            assets={appData.assets}
+            propertyId={appData.property.id}
+            repairEvent={repairEventToEdit}
+            onCancel={() => setMode('assetDetail')}
+            onSave={(input) => handleUpdateRepairEvent(input as UpdateRepairEventInput)}
+          />
+        </SafeAreaView>
+      );
+    }
+  }
+
   if (mode === 'addRepairEvent' && appData) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -1307,6 +1342,10 @@ export default function App() {
           onDelete={() => void handleDeleteAsset(selectedAsset.id)}
           onDuplicate={handleDuplicateAsset}
           onDeleteRepair={handleDeleteRepairEvent}
+          onEditRepair={(repairEventId) => {
+            setSelectedRepairEventId(repairEventId);
+            setMode('editRepairEvent');
+          }}
           onRecordRepair={() => {
             setRepairReturnTarget('assetDetail');
             setMode('addRepairEvent');

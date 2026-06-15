@@ -42,6 +42,7 @@ export type HomeVaultRepository = {
   updateTask(input: UpdateTaskInput): Promise<MaintenanceTask>;
   deleteTask(taskId: EntityId): Promise<void>;
   createRepairEvent(input: CreateRepairEventInput): Promise<RepairEvent>;
+  updateRepairEvent(input: UpdateRepairEventInput): Promise<RepairEvent>;
   deleteRepairEvent(repairEventId: EntityId): Promise<void>;
   completeTask(input: CompleteTaskInput): Promise<TaskCompletion>;
   resetDemoData?(): Promise<void>;
@@ -77,6 +78,8 @@ export type UpdateTaskInput = MaintenanceTask;
 export type CreateRepairEventInput = Omit<RepairEvent, 'id'> & {
   id?: EntityId;
 };
+
+export type UpdateRepairEventInput = RepairEvent;
 
 export type CompleteTaskInput = {
   taskId: EntityId;
@@ -344,6 +347,18 @@ export function createMemoryHomeVaultRepository(
       snapshot.repairEvents.push(repairEvent);
 
       return { ...repairEvent, documentIds: [...repairEvent.documentIds] };
+    },
+    async updateRepairEvent(input) {
+      const index = snapshot.repairEvents.findIndex((r) => r.id === input.id);
+
+      if (index === -1) {
+        throw new Error(`Repair event ${input.id} was not found in the local store.`);
+      }
+
+      const updated: RepairEvent = { ...input, documentIds: [...input.documentIds] };
+      snapshot.repairEvents[index] = updated;
+
+      return { ...updated, documentIds: [...updated.documentIds] };
     },
     async deleteRepairEvent(repairEventId) {
       const repairEventIndex = snapshot.repairEvents.findIndex(
