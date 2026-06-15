@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { getAssetStatusLabel, type AssetListItem } from '../data/homeVaultSampleData';
 import { colors } from '../theme/colors';
@@ -20,7 +20,11 @@ export function AssetRow({ asset, onPress }: AssetRowProps) {
       accessibilityRole={onPress ? 'button' : undefined}
     >
       <View style={styles.assetIcon}>
-        <Text style={styles.assetIconText}>{asset.category.slice(0, 1)}</Text>
+        {asset.photoUri ? (
+          <Image source={{ uri: asset.photoUri }} style={styles.assetPhoto} resizeMode="cover" />
+        ) : (
+          <Text style={styles.assetIconText}>{asset.category.slice(0, 1)}</Text>
+        )}
       </View>
       <View style={styles.rowBody}>
         <View style={styles.rowTitleLine}>
@@ -59,6 +63,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.blueSoft,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  assetPhoto: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
   },
   assetIconText: {
     color: colors.blue,
