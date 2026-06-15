@@ -175,6 +175,8 @@ export default function App() {
     useState<'assetDetail' | 'maintenance'>('assetDetail');
   const [selectedRepairEventId, setSelectedRepairEventId] = useState<string | null>(null);
   const [selectedCompletionId, setSelectedCompletionId] = useState<string | null>(null);
+  const [completionEditReturnTarget, setCompletionEditReturnTarget] =
+    useState<'taskDetail' | 'assetDetail'>('taskDetail');
   const [copyFromAssetId, setCopyFromAssetId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; kind: 'success' | 'error' | 'info' } | null>(null);
   const [appData, setAppData] = useState<AppData | null>(null);
@@ -751,7 +753,7 @@ export default function App() {
       await homeVaultRepository.updateTaskCompletion(input);
       await loadHomeVault();
       showToast('Completion updated');
-      setMode('taskDetail');
+      setMode(completionEditReturnTarget);
     } catch {
       showToast('Could not update completion. Please try again.', 'error');
     }
@@ -1372,6 +1374,16 @@ export default function App() {
             setSelectedRepairEventId(repairEventId);
             setMode('editRepairEvent');
           }}
+          onEditCompletion={(completionId) => {
+            const completion = appData?.taskCompletions.find((c) => c.id === completionId);
+            if (completion) {
+              setSelectedTaskId(completion.taskId);
+              setSelectedCompletionId(completionId);
+              setCompletionEditReturnTarget('assetDetail');
+              setMode('editTaskCompletion');
+            }
+          }}
+          onDeleteCompletion={handleDeleteTaskCompletion}
           onRecordRepair={() => {
             setRepairReturnTarget('assetDetail');
             setMode('addRepairEvent');
@@ -1392,7 +1404,7 @@ export default function App() {
           <CompleteTaskScreen
             task={selectedTask}
             completion={completionToEdit}
-            onCancel={() => setMode('taskDetail')}
+            onCancel={() => setMode(completionEditReturnTarget)}
             onSave={(input) => handleUpdateTaskCompletion(input as UpdateTaskCompletionInput)}
           />
         </SafeAreaView>

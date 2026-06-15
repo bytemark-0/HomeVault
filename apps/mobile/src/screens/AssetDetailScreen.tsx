@@ -14,6 +14,7 @@ type ServiceItem =
   | {
       kind: 'maintenance';
       id: string;
+      completionId: string;
       title: string;
       dateLabel: string;
       dateSort: string;
@@ -46,6 +47,8 @@ type AssetDetailScreenProps = {
   onEdit: () => void;
   onDeleteRepair: (repairEventId: string) => Promise<void>;
   onEditRepair: (repairEventId: string) => void;
+  onEditCompletion: (completionId: string) => void;
+  onDeleteCompletion: (completionId: string) => Promise<void>;
   onRecordRepair: () => void;
 };
 
@@ -63,12 +66,15 @@ export function AssetDetailScreen({
   onEdit,
   onDeleteRepair,
   onEditRepair,
+  onEditCompletion,
+  onDeleteCompletion,
   onRecordRepair,
 }: AssetDetailScreenProps) {
   const serviceItems: ServiceItem[] = [
     ...taskCompletions.map((c) => ({
       kind: 'maintenance' as const,
       id: `c-${c.id}`,
+      completionId: c.id,
       title: c.taskTitle,
       dateLabel: c.completedAtLabel,
       dateSort: c.completedAt,
@@ -270,7 +276,26 @@ export function AssetDetailScreen({
                         <Text style={styles.inlineDangerText}>Delete</Text>
                       </Pressable>
                     </View>
-                  ) : null}
+                  ) : (
+                    <View style={styles.serviceRowActions}>
+                      <Pressable
+                        onPress={() => onEditCompletion(item.completionId)}
+                        style={styles.inlineSecondaryButton}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.inlineSecondaryText}>Edit</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() =>
+                          confirmDeleteCompletion(item.dateLabel, () => onDeleteCompletion(item.completionId))
+                        }
+                        style={styles.inlineDangerButton}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.inlineDangerText}>Delete</Text>
+                      </Pressable>
+                    </View>
+                  )}
                 </View>
               </View>
               <Text style={styles.serviceSummary}>
@@ -393,6 +418,23 @@ function confirmDeleteAsset(name: string, onConfirm: () => void) {
     [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: onConfirm },
+    ],
+  );
+}
+
+function confirmDeleteCompletion(dateLabel: string, onConfirm: () => Promise<void>) {
+  Alert.alert(
+    'Delete completion?',
+    `The completion recorded on ${dateLabel} will be removed.`,
+    [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          void onConfirm();
+        },
+      },
     ],
   );
 }
