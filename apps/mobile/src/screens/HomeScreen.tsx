@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AssetRow } from '../components/AssetRow';
 import { MetricCard } from '../components/MetricCard';
@@ -12,6 +12,7 @@ import type {
 import { colors } from '../theme/colors';
 
 type HomeScreenProps = {
+  propertyPhotoUri?: string;
   activeTasks: number;
   assetCount: number;
   documentCount: number;
@@ -32,6 +33,7 @@ type HomeScreenProps = {
 };
 
 export function HomeScreen({
+  propertyPhotoUri,
   activeTasks,
   assetCount,
   documentCount,
@@ -67,6 +69,15 @@ export function HomeScreen({
           <Text style={styles.scoreLabel}>Score</Text>
         </View>
       </View>
+
+      {propertyPhotoUri ? (
+        <Image
+          source={{ uri: propertyPhotoUri }}
+          style={styles.propertyPhoto}
+          resizeMode="cover"
+          accessibilityLabel="Property photo"
+        />
+      ) : null}
 
       <View style={styles.metricGrid}>
         <MetricCard label="Assets" value={String(assetCount)} detail={`${roomCount} rooms`} />
@@ -232,6 +243,11 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 12,
     fontWeight: '700',
+  },
+  propertyPhoto: {
+    width: '100%',
+    height: 180,
+    borderRadius: 8,
   },
   metricGrid: {
     flexDirection: 'row',

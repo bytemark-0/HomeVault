@@ -1488,6 +1488,7 @@ export default function App() {
             <>
               {activeTab === 'home' && (
                 <HomeScreen
+                  propertyPhotoUri={appData.property.photoUri}
                   activeTasks={appData.activeTaskCount}
                   assetCount={appData.assetCount}
                   documentCount={appData.documentCount}
