@@ -46,6 +46,10 @@ export function formatDocumentAttachmentUri(document: AttachmentSource) {
   return uri ?? 'Metadata only';
 }
 
+export function getDocumentAttachmentUri(document: AttachmentSource): string | null {
+  return document.attachment?.storedUri ?? document.filePath ?? null;
+}
+
 function formatBytes(value: NonNullable<DocumentAttachment['sizeBytes']>) {
   if (value < 1024) {
     return `${value} B`;

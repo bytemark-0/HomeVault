@@ -1,9 +1,10 @@
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import {
   formatDocumentAttachmentDetail,
   formatDocumentAttachmentStatus,
   formatDocumentAttachmentUri,
+  getDocumentAttachmentUri,
 } from '../data/documentAttachmentLabels';
 import type { DocumentListItem } from '../data/homeVaultSampleData';
 import { colors } from '../theme/colors';
@@ -69,6 +70,19 @@ export function DocumentDetailScreen({
         <DetailLine label="Attachment" value={formatDocumentAttachmentStatus(document)} />
         <DetailLine label="File" value={formatDocumentAttachmentDetail(document)} />
         <DetailLine label="Location" value={formatDocumentAttachmentUri(document)} />
+        {getDocumentAttachmentUri(document) ? (
+          <Pressable
+            onPress={() => {
+              const uri = getDocumentAttachmentUri(document);
+              if (uri) void Linking.openURL(uri);
+            }}
+            style={styles.openFileButton}
+            accessibilityRole="button"
+            accessibilityLabel="Open attached file"
+          >
+            <Text style={styles.openFileButtonText}>Open file</Text>
+          </Pressable>
+        ) : null}
       </View>
 
       <View style={styles.panel}>
@@ -184,6 +198,22 @@ const styles = StyleSheet.create({
   },
   dangerButtonText: {
     color: colors.red,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  openFileButton: {
+    alignSelf: 'flex-start',
+    minHeight: 36,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    borderColor: colors.blue,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  openFileButtonText: {
+    color: colors.blue,
     fontSize: 13,
     fontWeight: '900',
   },
