@@ -68,6 +68,7 @@ export type RoomArea = {
   name: string;
   type: 'room' | 'area' | 'exterior' | 'system';
   floor?: string;
+  photoUri?: string;
 };
 
 export type Asset = {

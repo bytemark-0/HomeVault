@@ -51,6 +51,7 @@ type RoomRow = {
   name: string;
   type: RoomArea['type'];
   floor: string | null;
+  photo_uri: string | null;
 };
 
 type AssetRow = {
@@ -281,6 +282,7 @@ async function migrate(db: SQLiteDatabase) {
       name TEXT NOT NULL,
       type TEXT NOT NULL,
       floor TEXT,
+      photo_uri TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       deleted_at TEXT
@@ -377,6 +379,7 @@ async function migrate(db: SQLiteDatabase) {
   `);
 
   await ensureColumn(db, 'documents', 'attachment_json', 'TEXT');
+  await ensureColumn(db, 'rooms', 'photo_uri', 'TEXT');
   await ensureColumn(db, 'properties', 'photo_uri', 'TEXT');
   await ensureColumn(db, 'assets', 'install_date', 'TEXT');
   await ensureColumn(db, 'assets', 'purchase_date', 'TEXT');
@@ -723,9 +726,9 @@ async function createRoom(db: SQLiteDatabase, input: CreateRoomInput): Promise<R
   };
 
   await db.runAsync(
-    `INSERT INTO rooms (id, property_id, name, type, floor)
-     VALUES (?, ?, ?, ?, ?)`,
-    [room.id, room.propertyId, room.name, room.type, room.floor ?? null],
+    `INSERT INTO rooms (id, property_id, name, type, floor, photo_uri)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [room.id, room.propertyId, room.name, room.type, room.floor ?? null, room.photoUri ?? null],
   );
 
   return room;
@@ -737,9 +740,10 @@ async function updateRoom(db: SQLiteDatabase, input: UpdateRoomInput): Promise<R
      SET name = ?,
          type = ?,
          floor = ?,
+         photo_uri = ?,
          updated_at = CURRENT_TIMESTAMP
      WHERE id = ? AND property_id = ?`,
-    [input.name, input.type, input.floor ?? null, input.id, input.propertyId],
+    [input.name, input.type, input.floor ?? null, input.photoUri ?? null, input.id, input.propertyId],
   );
 
   return input;
@@ -1125,6 +1129,7 @@ function toRoom(row: RoomRow): RoomArea {
     name: row.name,
     type: row.type,
     floor: row.floor ?? undefined,
+    photoUri: row.photo_uri ?? undefined,
   };
 }
 

@@ -188,7 +188,10 @@ export function HouseholdScreen({
               style={styles.readinessRow}
               accessibilityRole="button"
             >
-              <View>
+              {room.photoUri ? (
+                <Image source={{ uri: room.photoUri }} style={styles.roomThumb} resizeMode="cover" accessibilityLabel={`Photo of ${room.name}`} />
+              ) : null}
+              <View style={styles.readinessRowBody}>
                 <Text style={styles.readinessLabel}>{room.name}</Text>
                 <Text style={styles.roomMeta}>
                   {formatRoomType(room.type)}{room.floor ? ` · ${room.floor}` : ''}
@@ -534,11 +537,22 @@ const styles = StyleSheet.create({
   readinessRow: {
     minHeight: 50,
     paddingHorizontal: 14,
+    paddingVertical: 8,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
     justifyContent: 'space-between',
     borderBottomColor: colors.line,
     borderBottomWidth: 1,
+  },
+  readinessRowBody: {
+    flex: 1,
+  },
+  roomThumb: {
+    width: 36,
+    height: 36,
+    borderRadius: 6,
+    flexShrink: 0,
   },
   backupStatusRow: {
     minHeight: 72,

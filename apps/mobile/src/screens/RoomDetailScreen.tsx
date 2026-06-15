@@ -1,4 +1,4 @@
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import {
   getAssetStatusLabel,
@@ -67,6 +67,15 @@ export function RoomDetailScreen({
         <Text style={styles.title}>{room.name}</Text>
         <Text style={styles.heroMeta}>{room.floor ?? 'No floor recorded'}</Text>
       </View>
+
+      {room.photoUri ? (
+        <Image
+          source={{ uri: room.photoUri }}
+          style={styles.roomPhoto}
+          resizeMode="cover"
+          accessibilityLabel={`Photo of ${room.name}`}
+        />
+      ) : null}
 
       <View style={styles.metricGrid}>
         <Metric label="Assets" value={String(room.assetCount)} />
@@ -370,6 +379,11 @@ const styles = StyleSheet.create({
     color: colors.greenSoft,
     fontSize: 13,
     fontWeight: '800',
+  },
+  roomPhoto: {
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
   },
   metricGrid: {
     flexDirection: 'row',
