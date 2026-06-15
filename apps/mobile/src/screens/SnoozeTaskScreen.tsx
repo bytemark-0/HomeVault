@@ -82,6 +82,7 @@ export function SnoozeTaskScreen({ task, onCancel, onSave }: SnoozeTaskScreenPro
       style={styles.screen}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
     >
       <View style={styles.header}>
         <View>

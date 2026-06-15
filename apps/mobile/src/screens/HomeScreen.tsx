@@ -56,7 +56,7 @@ export function HomeScreen({
   return (
     <View style={styles.screen}>
       <View style={styles.summaryPanel}>
-        <View>
+        <View style={styles.heroLeft}>
           <Text style={styles.kicker}>Home health</Text>
           <Text style={styles.heroTitle}>{heroTitle}</Text>
         </View>
@@ -146,13 +146,16 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0,
   },
+  heroLeft: {
+    flex: 1,
+    marginRight: 12,
+  },
   heroTitle: {
     color: '#FFFFFF',
     fontSize: 28,
     lineHeight: 34,
     fontWeight: '800',
     letterSpacing: 0,
-    maxWidth: 210,
     marginTop: 12,
   },
   scoreBadge: {

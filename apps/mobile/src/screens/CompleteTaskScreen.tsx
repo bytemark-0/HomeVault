@@ -77,6 +77,7 @@ export function CompleteTaskScreen({ task, onCancel, onSave }: CompleteTaskScree
       style={styles.screen}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
     >
       <View style={styles.header}>
         <View>

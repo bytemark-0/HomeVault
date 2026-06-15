@@ -32,10 +32,10 @@ export function AssetRow({ asset, onPress }: AssetRowProps) {
           </View>
         </View>
         <Text style={styles.rowMeta}>
-          {asset.roomName} · {asset.brand} {asset.model}
+          {[asset.roomName, [asset.brand, asset.model].filter(Boolean).join(' ')].filter(Boolean).join(' · ')}
         </Text>
         <Text style={styles.rowMeta}>
-          Serial {asset.serial} · {asset.documentCount} docs
+          {[asset.serial ? `Serial ${asset.serial}` : null, `${asset.documentCount} doc${asset.documentCount === 1 ? '' : 's'}`].filter(Boolean).join(' · ')}
         </Text>
       </View>
     </Pressable>

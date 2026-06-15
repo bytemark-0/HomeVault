@@ -111,7 +111,7 @@ Attachment model note:
 ## P2: App Polish
 
 - [x] Replace letter-only tab icons with real icons. *(codex)*
-- [ ] Tighten mobile layout spacing and text wrapping across small screens.
+- [x] Tighten mobile layout spacing and text wrapping across small screens. *(codex — flex hero layout replacing hardcoded maxWidth, conditional brand/model/serial in AssetRow, keyboardShouldPersistTaps on all form screens)*
 - [x] Add loading, saving, and error states for all async actions. *(codex)*
 - [x] Add toast/banner feedback after saves, deletes, exports, and restores. *(codex)*
 - [x] Add accessibility labels for icon-only and compact controls. *(codex)*
