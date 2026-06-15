@@ -68,8 +68,9 @@ export function RoomDetailScreen({
 
       <View style={styles.metricGrid}>
         <Metric label="Assets" value={String(room.assetCount)} />
+        <Metric label="Documents" value={String(documents.length)} />
         <Metric label="Open tasks" value={String(room.activeTaskCount)} />
-        <Metric label="Needs attention" value={String(room.attentionCount)} />
+        <Metric label="Attention" value={String(room.attentionCount)} />
       </View>
 
       <View style={styles.panel}>
@@ -337,10 +338,11 @@ const styles = StyleSheet.create({
   },
   metricGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
   },
   metricCard: {
-    flex: 1,
+    width: '48.6%',
     minHeight: 76,
     borderRadius: 8,
     borderColor: colors.line,

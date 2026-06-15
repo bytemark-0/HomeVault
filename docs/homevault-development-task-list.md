@@ -96,7 +96,7 @@ Attachment model note:
 - [x] Add better snooze controls: date picker, common presets, and reason/note. *(codex)*
 - [x] Add service history timeline by asset and by household. *(codex)*
 - [x] Add cost summaries by year, room, asset, and category. *(codex)*
-- [ ] Add repair event entry from maintenance history without requiring users to first open an asset.
+- [x] Add repair event entry from maintenance history without requiring users to first open an asset. *(codex)*
 - [x] Add task filters for overdue, due soon, snoozed, completed, and assigned. *(codex — All/Urgent/Upcoming/Snoozed/Completed pills already present; assigned N/A in local-only mode)*
 
 ## P2: Inventory And Household Depth
@@ -104,7 +104,7 @@ Attachment model note:
 - [ ] Add asset photo support.
 - [ ] Add warranty-expiration tracking and alerts.
 - [ ] Add model/serial lookup affordances.
-- [ ] Add room-level summaries for documents, tasks, assets, and attention items.
+- [x] Add room-level summaries for documents, tasks, assets, and attention items. *(codex)*
 - [ ] Add asset duplicate/copy flow for repeated fixtures or appliances.
 - [ ] Add richer asset categories and category-specific fields.
 
