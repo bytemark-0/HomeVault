@@ -10,7 +10,7 @@ type MaintenanceScreenProps = {
   tasks: TaskListItem[];
   onAddTask: () => void;
   onCompleteTask: (taskId: string) => void;
-  onSnoozeTask: (taskId: string) => Promise<void>;
+  onSnoozeTask: (taskId: string) => void;
   onTaskPress: (taskId: string) => void;
 };
 
@@ -81,7 +81,7 @@ export function MaintenanceScreen({
             disabled={!focusTask}
             onPress={() => {
               if (focusTask) {
-                void onSnoozeTask(focusTask.id);
+                onSnoozeTask(focusTask.id);
               }
             }}
             accessibilityRole="button"

@@ -92,12 +92,12 @@ Attachment model note:
 
 ## P1: Maintenance Workflow
 
-- [ ] Add recurring task generation from completed tasks.
+- [x] Add recurring task generation from completed tasks. *(codex)*
 - [ ] Add better snooze controls: date picker, common presets, and reason/note.
 - [ ] Add service history timeline by asset and by household.
 - [ ] Add cost summaries by year, room, asset, and category.
 - [ ] Add repair event entry from maintenance history without requiring users to first open an asset.
-- [ ] Add task filters for overdue, due soon, snoozed, completed, and assigned.
+- [x] Add task filters for overdue, due soon, snoozed, completed, and assigned. *(codex — All/Urgent/Upcoming/Snoozed/Completed pills already present; assigned N/A in local-only mode)*
 
 ## P2: Inventory And Household Depth
 

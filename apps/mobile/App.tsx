@@ -53,6 +53,7 @@ import { AddRoomScreen } from './src/screens/AddRoomScreen';
 import { AddTaskScreen } from './src/screens/AddTaskScreen';
 import { AssetDetailScreen } from './src/screens/AssetDetailScreen';
 import { CompleteTaskScreen } from './src/screens/CompleteTaskScreen';
+import { SnoozeTaskScreen } from './src/screens/SnoozeTaskScreen';
 import { DocumentDetailScreen } from './src/screens/DocumentDetailScreen';
 import { DocumentsScreen, type DocumentReviewFilter } from './src/screens/DocumentsScreen';
 import { EditPropertyScreen } from './src/screens/EditPropertyScreen';
@@ -91,6 +92,7 @@ type AppMode =
   | 'taskDetail'
   | 'editTask'
   | 'completeTask'
+  | 'snoozeTask'
   | 'addRepairEvent';
 
 const tabs: Array<{ key: TabKey; label: string; icon: string }> = [
@@ -498,28 +500,34 @@ export default function App() {
     setMode('taskDetail');
   }
 
-  async function handleSnoozeTask(taskId: string) {
+  function handleSnoozeTask(taskId: string) {
     const task = appData?.tasks.find((candidate) => candidate.id === taskId);
 
     if (!task || task.state === 'completed') {
       return;
     }
 
-    const homeVaultRepository = await getHomeVaultRepository();
-    const snoozedTask: UpdateTaskInput = {
-      ...task,
-      dueDate: addDaysToDateInput(new Date(), 7),
-      state: 'snoozed',
-    };
+    setSelectedTaskId(taskId);
+    setMode('snoozeTask');
+  }
 
-    await homeVaultRepository.updateTask(snoozedTask);
+  async function handleSaveSnooze(taskId: string, dueDate: string) {
+    const task = appData?.tasks.find((candidate) => candidate.id === taskId);
+
+    if (!task) {
+      return;
+    }
+
+    const homeVaultRepository = await getHomeVaultRepository();
+    await homeVaultRepository.updateTask({
+      ...task,
+      dueDate,
+      state: 'snoozed',
+    });
     await loadHomeVault();
     setSelectedTaskId(taskId);
     setActiveTab('maintenance');
-
-    if (mode !== 'taskDetail') {
-      setMode('tabs');
-    }
+    setMode('taskDetail');
   }
 
   async function handleCreateDocument(input: CreateDocumentInput | UpdateDocumentInput) {
@@ -1050,6 +1058,19 @@ export default function App() {
           task={selectedTask}
           onCancel={() => setMode('taskDetail')}
           onSave={handleCompleteTask}
+        />
+      </SafeAreaView>
+    );
+  }
+
+  if (mode === 'snoozeTask' && selectedTask) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar style="dark" />
+        <SnoozeTaskScreen
+          task={selectedTask}
+          onCancel={() => setMode('taskDetail')}
+          onSave={handleSaveSnooze}
         />
       </SafeAreaView>
     );

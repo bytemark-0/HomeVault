@@ -9,7 +9,7 @@ type TaskDetailScreenProps = {
   onBack: () => void;
   onComplete: (taskId: string) => void;
   onDelete: () => Promise<void>;
-  onSnooze: (taskId: string) => Promise<void>;
+  onSnooze: (taskId: string) => void;
   onEdit: () => void;
 };
 
@@ -59,7 +59,7 @@ export function TaskDetailScreen({
           <Pressable
             onPress={() => {
               if (!isCompleted) {
-                void onSnooze(task.id);
+                onSnooze(task.id);
               }
             }}
             disabled={isCompleted}
