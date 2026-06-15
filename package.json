@@ -10,7 +10,7 @@
     "fixtures:backup": "tsc -p tsconfig.tests.json && node /private/tmp/homevault-package-tests/scripts/generateSampleBackup.js",
     "mobile": "npm run start --workspace=apps/mobile",
     "test": "npm run test:packages",
-    "test:packages": "tsc -p tsconfig.tests.json && node /private/tmp/homevault-package-tests/scripts/generateSampleBackup.js && node /private/tmp/homevault-package-tests/tests/exportPackage.test.js",
+    "test:packages": "tsc -p tsconfig.tests.json && node /private/tmp/homevault-package-tests/scripts/generateSampleBackup.js && node /private/tmp/homevault-package-tests/tests/exportPackage.test.js && node /private/tmp/homevault-package-tests/tests/repository.test.js",
     "typecheck": "npm run typecheck:packages && npm run typecheck --workspace=apps/mobile",
     "typecheck:app": "npm run typecheck --workspace=apps/mobile",
     "typecheck:packages": "tsc --noEmit -p tsconfig.packages.json"
