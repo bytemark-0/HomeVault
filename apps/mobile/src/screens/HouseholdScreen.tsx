@@ -12,6 +12,7 @@ type HouseholdScreenProps = {
   backupSummary?: BackupSummary;
   documentCount: number;
   documentedAssetCount: number;
+  isDemo: boolean;
   linkedDocumentCount: number;
   property: Property;
   restoreSummary?: RestoreSummary;
@@ -60,6 +61,7 @@ export function HouseholdScreen({
   backupSummary,
   documentCount,
   documentedAssetCount,
+  isDemo,
   linkedDocumentCount,
   property,
   restoreSummary,
@@ -92,27 +94,29 @@ export function HouseholdScreen({
         </Text>
       </View>
 
-      <View style={styles.demoPanel}>
-        <View style={styles.demoBody}>
-          <Text style={styles.demoTitle}>Demo workspace</Text>
-          <Text style={styles.demoText}>
-            These seeded records stay local to this preview. Rename the home and replace sample areas,
-            assets, documents, and tasks with your own household records.
-          </Text>
+      {isDemo ? (
+        <View style={styles.demoPanel}>
+          <View style={styles.demoBody}>
+            <Text style={styles.demoTitle}>Demo workspace</Text>
+            <Text style={styles.demoText}>
+              These seeded records stay local to this preview. Rename the home and replace sample areas,
+              assets, documents, and tasks with your own household records.
+            </Text>
+          </View>
+          <View style={styles.demoActions}>
+            <Pressable onPress={onEditProperty} style={styles.demoPrimaryAction} accessibilityRole="button">
+              <Text style={styles.demoPrimaryActionText}>Edit home</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => confirmResetDemoData(onResetDemoData)}
+              style={styles.demoSecondaryAction}
+              accessibilityRole="button"
+            >
+              <Text style={styles.demoSecondaryActionText}>Reset demo</Text>
+            </Pressable>
+          </View>
         </View>
-        <View style={styles.demoActions}>
-          <Pressable onPress={onEditProperty} style={styles.demoPrimaryAction} accessibilityRole="button">
-            <Text style={styles.demoPrimaryActionText}>Edit home</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => confirmResetDemoData(onResetDemoData)}
-            style={styles.demoSecondaryAction}
-            accessibilityRole="button"
-          >
-            <Text style={styles.demoSecondaryActionText}>Reset demo</Text>
-          </Pressable>
-        </View>
-      </View>
+      ) : null}
 
       {restoreSummary ? (
         <View style={styles.noticePanel}>

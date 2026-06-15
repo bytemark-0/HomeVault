@@ -133,4 +133,4 @@ All P0, P1, and P2 engineering tasks are complete. Remaining open questions for 
 1. **Account/sync** — stay local-first for the first usable release, or start backend work now?
 2. **Room delete** — done. *(codex — deleteRoom cascades through assets, their tasks/completions/repairs; confirmation alert shows asset count; documents preserved)*
 3. **Zip-bundled export** — pack document attachments and asset photos into a zip archive alongside the JSON manifest for true portable backups.
-4. **Onboarding polish** — add first-launch walkthrough or empty-state coach marks before the first household record is added.
+4. **Onboarding polish** — add first-launch walkthrough or empty-state coach marks before the first household record is added. *(codex — Home tab shows a 3-step getting-started card when vault is empty; Household demo banner is hidden once the property label is renamed away from the default)*

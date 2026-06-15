@@ -1458,6 +1458,7 @@ export default function App() {
                   documentedAssetCount={documentedAssetCount}
                   linkedDocumentCount={linkedDocumentCount}
                   backupSummary={backupSummary ?? undefined}
+                  isDemo={appData.property.label === 'Maple Street home'}
                   property={appData.property}
                   restoreSummary={restoreSummary ?? undefined}
                   rooms={appData.rooms}

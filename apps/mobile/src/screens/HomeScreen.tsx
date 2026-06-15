@@ -75,6 +75,38 @@ export function HomeScreen({
         <MetricCard label="Tracked costs" value={savedCostLabel} detail="Repairs, service" onPress={onViewCostSummary} accessibilityLabel="View cost summary" />
       </View>
 
+      {assetCount === 0 && (
+        <View style={styles.gettingStartedPanel}>
+          <Text style={styles.gettingStartedTitle}>Set up your household</Text>
+          <Text style={styles.gettingStartedText}>
+            HomeVault tracks assets, documents, and maintenance so nothing slips through. Start with a few rooms and key appliances.
+          </Text>
+          <View style={styles.gettingStartedSteps}>
+            <Pressable onPress={onViewInventory} style={styles.gettingStartedStep} accessibilityRole="button">
+              <View style={styles.stepBadge}><Text style={styles.stepBadgeText}>1</Text></View>
+              <View style={styles.stepBody}>
+                <Text style={styles.stepTitle}>Add a room or area</Text>
+                <Text style={styles.stepMeta}>Kitchen, garage, basement, roof…</Text>
+              </View>
+            </Pressable>
+            <Pressable onPress={onViewInventory} style={styles.gettingStartedStep} accessibilityRole="button">
+              <View style={styles.stepBadge}><Text style={styles.stepBadgeText}>2</Text></View>
+              <View style={styles.stepBody}>
+                <Text style={styles.stepTitle}>Record an asset</Text>
+                <Text style={styles.stepMeta}>Dishwasher, HVAC, water heater…</Text>
+              </View>
+            </Pressable>
+            <Pressable onPress={onViewMaintenance} style={styles.gettingStartedStep} accessibilityRole="button">
+              <View style={styles.stepBadge}><Text style={styles.stepBadgeText}>3</Text></View>
+              <View style={styles.stepBody}>
+                <Text style={styles.stepTitle}>Add a maintenance task</Text>
+                <Text style={styles.stepMeta}>Filter changes, inspections, seasonal work…</Text>
+              </View>
+            </Pressable>
+          </View>
+        </View>
+      )}
+
       <SectionTitle title="Due now" action="View all" onActionPress={onViewMaintenance} />
       {dueTasks.length > 0 ? (
         dueTasks.map((task) => <TaskRow key={task.id} task={task} onPress={onTaskPress} />)
@@ -205,6 +237,64 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
+  },
+  gettingStartedPanel: {
+    backgroundColor: colors.panel,
+    borderColor: colors.green,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 14,
+    gap: 12,
+  },
+  gettingStartedTitle: {
+    color: colors.ink,
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 0,
+  },
+  gettingStartedText: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 19,
+  },
+  gettingStartedSteps: {
+    gap: 10,
+  },
+  gettingStartedStep: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingTop: 10,
+    borderTopColor: colors.line,
+    borderTopWidth: 1,
+  },
+  stepBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.greenSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepBadgeText: {
+    color: colors.green,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  stepBody: {
+    flex: 1,
+    gap: 2,
+  },
+  stepTitle: {
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  stepMeta: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
   },
   warrantyRow: {
     backgroundColor: colors.panel,
