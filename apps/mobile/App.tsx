@@ -67,6 +67,7 @@ import { MaintenanceScreen } from './src/screens/MaintenanceScreen';
 import { QuickAddScreen } from './src/screens/QuickAddScreen';
 import { RoomDetailScreen } from './src/screens/RoomDetailScreen';
 import { TaskDetailScreen } from './src/screens/TaskDetailScreen';
+import { TabIcon } from './src/components/TabIcon';
 import { Toast } from './src/components/Toast';
 import { colors } from './src/theme/colors';
 
@@ -100,12 +101,12 @@ type AppMode =
   | 'serviceHistory'
   | 'costSummary';
 
-const tabs: Array<{ key: TabKey; label: string; icon: string }> = [
-  { key: 'home', label: 'Home', icon: 'H' },
-  { key: 'inventory', label: 'Inventory', icon: 'I' },
-  { key: 'maintenance', label: 'Tasks', icon: 'T' },
-  { key: 'documents', label: 'Docs', icon: 'D' },
-  { key: 'household', label: 'Household', icon: 'P' },
+const tabs: Array<{ key: TabKey; label: string }> = [
+  { key: 'home', label: 'Home' },
+  { key: 'inventory', label: 'Inventory' },
+  { key: 'maintenance', label: 'Tasks' },
+  { key: 'documents', label: 'Docs' },
+  { key: 'household', label: 'Household' },
 ];
 
 type AppData = {
@@ -1404,9 +1405,7 @@ export default function App() {
                 style={[styles.tabButton, isActive && styles.tabButtonActive]}
                 accessibilityRole="button"
               >
-                <Text style={[styles.tabIcon, isActive && styles.tabIconActive]}>
-                  {tab.icon}
-                </Text>
+                <TabIcon tabKey={tab.key} color={isActive ? colors.green : colors.muted} />
                 <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
                   {tab.label}
                 </Text>
@@ -1509,14 +1508,6 @@ const styles = StyleSheet.create({
   },
   tabButtonActive: {
     backgroundColor: colors.greenSoft,
-  },
-  tabIcon: {
-    color: colors.muted,
-    fontSize: 14,
-    fontWeight: '900',
-  },
-  tabIconActive: {
-    color: colors.green,
   },
   tabLabel: {
     color: colors.muted,

@@ -110,7 +110,7 @@ Attachment model note:
 
 ## P2: App Polish
 
-- [ ] Replace letter-only tab icons with real icons.
+- [x] Replace letter-only tab icons with real icons. *(codex)*
 - [ ] Tighten mobile layout spacing and text wrapping across small screens.
 - [ ] Add loading, saving, and error states for all async actions.
 - [x] Add toast/banner feedback after saves, deletes, exports, and restores. *(codex)*
