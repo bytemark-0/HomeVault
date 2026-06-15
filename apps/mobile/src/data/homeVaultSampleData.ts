@@ -330,12 +330,27 @@ export function toAssetListItem(
   documents: DocumentRecord[] = [],
   repairEvents: RepairEvent[] = [],
   tasks: MaintenanceTask[] = [],
+  taskCompletions: TaskCompletion[] = [],
 ): AssetListItem {
   const room = rooms.find((candidate) => candidate.id === asset.roomId);
   const documentCount = documents.filter((document) =>
     document.linkedRecordIds.includes(asset.id),
   ).length;
   const latestRepair = getLatestRepairEvent(asset.id, repairEvents);
+
+  const assetTaskIds = new Set(
+    tasks.filter((t) => t.scope === 'asset' && t.scopeId === asset.id).map((t) => t.id),
+  );
+  const latestCompletion = taskCompletions
+    .filter((c) => assetTaskIds.has(c.taskId))
+    .sort((a, b) => b.completedAt.localeCompare(a.completedAt))
+    .at(0);
+
+  const lastServiceDate = [latestRepair?.date, latestCompletion?.completedAt.slice(0, 10)]
+    .filter(Boolean)
+    .sort()
+    .at(-1);
+
   const nextTask = tasks
     .filter((task) => task.scope === 'asset' && task.scopeId === asset.id && task.state !== 'completed')
     .sort((a, b) => (a.dueDate ?? '').localeCompare(b.dueDate ?? ''))
@@ -345,7 +360,7 @@ export function toAssetListItem(
     ...asset,
     roomName: room?.name ?? 'Unassigned',
     documentCount,
-    lastServiceLabel: latestRepair ? formatRecordDate(latestRepair.date) : 'Not serviced',
+    lastServiceLabel: lastServiceDate ? formatRecordDate(lastServiceDate) : 'Not serviced',
     nextTaskLabel: nextTask?.title ?? 'No open tasks',
     warrantyExpiryLabel: asset.warrantyExpiry ? formatRecordDate(asset.warrantyExpiry) : undefined,
     warrantyExpiringSoon: asset.warrantyExpiry ? isWithin90Days(asset.warrantyExpiry) : false,

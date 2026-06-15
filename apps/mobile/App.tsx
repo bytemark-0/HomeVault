@@ -203,7 +203,7 @@ export default function App() {
     ]);
 
     const assetList = assets.map((asset) =>
-      toAssetListItem(asset, rooms, documents, repairEvents, tasks),
+      toAssetListItem(asset, rooms, documents, repairEvents, tasks, taskCompletions),
     );
     const roomList = toRoomListItems(rooms, assets, tasks);
     const taskList = tasks.map((task) => toTaskListItem(task, assets, rooms));
@@ -237,7 +237,7 @@ export default function App() {
       assets: assetList,
       dueTasks: dashboard.dueTasks.map((task) => toTaskListItem(task, assets, rooms)),
       recentAssets: dashboard.recentAssets.map((asset) =>
-        toAssetListItem(asset, rooms, documents, repairEvents, tasks),
+        toAssetListItem(asset, rooms, documents, repairEvents, tasks, taskCompletions),
       ),
       recentActivity,
       savedCostLabel: formatCurrency(trackedCostCents),
