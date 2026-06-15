@@ -1,4 +1,4 @@
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Property, RoomArea } from '@homevault/domain';
 
@@ -159,7 +159,11 @@ export function HouseholdScreen({
         accessibilityRole="button"
       >
         <View style={styles.propertyPhoto}>
-          <Text style={styles.propertyPhotoText}>{propertyInitials(property.label)}</Text>
+          {property.photoUri ? (
+            <Image source={{ uri: property.photoUri }} style={styles.propertyPhotoImage} resizeMode="cover" />
+          ) : (
+            <Text style={styles.propertyPhotoText}>{propertyInitials(property.label)}</Text>
+          )}
         </View>
         <View style={styles.rowBody}>
           <Text style={styles.rowTitle}>{property.label}</Text>
@@ -499,6 +503,11 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '900',
+  },
+  propertyPhotoImage: {
+    width: 62,
+    height: 62,
+    borderRadius: 8,
   },
   rowBody: {
     flex: 1,
