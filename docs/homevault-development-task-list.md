@@ -106,7 +106,7 @@ Attachment model note:
 - [ ] Add model/serial lookup affordances.
 - [x] Add room-level summaries for documents, tasks, assets, and attention items. *(codex)*
 - [x] Add asset duplicate/copy flow for repeated fixtures or appliances. *(codex)*
-- [ ] Add richer asset categories and category-specific fields.
+- [x] Add richer asset categories and category-specific fields. *(codex — 11 preset categories with custom fallback; domain type remains string for backward compatibility)*
 
 ## P2: App Polish
 
@@ -123,7 +123,7 @@ Attachment model note:
 - [ ] Add repository tests for SQLite parity with in-memory repository behavior.
 - [ ] Add linting/formatting scripts if we want stricter CI hygiene.
 - [ ] Add CI workflow for typecheck, tests, and web export.
-- [ ] Document local development commands in the README.
+- [x] Document local development commands in the README. *(codex)*
 - [ ] Decide when to push branch and open a draft PR.
 
 ## Suggested Next Three Slices

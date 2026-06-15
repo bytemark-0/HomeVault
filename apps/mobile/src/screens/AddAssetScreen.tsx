@@ -34,6 +34,20 @@ type FormState = {
   notes: string;
 };
 
+const categoryPresets = [
+  'Appliance',
+  'Heating & cooling',
+  'Plumbing',
+  'Electrical',
+  'Roofing',
+  'Windows & doors',
+  'Flooring',
+  'Lighting',
+  'Security',
+  'Exterior',
+  'Structure',
+];
+
 const statusOptions: Array<{ label: string; value: Asset['status'] }> = [
   { label: 'Ready', value: 'ready' },
   { label: 'Needs attention', value: 'needs_attention' },
@@ -123,13 +137,37 @@ export function AddAssetScreen({
           error={errors.name}
           onChangeText={(name) => setForm((current) => ({ ...current, name }))}
         />
-        <Field
-          label="Category"
-          value={form.category}
-          placeholder="Appliance, plumbing, exterior"
-          error={errors.category}
-          onChangeText={(category) => setForm((current) => ({ ...current, category }))}
-        />
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>Category</Text>
+          <View style={styles.optionGrid}>
+            {categoryPresets.map((preset) => {
+              const isSelected = form.category === preset;
+
+              return (
+                <Pressable
+                  key={preset}
+                  onPress={() => setForm((current) => ({ ...current, category: preset }))}
+                  style={[styles.optionPill, isSelected && styles.optionPillActive]}
+                  accessibilityRole="button"
+                >
+                  <Text style={[styles.optionText, isSelected && styles.optionTextActive]}>
+                    {preset}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          {!categoryPresets.includes(form.category) || form.category === '' ? (
+            <TextInput
+              value={categoryPresets.includes(form.category) ? '' : form.category}
+              placeholder="Custom category"
+              onChangeText={(category) => setForm((current) => ({ ...current, category }))}
+              style={[styles.input, errors.category && styles.inputError]}
+              placeholderTextColor={colors.muted}
+            />
+          ) : null}
+          {errors.category ? <Text style={styles.errorText}>{errors.category}</Text> : null}
+        </View>
 
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>Room or area</Text>
