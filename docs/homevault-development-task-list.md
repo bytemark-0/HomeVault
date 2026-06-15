@@ -87,7 +87,7 @@ Attachment model note:
 - [x] Add restore conflict warnings when current data would be replaced. *(codex)*
 - [x] Add backup package version compatibility messaging. *(codex)*
 - [x] Add import error states for malformed JSON, unsupported versions, and partial records. *(codex — covered by errorKind classification in version compatibility slice)*
-- [ ] Add tests for checklist action routing and restore confirmation edge cases.
+- [x] Add tests for checklist action routing and restore confirmation edge cases. *(codex)*
 - [ ] Decide whether backup packages should include copied attachment payloads or references only.
 
 ## P1: Maintenance Workflow
