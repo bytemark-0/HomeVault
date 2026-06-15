@@ -22,6 +22,7 @@
   },
   "include": [
     "apps/mobile/src/data/sampleBackupPackage.ts",
+    "apps/mobile/src/utils/**/*.ts",
     "packages/*/src/**/*.ts",
     "scripts/**/*.ts",
     "tests/**/*.ts"
