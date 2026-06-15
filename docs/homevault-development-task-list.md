@@ -1,21 +1,23 @@
 # HomeVault Development Task List
 
-Last reviewed: 2026-06-14
+Last reviewed: 2026-06-15
 
 ## Current State
 
-HomeVault is a working Expo/React Native app with local persistence, demo household data, core household/inventory/documents/maintenance screens, export manifest generation, backup validation, sample restore flow, restore confirmation/audit feedback, export readiness routing, empty states, form validation, Household backup status, demo workspace onboarding, document search/filter, asset duplicate/copy flow, richer asset categories, service history timeline, cost summaries, recurring task generation, snooze controls, repair event entry from maintenance, warranty expiration tracking with home dashboard alerts, asset photo support (camera/library picker), geometric tab icons, accessibility labels, loading/error states, toast feedback, model lookup affordance, in-memory repository tests (13 cases), task utility tests (12 cases), ESLint v9 CI hygiene, and a CI workflow.
+HomeVault is a working Expo/React Native app with local persistence, demo household data, core household/inventory/documents/maintenance screens, export manifest generation, backup validation, sample restore flow, restore confirmation/audit feedback, export readiness routing, empty states, form validation, Household backup status, demo workspace onboarding, document search/filter, asset duplicate/copy flow, richer asset categories, service history timeline, cost summaries, recurring task generation, snooze controls, repair event entry from maintenance, warranty expiration tracking with home dashboard alerts, asset photo support (camera/library picker), geometric tab icons, accessibility labels, loading/error states, toast feedback, model lookup affordance, barcode scanner with UPC product lookup in the asset form, in-memory repository tests (13 cases), task utility tests (12 cases), ESLint v9 CI hygiene, and a CI workflow.
 
-Current branch: `codex/homevault-stabilization`
+The app runs on a real iPhone via Expo Go (SDK 54).
 
-Latest slice before this update: `99245ed Extract task utilities and add 12 unit tests`
+Current branch: `codex/expo-go-setup`
+
+Latest slice before this update: `1c92403 Downgrade to Expo SDK 54 for Expo Go and add barcode scanner to asset form`
 
 ## Review Questions
 
 1. Should the app stay local-first only for the first usable release, or should account/sync work start now?
-2. Should document attachments remain as local file references for now, or should we build real file-copy/storage semantics next?
+2. ~~Should document attachments remain as local file references for now, or should we build real file-copy/storage semantics next?~~ *(resolved — files are copied into app-owned storage; references-only backup format decided for this release)*
 3. Should export/restore be treated as the MVP completion bar, or should mobile polish and onboarding come first?
-4. Do we want to push the current branch to GitHub now, knowing it includes the design brief PDF in repository history/context?
+4. ~~Do we want to push the current branch to GitHub now, knowing it includes the design brief PDF in repository history/context?~~ *(resolved — `codex/homevault-stabilization` pushed; new work on `codex/expo-go-setup`)*
 
 ## P0: Finish The Usable Local MVP
 
@@ -26,7 +28,7 @@ Latest slice before this update: `99245ed Extract task utilities and add 12 unit
 - [x] Add delete confirmations for destructive record actions.
 - [x] Add edit flows for all primary record types: property, rooms, assets, documents, tasks.
 - [x] Verify navigation return paths after every create/edit/delete action.
-- [x] Add a small “backup last created/restored” status indicator on Household or Export.
+- [x] Add a small "backup last created/restored" status indicator on Household or Export.
 
 ## Destructive Action Audit
 
@@ -34,10 +36,11 @@ Current destructive actions exposed in the app:
 - Document delete: confirmed from document detail.
 - Task delete: confirmed from task detail, including a completion-history warning when relevant.
 - Repair delete: confirmed from asset repair history.
+- Room delete: confirmed from room detail; confirmation alert shows asset count; cascades through assets, their tasks/completions/repairs; documents preserved.
 - Demo data reset: confirmed from Household readiness.
 - Backup restore: guarded by validation, preview, dry-run checklist, and typed `RESTORE` confirmation.
 
-Asset and room delete are not currently exposed as user actions.
+Asset delete is not currently exposed as a user action.
 
 ## Navigation Return Audit
 
@@ -68,8 +71,8 @@ No missing primary edit affordances were found in the currently exposed flows.
 - [x] Copy picked files into an app-owned storage location instead of storing picker URIs directly.
 - [x] Add attachment presence/status labels in document list and detail views.
 - [x] Allow documents to link to multiple records, not just one asset/room/property.
-- [x] Add a “missing attachment” filtered view from export readiness.
-- [x] Add a “missing asset documentation” filtered view from export readiness.
+- [x] Add a "missing attachment" filtered view from export readiness.
+- [x] Add a "missing asset documentation" filtered view from export readiness.
 - [x] Add document search/filter by type, linked record, vendor, and date. *(codex)*
 
 Attachment model note:
@@ -115,7 +118,7 @@ Attachment model note:
 - [x] Add loading, saving, and error states for all async actions. *(codex)*
 - [x] Add toast/banner feedback after saves, deletes, exports, and restores. *(codex)*
 - [x] Add accessibility labels for icon-only and compact controls. *(codex)*
-- [ ] Verify with in-app browser screenshots once browser access policy allows it.
+- [x] Verify on real device. *(resolved — app runs on iPhone via Expo Go SDK 54)*
 
 ## P2: Engineering Hardening
 
@@ -124,11 +127,11 @@ Attachment model note:
 - [x] Add linting/formatting scripts if we want stricter CI hygiene. *(codex — ESLint v9 flat config with @typescript-eslint; 0 errors across packages, mobile src, and tests)*
 - [x] Add CI workflow for typecheck, tests, and web export. *(codex — .github/workflows/ci.yml runs typecheck:packages, typecheck:app, and npm test)*
 - [x] Document local development commands in the README. *(codex)*
-- [ ] Decide when to push branch and open a draft PR.
+- [x] Push branch and open for review. *(codex/homevault-stabilization pushed to GitHub 2026-06-15)*
 
 ## Suggested Next Slices
 
-All P0, P1, and P2 engineering tasks are complete. Remaining open questions for the next phase:
+All original P0, P1, and P2 engineering tasks are complete. Current work and open questions:
 
 1. **Account/sync** — stay local-first for the first usable release, or start backend work now?
 2. **Room delete** — done. *(codex — deleteRoom cascades through assets, their tasks/completions/repairs; confirmation alert shows asset count; documents preserved)*
@@ -149,3 +152,5 @@ All P0, P1, and P2 engineering tasks are complete. Remaining open questions for 
 17. **Tappable linked records in document detail** — done. *(codex — LinkedRecordItem type added to DocumentListItem with id/label/kind; toDocumentListItem computes it inline (replacing formatLinkedRecordLabel helper); DocumentDetailScreen gains onLinkedRecordPress prop and renders a "Linked records" panel with tappable rows; App.tsx routes to asset detail, room detail, or household tab based on record kind)*
 18. **Scope type filter on maintenance screen** — done. *(codex — activeScope state added; scopeTypes useMemo derives distinct scope types from task list; a second filter row (All scopes / Property / Room / Asset) appears only when tasks span multiple scope types; filteredTasks respects both state and scope filters)*
 19. **Tappable cost summary rows for asset and room dimensions** — done. *(codex — CostSummaryScreen gains onAssetPress/onRoomPress optional props; when viewing 'By asset' or 'By room', group rows become Pressable and the cost total gets an underline; App.tsx wires navigation to openAssetDetail and roomDetail mode)*
+20. **Expo Go / SDK 54 compatibility** — done. *(codex — all expo-* packages downgraded to SDK 54 equivalents; expo-image-picker removed from root package.json; expo-sharing removed from app.json plugins; tsconfig ignoreDeprecations set to "6.0" for TypeScript 5.9 baseUrl compatibility; fresh package-lock.json generated)*
+21. **Barcode scanner in asset form** — done. *(codex — expo-camera CameraView added to AddAssetScreen as a full-screen Modal; scans EAN-13, EAN-8, UPC-A, UPC-E, Code128, Code39, and QR; tries UPC Item DB product lookup and pre-fills name/brand/model if found, otherwise drops raw barcode into serial field; NSCameraUsageDescription added to app.json iOS infoPlist)*
