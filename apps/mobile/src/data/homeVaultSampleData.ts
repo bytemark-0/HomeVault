@@ -29,10 +29,17 @@ export type TaskListItem = MaintenanceTask & {
   dueLabel: string;
 };
 
+export type LinkedRecordItem = {
+  id: string;
+  label: string;
+  kind: 'asset' | 'room' | 'property';
+};
+
 export type DocumentListItem = DocumentRecord & {
   typeLabel: string;
   linkedToLabel: string;
   dateLabel: string;
+  linkedRecords: LinkedRecordItem[];
 };
 
 export type RepairEventListItem = RepairEvent & {
@@ -259,6 +266,7 @@ export const sampleDocuments: DocumentListItem[] = [
     typeLabel: 'Manual',
     linkedToLabel: 'Main HVAC',
     dateLabel: 'Apr 2024',
+    linkedRecords: [{ id: 'asset-hvac', label: 'Main HVAC', kind: 'asset' }],
   },
   {
     id: 'doc-dishwasher-receipt',
@@ -269,6 +277,7 @@ export const sampleDocuments: DocumentListItem[] = [
     typeLabel: 'Receipt',
     linkedToLabel: 'Dishwasher',
     dateLabel: 'Nov 2025',
+    linkedRecords: [{ id: 'asset-dishwasher', label: 'Dishwasher', kind: 'asset' }],
   },
   {
     id: 'doc-inspection',
@@ -279,6 +288,7 @@ export const sampleDocuments: DocumentListItem[] = [
     typeLabel: 'Report',
     linkedToLabel: 'Property',
     dateLabel: 'Aug 2023',
+    linkedRecords: [{ id: sampleProperty.id, label: 'Property', kind: 'property' }],
   },
 ];
 
@@ -421,15 +431,25 @@ export function toDocumentListItem(
   assets: Asset[],
   rooms: RoomArea[] = [],
 ): DocumentListItem {
-  const linkedLabels = document.linkedRecordIds
-    .map((recordId) => formatLinkedRecordLabel(recordId, assets, rooms, document.propertyId))
-    .filter((label): label is string => Boolean(label));
+  const linkedRecords = document.linkedRecordIds
+    .map((recordId): LinkedRecordItem | null => {
+      const asset = assets.find((a) => a.id === recordId);
+      if (asset) return { id: recordId, label: asset.name, kind: 'asset' };
+      const room = rooms.find((r) => r.id === recordId);
+      if (room) return { id: recordId, label: room.name, kind: 'room' };
+      if (recordId === document.propertyId) return { id: recordId, label: 'Property', kind: 'property' };
+      return null;
+    })
+    .filter((item): item is LinkedRecordItem => item !== null);
+
+  const linkedLabels = linkedRecords.map((r) => r.label);
 
   return {
     ...document,
     typeLabel: formatDocumentType(document.type),
     linkedToLabel: formatLinkedRecordSummary(linkedLabels),
     dateLabel: document.date ?? 'No date',
+    linkedRecords,
   };
 }
 
@@ -548,31 +568,6 @@ function formatTaskDueLabel(task: MaintenanceTask) {
 
 function formatDocumentType(type: DocumentRecord['type']) {
   return type.slice(0, 1).toUpperCase() + type.slice(1);
-}
-
-function formatLinkedRecordLabel(
-  recordId: string,
-  assets: Asset[],
-  rooms: RoomArea[],
-  propertyId: string,
-) {
-  const linkedAsset = assets.find((asset) => asset.id === recordId);
-
-  if (linkedAsset) {
-    return linkedAsset.name;
-  }
-
-  const linkedRoom = rooms.find((room) => room.id === recordId);
-
-  if (linkedRoom) {
-    return linkedRoom.name;
-  }
-
-  if (recordId === propertyId) {
-    return 'Property';
-  }
-
-  return undefined;
 }
 
 function formatLinkedRecordSummary(labels: string[]) {

@@ -1161,6 +1161,19 @@ export default function App() {
           }}
           onDelete={() => handleDeleteDocument(selectedDocument.id)}
           onEdit={() => setMode('editDocument')}
+          onLinkedRecordPress={(recordId) => {
+            if (!appData) return;
+            if (appData.assets.some((a) => a.id === recordId)) {
+              openAssetDetail(recordId);
+            } else if (appData.rooms.some((r) => r.id === recordId)) {
+              setSelectedRoomId(recordId);
+              setActiveTab('household');
+              setMode('roomDetail');
+            } else {
+              setActiveTab('household');
+              setMode('tabs');
+            }
+          }}
         />
       </SafeAreaView>
     );

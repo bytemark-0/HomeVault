@@ -14,6 +14,7 @@ type DocumentDetailScreenProps = {
   onBack: () => void;
   onDelete: () => Promise<void>;
   onEdit: () => void;
+  onLinkedRecordPress?: (recordId: string) => void;
 };
 
 export function DocumentDetailScreen({
@@ -21,6 +22,7 @@ export function DocumentDetailScreen({
   onBack,
   onDelete,
   onEdit,
+  onLinkedRecordPress,
 }: DocumentDetailScreenProps) {
   return (
     <ScrollView
@@ -62,6 +64,28 @@ export function DocumentDetailScreen({
         <DetailItem label="Linked to" value={document.linkedToLabel} />
         <DetailItem label="Amount" value={formatAmount(document.amountCents)} />
       </View>
+
+      {document.linkedRecords.length > 0 && onLinkedRecordPress ? (
+        <View style={styles.panel}>
+          <Text style={styles.sectionTitle}>Linked records</Text>
+          {document.linkedRecords.map((record) => (
+            <Pressable
+              key={record.id}
+              onPress={() => onLinkedRecordPress(record.id)}
+              style={styles.linkedRecordRow}
+              accessibilityRole="button"
+            >
+              <View style={styles.linkedRecordBadge}>
+                <Text style={styles.linkedRecordKind}>
+                  {record.kind === 'asset' ? 'Asset' : record.kind === 'room' ? 'Room' : 'Property'}
+                </Text>
+              </View>
+              <Text style={styles.linkedRecordLabel}>{record.label}</Text>
+              <Text style={styles.linkedRecordChevron}>›</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
 
       <View style={styles.panel}>
         <Text style={styles.sectionTitle}>Source</Text>
@@ -290,6 +314,36 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontSize: 17,
     fontWeight: '900',
+  },
+  linkedRecordRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 38,
+    gap: 10,
+  },
+  linkedRecordBadge: {
+    minHeight: 22,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    backgroundColor: colors.blueSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  linkedRecordKind: {
+    color: colors.blue,
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  linkedRecordLabel: {
+    flex: 1,
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  linkedRecordChevron: {
+    color: colors.muted,
+    fontSize: 18,
+    fontWeight: '700',
   },
   detailLine: {
     minHeight: 34,
