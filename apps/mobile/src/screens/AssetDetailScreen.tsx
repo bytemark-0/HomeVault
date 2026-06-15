@@ -40,6 +40,7 @@ type AssetDetailScreenProps = {
   onAddDocument: () => void;
   onAddTask: () => void;
   onDocumentPress: (documentId: string) => void;
+  onDuplicate: () => void;
   onEdit: () => void;
   onDeleteRepair: (repairEventId: string) => Promise<void>;
   onRecordRepair: () => void;
@@ -54,6 +55,7 @@ export function AssetDetailScreen({
   onAddDocument,
   onAddTask,
   onDocumentPress,
+  onDuplicate,
   onEdit,
   onDeleteRepair,
   onRecordRepair,
@@ -91,6 +93,9 @@ export function AssetDetailScreen({
           <Text style={styles.secondaryButtonText}>Back</Text>
         </Pressable>
         <View style={styles.headerActions}>
+          <Pressable onPress={onDuplicate} style={styles.secondaryButton} accessibilityRole="button">
+            <Text style={styles.secondaryButtonText}>Copy</Text>
+          </Pressable>
           <Pressable onPress={onRecordRepair} style={styles.secondaryButton} accessibilityRole="button">
             <Text style={styles.secondaryButtonText}>Repair</Text>
           </Pressable>

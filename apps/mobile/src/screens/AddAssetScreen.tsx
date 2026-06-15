@@ -17,6 +17,7 @@ type AddAssetScreenProps = {
   propertyId: string;
   rooms: RoomArea[];
   asset?: Asset;
+  copyFrom?: Asset;
   initialRoomId?: string;
   onCancel: () => void;
   onSave: (input: CreateAssetInput | UpdateAssetInput) => Promise<void>;
@@ -43,19 +44,21 @@ export function AddAssetScreen({
   propertyId,
   rooms,
   asset,
+  copyFrom,
   initialRoomId,
   onCancel,
   onSave,
 }: AddAssetScreenProps) {
+  const template = asset ?? copyFrom;
   const [form, setForm] = useState<FormState>({
-    name: asset?.name ?? '',
-    category: asset?.category ?? 'Appliance',
-    roomId: asset?.roomId ?? initialRoomId ?? rooms[0]?.id,
-    brand: asset?.brand ?? '',
-    model: asset?.model ?? '',
-    serial: asset?.serial ?? '',
-    status: asset?.status ?? 'ready',
-    notes: asset?.notes ?? '',
+    name: copyFrom ? `${copyFrom.name} (copy)` : (asset?.name ?? ''),
+    category: template?.category ?? 'Appliance',
+    roomId: template?.roomId ?? initialRoomId ?? rooms[0]?.id,
+    brand: template?.brand ?? '',
+    model: template?.model ?? '',
+    serial: copyFrom ? '' : (asset?.serial ?? ''),
+    status: template?.status ?? 'ready',
+    notes: copyFrom ? '' : (asset?.notes ?? ''),
   });
   const [isSaving, setIsSaving] = useState(false);
   const errors = useMemo(
@@ -105,7 +108,7 @@ export function AddAssetScreen({
       <View style={styles.header}>
         <View>
           <Text style={styles.kicker}>Inventory</Text>
-          <Text style={styles.title}>{asset ? 'Edit asset' : 'Add asset'}</Text>
+          <Text style={styles.title}>{asset ? 'Edit asset' : copyFrom ? 'Copy asset' : 'Add asset'}</Text>
         </View>
         <Pressable onPress={onCancel} style={styles.cancelButton} accessibilityRole="button">
           <Text style={styles.cancelText}>Cancel</Text>

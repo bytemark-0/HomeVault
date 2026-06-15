@@ -161,6 +161,7 @@ export default function App() {
     useState<TaskReturnTarget>('maintenance');
   const [repairReturnTarget, setRepairReturnTarget] =
     useState<'assetDetail' | 'maintenance'>('assetDetail');
+  const [copyFromAssetId, setCopyFromAssetId] = useState<string | null>(null);
   const [appData, setAppData] = useState<AppData | null>(null);
   const [backupSummary, setBackupSummary] = useState<BackupSummary | null>(null);
   const [restoreSummary, setRestoreSummary] = useState<RestoreSummary | null>(null);
@@ -700,6 +701,11 @@ export default function App() {
     setMode('assetDetail');
   }
 
+  function handleDuplicateAsset() {
+    setCopyFromAssetId(selectedAssetId);
+    setMode('addAsset');
+  }
+
   function openTaskDetail(taskId: string, returnTarget: TaskReturnTarget = 'maintenance') {
     setSelectedTaskId(taskId);
     setTaskReturnTarget(returnTarget);
@@ -707,6 +713,7 @@ export default function App() {
   }
 
   const selectedAsset = appData?.assets.find((asset) => asset.id === selectedAssetId);
+  const copyFromAsset = appData?.assets.find((asset) => asset.id === copyFromAssetId);
   const quickRepairAsset = selectedAsset ?? appData?.assets[0];
   const selectedAssetRoom = appData?.rooms.find((room) => room.id === selectedAsset?.roomId);
   const selectedDocument = appData?.documents.find(
@@ -797,9 +804,16 @@ export default function App() {
         <AddAssetScreen
           propertyId={appData.property.id}
           rooms={appData.rooms}
+          copyFrom={copyFromAsset}
           initialRoomId={mode === 'addRoomAsset' ? selectedRoomId ?? undefined : undefined}
-          onCancel={() => setMode(mode === 'addRoomAsset' ? 'roomDetail' : 'tabs')}
-          onSave={handleCreateAsset}
+          onCancel={() => {
+            setCopyFromAssetId(null);
+            setMode(mode === 'addRoomAsset' ? 'roomDetail' : 'tabs');
+          }}
+          onSave={async (input) => {
+            setCopyFromAssetId(null);
+            await handleCreateAsset(input);
+          }}
         />
       </SafeAreaView>
     );
@@ -1185,6 +1199,7 @@ export default function App() {
             setDocumentReturnTarget('assetDetail');
             setMode('documentDetail');
           }}
+          onDuplicate={handleDuplicateAsset}
           onDeleteRepair={handleDeleteRepairEvent}
           onRecordRepair={() => {
             setRepairReturnTarget('assetDetail');

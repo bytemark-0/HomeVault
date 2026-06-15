@@ -105,7 +105,7 @@ Attachment model note:
 - [ ] Add warranty-expiration tracking and alerts.
 - [ ] Add model/serial lookup affordances.
 - [x] Add room-level summaries for documents, tasks, assets, and attention items. *(codex)*
-- [ ] Add asset duplicate/copy flow for repeated fixtures or appliances.
+- [x] Add asset duplicate/copy flow for repeated fixtures or appliances. *(codex)*
 - [ ] Add richer asset categories and category-specific fields.
 
 ## P2: App Polish
