@@ -477,7 +477,21 @@ export default function App() {
 
   async function handleCompleteTask(input: CompleteTaskInput) {
     const homeVaultRepository = await getHomeVaultRepository();
+    const task = appData?.tasks.find((candidate) => candidate.id === input.taskId);
     await homeVaultRepository.completeTask(input);
+
+    if (task && task.recurrenceKind !== 'one_time') {
+      const nextDueDate = computeNextDueDate(task.recurrenceLabel, input.completedAt);
+
+      if (nextDueDate) {
+        await homeVaultRepository.updateTask({
+          ...task,
+          dueDate: nextDueDate,
+          state: getTaskStateForDate(nextDueDate),
+        });
+      }
+    }
+
     await loadHomeVault();
     setSelectedTaskId(input.taskId);
     setActiveTab('maintenance');
@@ -1383,6 +1397,39 @@ function addDaysToDateInput(date: Date, days: number) {
   nextDate.setDate(nextDate.getDate() + days);
 
   return nextDate.toISOString().slice(0, 10);
+}
+
+function computeNextDueDate(recurrenceLabel: string, completedAt?: string): string | null {
+  const intervalDays: Record<string, number> = {
+    'Monthly': 30,
+    'Every 90 days': 90,
+    'Twice a year': 182,
+    'Yearly': 365,
+  };
+
+  const days = intervalDays[recurrenceLabel];
+
+  if (!days) {
+    return null;
+  }
+
+  const baseDate = completedAt ? new Date(completedAt) : new Date();
+
+  return addDaysToDateInput(baseDate, days);
+}
+
+function getTaskStateForDate(dueDate: string): 'overdue' | 'due_today' | 'upcoming' {
+  const today = new Date().toISOString().slice(0, 10);
+
+  if (dueDate < today) {
+    return 'overdue';
+  }
+
+  if (dueDate === today) {
+    return 'due_today';
+  }
+
+  return 'upcoming';
 }
 
 function formatCurrency(value: number) {
