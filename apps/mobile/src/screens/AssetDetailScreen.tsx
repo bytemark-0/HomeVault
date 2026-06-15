@@ -1,4 +1,4 @@
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import {
   getAssetStatusLabel,
@@ -112,6 +112,15 @@ export function AssetDetailScreen({
           <Text style={styles.statusText}>{getAssetStatusLabel(asset.status)}</Text>
         </View>
       </View>
+
+      {asset.photoUri ? (
+        <Image
+          source={{ uri: asset.photoUri }}
+          style={styles.assetPhoto}
+          resizeMode="cover"
+          accessibilityLabel={`Photo of ${asset.name}`}
+        />
+      ) : null}
 
       <View style={styles.detailGrid}>
         <DetailItem label="Room" value={asset.roomName} />
@@ -431,6 +440,12 @@ const styles = StyleSheet.create({
     color: colors.green,
     fontSize: 12,
     fontWeight: '900',
+  },
+  assetPhoto: {
+    width: '100%',
+    height: 220,
+    borderRadius: 8,
+    backgroundColor: colors.page,
   },
   detailGrid: {
     flexDirection: 'row',

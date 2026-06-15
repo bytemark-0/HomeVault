@@ -4,7 +4,7 @@ Last reviewed: 2026-06-14
 
 ## Current State
 
-HomeVault is a working Expo/React Native app with local persistence, demo household data, core household/inventory/documents/maintenance screens, export manifest generation, backup validation, sample restore flow, restore confirmation/audit feedback, export readiness routing, empty states, form validation, Household backup status, demo workspace onboarding, document search/filter, asset duplicate/copy flow, richer asset categories, service history timeline, cost summaries, recurring task generation, snooze controls, repair event entry from maintenance, warranty expiration tracking, geometric tab icons, accessibility labels, loading/error states, toast feedback, model lookup affordance, in-memory repository tests (13 cases), task utility tests (12 cases), and a CI workflow.
+HomeVault is a working Expo/React Native app with local persistence, demo household data, core household/inventory/documents/maintenance screens, export manifest generation, backup validation, sample restore flow, restore confirmation/audit feedback, export readiness routing, empty states, form validation, Household backup status, demo workspace onboarding, document search/filter, asset duplicate/copy flow, richer asset categories, service history timeline, cost summaries, recurring task generation, snooze controls, repair event entry from maintenance, warranty expiration tracking, asset photo support (camera/library picker), geometric tab icons, accessibility labels, loading/error states, toast feedback, model lookup affordance, in-memory repository tests (13 cases), task utility tests (12 cases), ESLint v9 CI hygiene, and a CI workflow.
 
 Current branch: `codex/homevault-stabilization`
 
@@ -101,7 +101,7 @@ Attachment model note:
 
 ## P2: Inventory And Household Depth
 
-- [ ] Add asset photo support.
+- [x] Add asset photo support. *(codex — expo-image-picker with camera/library picker, copy to app storage, preview in add form and detail screen; warranty_expiry and photo_uri columns added to SQLite with ensureColumn migration)*
 - [x] Add warranty-expiration tracking and alerts. *(codex)*
 - [x] Add model/serial lookup affordances. *(codex — "Look up" chip on model field opens web search for brand + model)*
 - [x] Add room-level summaries for documents, tasks, assets, and attention items. *(codex)*

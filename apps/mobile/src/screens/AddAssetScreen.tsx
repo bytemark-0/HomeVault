@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
+  Image,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -7,6 +9,9 @@ import {
   TextInput,
   View,
 } from 'react-native';
+
+import * as FileSystem from 'expo-file-system/legacy';
+import * as ImagePicker from 'expo-image-picker';
 
 import type { Asset, RoomArea } from '@homevault/domain';
 import type { CreateAssetInput, UpdateAssetInput } from '@homevault/database';
@@ -32,6 +37,7 @@ type FormState = {
   serial: string;
   status: Asset['status'];
   warrantyExpiry: string;
+  photoUri: string;
   notes: string;
 };
 
@@ -74,6 +80,7 @@ export function AddAssetScreen({
     serial: copyFrom ? '' : (asset?.serial ?? ''),
     status: template?.status ?? 'ready',
     warrantyExpiry: copyFrom ? '' : (asset?.warrantyExpiry ?? ''),
+    photoUri: copyFrom ? '' : (asset?.photoUri ?? ''),
     notes: copyFrom ? '' : (asset?.notes ?? ''),
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -113,11 +120,47 @@ export function AddAssetScreen({
         serial: cleanOptional(form.serial),
         status: form.status,
         warrantyExpiry: cleanOptional(form.warrantyExpiry),
+        photoUri: form.photoUri || undefined,
         notes: cleanOptional(form.notes),
       });
     } finally {
       setIsSaving(false);
     }
+  }
+
+  async function handlePickPhoto(source: 'library' | 'camera') {
+    let result: ImagePicker.ImagePickerResult;
+
+    if (source === 'camera') {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+
+      if (!permission.granted) {
+        return;
+      }
+
+      result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+    } else {
+      result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+    }
+
+    if (result.canceled || !result.assets[0]) {
+      return;
+    }
+
+    const pickedUri = result.assets[0].uri;
+    const storedUri = await copyPhotoToAppStorage(pickedUri);
+
+    setForm((current) => ({ ...current, photoUri: storedUri ?? pickedUri }));
   }
 
   return (
@@ -249,6 +292,40 @@ export function AddAssetScreen({
           error={errors.warrantyExpiry}
           onChangeText={(warrantyExpiry) => setForm((current) => ({ ...current, warrantyExpiry }))}
         />
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>Photo</Text>
+          {form.photoUri ? (
+            <View style={styles.photoPreviewBox}>
+              <Image source={{ uri: form.photoUri }} style={styles.photoPreview} resizeMode="cover" />
+              <Pressable
+                onPress={() => setForm((current) => ({ ...current, photoUri: '' }))}
+                style={styles.photoRemoveButton}
+                accessibilityRole="button"
+                accessibilityLabel="Remove photo"
+              >
+                <Text style={styles.photoRemoveText}>Remove</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <View style={styles.photoPickerRow}>
+              <Pressable
+                onPress={() => handlePickPhoto('library')}
+                style={styles.photoPickerButton}
+                accessibilityRole="button"
+              >
+                <Text style={styles.photoPickerText}>Choose from library</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => handlePickPhoto('camera')}
+                style={styles.photoPickerButton}
+                accessibilityRole="button"
+              >
+                <Text style={styles.photoPickerText}>Take photo</Text>
+              </Pressable>
+            </View>
+          )}
+        </View>
+
         <Field
           label="Notes"
           value={form.notes}
@@ -310,6 +387,25 @@ function cleanOptional(value: string) {
   const trimmed = value.trim();
 
   return trimmed.length > 0 ? trimmed : undefined;
+}
+
+async function copyPhotoToAppStorage(sourceUri: string): Promise<string | null> {
+  if (Platform.OS === 'web' || !FileSystem.documentDirectory) {
+    return null;
+  }
+
+  try {
+    const directoryUri = `${FileSystem.documentDirectory}homevault-assets/`;
+    const fileName = `asset-photo-${Date.now()}.jpg`;
+    const fileUri = `${directoryUri}${fileName}`;
+
+    await FileSystem.makeDirectoryAsync(directoryUri, { intermediates: true });
+    await FileSystem.copyAsync({ from: sourceUri, to: fileUri });
+
+    return fileUri;
+  } catch {
+    return null;
+  }
 }
 
 const styles = StyleSheet.create({
@@ -425,6 +521,49 @@ const styles = StyleSheet.create({
   },
   optionTextActive: {
     color: '#FFFFFF',
+  },
+  photoPickerRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  photoPickerButton: {
+    flex: 1,
+    minHeight: 46,
+    borderRadius: 8,
+    borderColor: colors.line,
+    borderWidth: 1,
+    backgroundColor: colors.panel,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoPickerText: {
+    color: colors.blue,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  photoPreviewBox: {
+    gap: 10,
+  },
+  photoPreview: {
+    width: '100%',
+    height: 180,
+    borderRadius: 8,
+    backgroundColor: colors.page,
+  },
+  photoRemoveButton: {
+    alignSelf: 'flex-start',
+    minHeight: 34,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderColor: colors.red,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoRemoveText: {
+    color: colors.red,
+    fontSize: 12,
+    fontWeight: '900',
   },
   saveButton: {
     minHeight: 48,

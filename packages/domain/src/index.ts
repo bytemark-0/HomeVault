@@ -82,6 +82,7 @@ export type Asset = {
   installDate?: string;
   purchaseDate?: string;
   warrantyExpiry?: string;
+  photoUri?: string;
   costCents?: number;
   status: AssetStatus;
   notes?: string;

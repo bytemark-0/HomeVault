@@ -61,6 +61,8 @@ type AssetRow = {
   serial: string | null;
   install_date: string | null;
   purchase_date: string | null;
+  warranty_expiry: string | null;
+  photo_uri: string | null;
   cost_cents: number | null;
   status: Asset['status'];
   notes: string | null;
@@ -283,6 +285,8 @@ async function migrate(db: SQLiteDatabase) {
       serial TEXT,
       install_date TEXT,
       purchase_date TEXT,
+      warranty_expiry TEXT,
+      photo_uri TEXT,
       cost_cents INTEGER,
       status TEXT NOT NULL,
       notes TEXT,
@@ -361,6 +365,8 @@ async function migrate(db: SQLiteDatabase) {
   `);
 
   await ensureColumn(db, 'documents', 'attachment_json', 'TEXT');
+  await ensureColumn(db, 'assets', 'warranty_expiry', 'TEXT');
+  await ensureColumn(db, 'assets', 'photo_uri', 'TEXT');
 }
 
 async function seedIfNeeded(db: SQLiteDatabase, snapshot: HomeVaultSnapshot) {
@@ -401,8 +407,8 @@ async function seedIfNeeded(db: SQLiteDatabase, snapshot: HomeVaultSnapshot) {
       await db.runAsync(
         `INSERT INTO assets (
           id, property_id, room_id, name, category, brand, model, serial,
-          install_date, purchase_date, cost_cents, status, notes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          install_date, purchase_date, warranty_expiry, photo_uri, cost_cents, status, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           asset.id,
           asset.propertyId,
@@ -414,6 +420,8 @@ async function seedIfNeeded(db: SQLiteDatabase, snapshot: HomeVaultSnapshot) {
           asset.serial ?? null,
           asset.installDate ?? null,
           asset.purchaseDate ?? null,
+          asset.warrantyExpiry ?? null,
+          asset.photoUri ?? null,
           asset.costCents ?? null,
           asset.status,
           asset.notes ?? null,
@@ -637,8 +645,8 @@ async function createAsset(db: SQLiteDatabase, input: CreateAssetInput): Promise
   await db.runAsync(
     `INSERT INTO assets (
       id, property_id, room_id, name, category, brand, model, serial,
-      install_date, purchase_date, cost_cents, status, notes
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      install_date, purchase_date, warranty_expiry, photo_uri, cost_cents, status, notes
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       asset.id,
       asset.propertyId,
@@ -650,6 +658,8 @@ async function createAsset(db: SQLiteDatabase, input: CreateAssetInput): Promise
       asset.serial ?? null,
       asset.installDate ?? null,
       asset.purchaseDate ?? null,
+      asset.warrantyExpiry ?? null,
+      asset.photoUri ?? null,
       asset.costCents ?? null,
       asset.status,
       asset.notes ?? null,
@@ -729,6 +739,8 @@ async function updateAsset(db: SQLiteDatabase, input: UpdateAssetInput): Promise
          serial = ?,
          install_date = ?,
          purchase_date = ?,
+         warranty_expiry = ?,
+         photo_uri = ?,
          cost_cents = ?,
          status = ?,
          notes = ?,
@@ -743,6 +755,8 @@ async function updateAsset(db: SQLiteDatabase, input: UpdateAssetInput): Promise
       input.serial ?? null,
       input.installDate ?? null,
       input.purchaseDate ?? null,
+      input.warrantyExpiry ?? null,
+      input.photoUri ?? null,
       input.costCents ?? null,
       input.status,
       input.notes ?? null,
@@ -1046,6 +1060,8 @@ function toAsset(row: AssetRow): Asset {
     serial: row.serial ?? undefined,
     installDate: row.install_date ?? undefined,
     purchaseDate: row.purchase_date ?? undefined,
+    warrantyExpiry: row.warranty_expiry ?? undefined,
+    photoUri: row.photo_uri ?? undefined,
     costCents: row.cost_cents ?? undefined,
     status: row.status,
     notes: row.notes ?? undefined,
