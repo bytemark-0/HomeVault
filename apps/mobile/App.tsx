@@ -1404,6 +1404,8 @@ export default function App() {
                 onPress={() => setActiveTab(tab.key)}
                 style={[styles.tabButton, isActive && styles.tabButtonActive]}
                 accessibilityRole="button"
+                accessibilityLabel={tab.label}
+                accessibilityState={{ selected: isActive }}
               >
                 <TabIcon tabKey={tab.key} color={isActive ? colors.green : colors.muted} />
                 <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>

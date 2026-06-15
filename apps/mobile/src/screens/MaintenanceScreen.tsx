@@ -94,6 +94,7 @@ export function MaintenanceScreen({
             style={styles.repairAction}
             onPress={onRecordRepair}
             accessibilityRole="button"
+            accessibilityLabel="Record repair"
           >
             <Text style={styles.repairActionText}>Repair</Text>
           </Pressable>

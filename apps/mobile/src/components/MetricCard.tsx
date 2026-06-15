@@ -7,15 +7,17 @@ type MetricCardProps = {
   value: string;
   detail: string;
   onPress?: () => void;
+  accessibilityLabel?: string;
 };
 
-export function MetricCard({ label, value, detail, onPress }: MetricCardProps) {
+export function MetricCard({ label, value, detail, onPress, accessibilityLabel }: MetricCardProps) {
   return (
     <Pressable
       style={styles.metricCard}
       onPress={onPress}
       disabled={!onPress}
       accessibilityRole={onPress ? 'button' : 'none'}
+      accessibilityLabel={accessibilityLabel}
     >
       <Text style={styles.metricValue}>{value}</Text>
       <Text style={styles.metricLabel}>{label}</Text>

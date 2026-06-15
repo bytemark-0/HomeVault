@@ -194,6 +194,7 @@ export function DocumentsScreen({
                 }}
                 style={styles.rowAction}
                 accessibilityRole="button"
+                accessibilityLabel="Add document"
               >
                 <Text style={styles.rowActionText}>Add</Text>
               </Pressable>

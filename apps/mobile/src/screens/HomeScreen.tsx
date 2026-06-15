@@ -70,7 +70,7 @@ export function HomeScreen({
         <MetricCard label="Assets" value={String(assetCount)} detail={`${roomCount} rooms`} />
         <MetricCard label="Documents" value={String(documentCount)} detail="Receipts, manuals" />
         <MetricCard label="Open tasks" value={String(activeTasks)} detail="Local reminders" />
-        <MetricCard label="Tracked costs" value={savedCostLabel} detail="Repairs, service" onPress={onViewCostSummary} />
+        <MetricCard label="Tracked costs" value={savedCostLabel} detail="Repairs, service" onPress={onViewCostSummary} accessibilityLabel="View cost summary" />
       </View>
 
       <SectionTitle title="Due now" action="View all" onActionPress={onViewMaintenance} />

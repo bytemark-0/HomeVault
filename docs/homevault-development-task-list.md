@@ -114,7 +114,7 @@ Attachment model note:
 - [ ] Tighten mobile layout spacing and text wrapping across small screens.
 - [ ] Add loading, saving, and error states for all async actions.
 - [x] Add toast/banner feedback after saves, deletes, exports, and restores. *(codex)*
-- [ ] Add accessibility labels for icon-only and compact controls.
+- [x] Add accessibility labels for icon-only and compact controls. *(codex)*
 - [ ] Verify with in-app browser screenshots once browser access policy allows it.
 
 ## P2: Engineering Hardening

@@ -93,10 +93,10 @@ export function AssetDetailScreen({
           <Text style={styles.secondaryButtonText}>Back</Text>
         </Pressable>
         <View style={styles.headerActions}>
-          <Pressable onPress={onDuplicate} style={styles.secondaryButton} accessibilityRole="button">
+          <Pressable onPress={onDuplicate} style={styles.secondaryButton} accessibilityRole="button" accessibilityLabel="Copy asset">
             <Text style={styles.secondaryButtonText}>Copy</Text>
           </Pressable>
-          <Pressable onPress={onRecordRepair} style={styles.secondaryButton} accessibilityRole="button">
+          <Pressable onPress={onRecordRepair} style={styles.secondaryButton} accessibilityRole="button" accessibilityLabel="Record repair">
             <Text style={styles.secondaryButtonText}>Repair</Text>
           </Pressable>
           <Pressable onPress={onEdit} style={styles.primaryButton} accessibilityRole="button">
@@ -154,6 +154,7 @@ export function AssetDetailScreen({
             onPress={onAddDocument}
             style={styles.linkButton}
             accessibilityRole="button"
+            accessibilityLabel="Add document"
           >
             <Text style={styles.linkButtonText}>Add</Text>
           </Pressable>
@@ -194,10 +195,10 @@ export function AssetDetailScreen({
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Service history</Text>
           <View style={styles.sectionActions}>
-            <Pressable onPress={onAddTask} style={styles.linkButton} accessibilityRole="button">
+            <Pressable onPress={onAddTask} style={styles.linkButton} accessibilityRole="button" accessibilityLabel="Add task">
               <Text style={styles.linkButtonText}>Task</Text>
             </Pressable>
-            <Pressable onPress={onRecordRepair} style={styles.linkButton} accessibilityRole="button">
+            <Pressable onPress={onRecordRepair} style={styles.linkButton} accessibilityRole="button" accessibilityLabel="Record repair">
               <Text style={styles.linkButtonText}>Repair</Text>
             </Pressable>
           </View>
