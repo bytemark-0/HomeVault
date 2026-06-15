@@ -159,7 +159,7 @@ export function HouseholdScreen({
         accessibilityRole="button"
       >
         <View style={styles.propertyPhoto}>
-          <Text style={styles.propertyPhotoText}>MS</Text>
+          <Text style={styles.propertyPhotoText}>{propertyInitials(property.label)}</Text>
         </View>
         <View style={styles.rowBody}>
           <Text style={styles.rowTitle}>{property.label}</Text>
@@ -629,6 +629,13 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
 });
+
+function propertyInitials(label: string) {
+  const words = label.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return '?';
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+}
 
 function formatRoomType(type: RoomArea['type']) {
   return type.slice(0, 1).toUpperCase() + type.slice(1);

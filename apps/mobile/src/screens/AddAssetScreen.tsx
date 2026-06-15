@@ -222,24 +222,30 @@ export function AddAssetScreen({
 
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>Room or area</Text>
-          <View style={styles.optionGrid}>
-            {rooms.map((room) => {
-              const isSelected = room.id === form.roomId;
+          {rooms.length > 0 ? (
+            <View style={styles.optionGrid}>
+              {rooms.map((room) => {
+                const isSelected = room.id === form.roomId;
 
-              return (
-                <Pressable
-                  key={room.id}
-                  onPress={() => setForm((current) => ({ ...current, roomId: room.id }))}
-                  style={[styles.optionPill, isSelected && styles.optionPillActive]}
-                  accessibilityRole="button"
-                >
-                  <Text style={[styles.optionText, isSelected && styles.optionTextActive]}>
-                    {room.name}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+                return (
+                  <Pressable
+                    key={room.id}
+                    onPress={() => setForm((current) => ({ ...current, roomId: room.id }))}
+                    style={[styles.optionPill, isSelected && styles.optionPillActive]}
+                    accessibilityRole="button"
+                  >
+                    <Text style={[styles.optionText, isSelected && styles.optionTextActive]}>
+                      {room.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : (
+            <Text style={styles.fieldHint}>
+              No areas added yet. Add a room or area from the Household tab first.
+            </Text>
+          )}
         </View>
 
         <Field
@@ -483,6 +489,12 @@ const styles = StyleSheet.create({
   },
   inputError: {
     borderColor: colors.red,
+  },
+  fieldHint: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 19,
   },
   errorText: {
     color: colors.red,
