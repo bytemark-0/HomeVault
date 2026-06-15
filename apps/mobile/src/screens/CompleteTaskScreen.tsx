@@ -12,15 +12,17 @@ import {
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
 
-import type { CompleteTaskInput } from '@homevault/database';
+import type { CompleteTaskInput, UpdateTaskCompletionInput } from '@homevault/database';
+import type { TaskCompletion } from '@homevault/domain';
 
 import type { TaskListItem } from '../data/homeVaultSampleData';
 import { colors } from '../theme/colors';
 
 type CompleteTaskScreenProps = {
   task: TaskListItem;
+  completion?: TaskCompletion;
   onCancel: () => void;
-  onSave: (input: CompleteTaskInput) => Promise<void>;
+  onSave: (input: CompleteTaskInput | UpdateTaskCompletionInput) => Promise<void>;
 };
 
 type FormState = {
@@ -30,12 +32,13 @@ type FormState = {
   photoUri: string;
 };
 
-export function CompleteTaskScreen({ task, onCancel, onSave }: CompleteTaskScreenProps) {
+export function CompleteTaskScreen({ task, completion, onCancel, onSave }: CompleteTaskScreenProps) {
+  const isEditing = completion !== undefined;
   const [form, setForm] = useState<FormState>({
-    completedAt: toDateInputValue(new Date()),
-    cost: '',
-    notes: '',
-    photoUri: '',
+    completedAt: completion ? toDateInputValue(new Date(completion.completedAt)) : toDateInputValue(new Date()),
+    cost: completion?.costCents != null ? String(completion.costCents / 100) : '',
+    notes: completion?.notes ?? '',
+    photoUri: completion?.photoUri ?? '',
   });
   const [isSaving, setIsSaving] = useState(false);
   const errors = useMemo(
@@ -102,13 +105,23 @@ export function CompleteTaskScreen({ task, onCancel, onSave }: CompleteTaskScree
     setIsSaving(true);
 
     try {
-      await onSave({
-        taskId: task.id,
-        completedAt: toCompletedAtIso(form.completedAt),
-        costCents: parseAmountCents(form.cost),
-        notes: cleanOptional(form.notes),
-        photoUri: form.photoUri || undefined,
-      });
+      if (isEditing && completion) {
+        await onSave({
+          ...completion,
+          completedAt: toCompletedAtIso(form.completedAt),
+          costCents: parseAmountCents(form.cost),
+          notes: cleanOptional(form.notes),
+          photoUri: form.photoUri || undefined,
+        });
+      } else {
+        await onSave({
+          taskId: task.id,
+          completedAt: toCompletedAtIso(form.completedAt),
+          costCents: parseAmountCents(form.cost),
+          notes: cleanOptional(form.notes),
+          photoUri: form.photoUri || undefined,
+        });
+      }
     } finally {
       setIsSaving(false);
     }
@@ -124,7 +137,7 @@ export function CompleteTaskScreen({ task, onCancel, onSave }: CompleteTaskScree
       <View style={styles.header}>
         <View>
           <Text style={styles.kicker}>Maintenance</Text>
-          <Text style={styles.title}>Complete task</Text>
+          <Text style={styles.title}>{isEditing ? 'Edit completion' : 'Complete task'}</Text>
           <Text style={styles.subtitle}>{task.title}</Text>
         </View>
         <Pressable onPress={onCancel} style={styles.cancelButton} accessibilityRole="button">
@@ -203,7 +216,7 @@ export function CompleteTaskScreen({ task, onCancel, onSave }: CompleteTaskScree
         style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
         accessibilityRole="button"
       >
-        <Text style={styles.saveText}>{isSaving ? 'Saving' : 'Save completion'}</Text>
+        <Text style={styles.saveText}>{isSaving ? 'Saving' : isEditing ? 'Save changes' : 'Save completion'}</Text>
       </Pressable>
     </ScrollView>
   );
