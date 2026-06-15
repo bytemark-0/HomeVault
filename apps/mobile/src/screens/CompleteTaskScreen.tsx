@@ -90,6 +90,13 @@ export function CompleteTaskScreen({ task, onCancel, onSave }: CompleteTaskScree
         </Pressable>
       </View>
 
+      {task.instructions ? (
+        <View style={styles.instructionsPanel}>
+          <Text style={styles.instructionsLabel}>Instructions</Text>
+          <Text style={styles.instructionsText}>{task.instructions}</Text>
+        </View>
+      ) : null}
+
       <View style={styles.panel}>
         <Field
           label="Completed date"
@@ -268,6 +275,27 @@ const styles = StyleSheet.create({
     color: colors.blue,
     fontSize: 13,
     fontWeight: '900',
+  },
+  instructionsPanel: {
+    borderRadius: 8,
+    borderColor: colors.green,
+    borderWidth: 1,
+    backgroundColor: colors.panel,
+    padding: 14,
+    gap: 6,
+  },
+  instructionsLabel: {
+    color: colors.green,
+    fontSize: 11,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    letterSpacing: 0,
+  },
+  instructionsText: {
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 20,
   },
   panel: {
     borderRadius: 8,

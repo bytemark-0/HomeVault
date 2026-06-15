@@ -373,11 +373,13 @@ async function migrate(db: SQLiteDatabase) {
   `);
 
   await ensureColumn(db, 'documents', 'attachment_json', 'TEXT');
+  await ensureColumn(db, 'properties', 'photo_uri', 'TEXT');
   await ensureColumn(db, 'assets', 'install_date', 'TEXT');
   await ensureColumn(db, 'assets', 'purchase_date', 'TEXT');
   await ensureColumn(db, 'assets', 'cost_cents', 'INTEGER');
   await ensureColumn(db, 'assets', 'warranty_expiry', 'TEXT');
   await ensureColumn(db, 'assets', 'photo_uri', 'TEXT');
+  await ensureColumn(db, 'task_completions', 'photo_uri', 'TEXT');
 }
 
 async function seedIfNeeded(db: SQLiteDatabase, snapshot: HomeVaultSnapshot) {
