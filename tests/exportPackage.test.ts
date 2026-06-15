@@ -4,8 +4,10 @@ import { resolve } from 'node:path';
 
 import { createMemoryHomeVaultRepository } from '../packages/database/src';
 import {
+  buildHomeVaultExportManifest,
   formatHomeVaultExportPackage,
   parseHomeVaultExportPackage,
+  validateHomeVaultExportPackage,
 } from '../packages/export/src';
 import { sampleBackupPackage } from '../apps/mobile/src/data/sampleBackupPackage';
 import {
@@ -47,7 +49,101 @@ test('rejects packages whose manifest counts do not match records', () => {
     throw new Error('Expected package validation to fail.');
   }
 
+  assert.equal(result.errorKind, 'malformed');
   assert.deepEqual(result.errors, ['Record count mismatch for assets.']);
+});
+
+test('rejects non-JSON input with not_json errorKind', () => {
+  const result = parseHomeVaultExportPackage('not valid json {{');
+
+  assert.equal(result.ok, false);
+
+  if (result.ok) {
+    throw new Error('Expected package validation to fail.');
+  }
+
+  assert.equal(result.errorKind, 'not_json');
+});
+
+test('rejects non-HomeVault JSON with not_homevault errorKind', () => {
+  const result = parseHomeVaultExportPackage(JSON.stringify({ some: 'other json' }));
+
+  assert.equal(result.ok, false);
+
+  if (result.ok) {
+    throw new Error('Expected package validation to fail.');
+  }
+
+  assert.equal(result.errorKind, 'not_homevault');
+});
+
+test('rejects unsupported version with version_unsupported errorKind', () => {
+  const exportPackage = buildPackage(backupSnapshot, sampleBackupGeneratedAt);
+  const futurePackage = { ...exportPackage, manifest: { ...exportPackage.manifest, version: 99 } };
+
+  const result = validateHomeVaultExportPackage(futurePackage);
+
+  assert.equal(result.ok, false);
+
+  if (result.ok) {
+    throw new Error('Expected package validation to fail.');
+  }
+
+  assert.equal(result.errorKind, 'version_unsupported');
+  assert.ok(result.errors[0]?.includes('version 99'));
+});
+
+test('export checklist marks rooms as review when there are no rooms', () => {
+  const snapshot = { ...backupSnapshot, rooms: [] };
+  const [property] = snapshot.properties;
+
+  if (!property) {
+    throw new Error('Test snapshot must include a property.');
+  }
+
+  const manifest = buildHomeVaultExportManifest({
+    property,
+    assets: snapshot.assets,
+    documents: snapshot.documents,
+    repairEvents: snapshot.repairEvents,
+    rooms: [],
+    taskCompletions: snapshot.taskCompletions,
+    tasks: snapshot.tasks,
+  });
+
+  const roomItem = manifest.checklist.find((item) => item.id === 'rooms');
+
+  assert.equal(roomItem?.state, 'review');
+});
+
+test('export checklist marks linked documents as review when some are unlinked', () => {
+  const [property] = backupSnapshot.properties;
+
+  if (!property) {
+    throw new Error('Test snapshot must include a property.');
+  }
+
+  const unlinkedDocument = { ...backupSnapshot.documents[0]!, linkedRecordIds: [] };
+  const manifest = buildHomeVaultExportManifest({
+    property,
+    assets: backupSnapshot.assets,
+    documents: [unlinkedDocument],
+    repairEvents: backupSnapshot.repairEvents,
+    rooms: backupSnapshot.rooms,
+    taskCompletions: backupSnapshot.taskCompletions,
+    tasks: backupSnapshot.tasks,
+  });
+
+  const docsItem = manifest.checklist.find((item) => item.id === 'documents');
+
+  assert.equal(docsItem?.state, 'review');
+});
+
+test('export checklist marks all items ready when coverage is complete', () => {
+  const pkg = buildPackage(backupSnapshot, sampleBackupGeneratedAt);
+  const reviewItems = pkg.manifest.checklist.filter((item) => item.state === 'review');
+
+  assert.equal(reviewItems.length, 0);
 });
 
 test('restores a validated package into the local repository snapshot', async () => {
