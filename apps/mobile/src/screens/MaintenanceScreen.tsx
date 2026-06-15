@@ -27,7 +27,14 @@ export function MaintenanceScreen({
 }: MaintenanceScreenProps) {
   const [query, setQuery] = useState('');
   const [activeState, setActiveState] = useState('All');
+  const [activeScope, setActiveScope] = useState<'all' | 'property' | 'room' | 'asset'>('all');
   const focusTask = tasks.find((task) => task.state === 'overdue' || task.state === 'due_today');
+
+  const scopeTypes = useMemo(() => {
+    const types = new Set(tasks.map((t) => t.scope));
+    return ['property', 'room', 'asset'].filter((s) => types.has(s as 'property' | 'room' | 'asset')) as ('property' | 'room' | 'asset')[];
+  }, [tasks]);
+
   const filteredTasks = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
@@ -38,6 +45,7 @@ export function MaintenanceScreen({
         (activeState === 'Upcoming' && task.state === 'upcoming') ||
         (activeState === 'Snoozed' && task.state === 'snoozed') ||
         (activeState === 'Completed' && task.state === 'completed');
+      const matchesScope = activeScope === 'all' || task.scope === activeScope;
       const searchableText = [
         task.title,
         task.scopeLabel,
@@ -49,9 +57,9 @@ export function MaintenanceScreen({
         .toLowerCase();
       const matchesQuery = normalizedQuery.length === 0 || searchableText.includes(normalizedQuery);
 
-      return matchesState && matchesQuery;
+      return matchesState && matchesScope && matchesQuery;
     });
-  }, [activeState, query, tasks]);
+  }, [activeScope, activeState, query, tasks]);
 
   return (
     <View style={styles.screen}>
@@ -130,6 +138,32 @@ export function MaintenanceScreen({
         })}
       </View>
 
+      {scopeTypes.length > 1 && (
+        <View style={styles.filterRow}>
+          <Pressable
+            onPress={() => setActiveScope('all')}
+            style={[styles.filterPill, activeScope === 'all' && styles.filterPillActive]}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.filterText, activeScope === 'all' && styles.filterTextActive]}>
+              All scopes
+            </Text>
+          </Pressable>
+          {scopeTypes.map((scope) => (
+            <Pressable
+              key={scope}
+              onPress={() => setActiveScope(scope)}
+              style={[styles.filterPill, activeScope === scope && styles.filterPillActive]}
+              accessibilityRole="button"
+            >
+              <Text style={[styles.filterText, activeScope === scope && styles.filterTextActive]}>
+                {scope === 'property' ? 'Property' : scope === 'room' ? 'Room' : 'Asset'}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+
       <SectionTitle title="Maintenance" action="New task" onActionPress={onAddTask} />
       {tasks.length === 0 ? (
         <View style={styles.emptyPanel}>
@@ -148,7 +182,7 @@ export function MaintenanceScreen({
       ) : (
         <View style={styles.emptyPanel}>
           <Text style={styles.emptyTitle}>No tasks found</Text>
-          <Text style={styles.emptyText}>Try another search or state filter.</Text>
+          <Text style={styles.emptyText}>Try another search, state filter, or scope.</Text>
         </View>
       )}
     </View>
