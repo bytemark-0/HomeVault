@@ -1,4 +1,4 @@
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { TaskCompletionListItem, TaskListItem } from '../data/homeVaultSampleData';
 import { colors } from '../theme/colors';
@@ -108,6 +108,14 @@ export function TaskDetailScreen({
               <Text style={styles.completionNotes}>
                 {completion.notes ?? 'No notes recorded.'}
               </Text>
+              {completion.photoUri ? (
+                <Image
+                  source={{ uri: completion.photoUri }}
+                  style={styles.completionPhoto}
+                  resizeMode="cover"
+                  accessibilityLabel="Completion photo"
+                />
+              ) : null}
             </View>
           ))
         ) : (
@@ -358,5 +366,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     lineHeight: 19,
+  },
+  completionPhoto: {
+    width: '100%',
+    height: 160,
+    borderRadius: 6,
+    marginTop: 6,
   },
 });
