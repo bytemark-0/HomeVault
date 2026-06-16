@@ -88,6 +88,7 @@ import {
   requestNotificationPermission,
   syncTaskNotifications,
 } from './src/utils/notificationUtils';
+import { printPropertySummary } from './src/utils/printReport';
 
 type TabKey = 'home' | 'inventory' | 'maintenance' | 'documents' | 'household';
 type AssetReturnTarget = 'inventory' | 'roomDetail';
@@ -370,6 +371,21 @@ export default function App() {
       setMode('tabs');
     } catch {
       showToast('Could not save property. Please try again.', 'error');
+    }
+  }
+
+  async function handlePrintSummary() {
+    if (!appData) return;
+    try {
+      await printPropertySummary({
+        property: appData.property,
+        rooms: appData.rooms,
+        assets: appData.assets,
+        documents: appData.documents,
+        tasks: appData.tasks,
+      });
+    } catch {
+      showToast('Could not open print dialog. Please try again.', 'error');
     }
   }
 
@@ -1773,6 +1789,7 @@ export default function App() {
                   onDismissRestoreNotice={() => setRestoreSummary(null)}
                   onEditProperty={() => setMode('editProperty')}
                   onExportManifest={() => setMode('exportManifest')}
+                  onPrintSummary={() => void handlePrintSummary()}
                   onResetDemoData={handleResetDemoData}
                   onRoomPress={(roomId) => {
                     setSelectedRoomId(roomId);
