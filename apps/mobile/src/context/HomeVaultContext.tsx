@@ -2,7 +2,7 @@ import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 
-import type { Property } from '@homevault/domain';
+import type { PartSupply, Property } from '@homevault/domain';
 import type { HomeVaultExportPackage } from '@homevault/export';
 import { getHomeVaultRepository } from '../data/localHomeVaultRepository';
 import {
@@ -24,7 +24,6 @@ import {
 import { formatCurrency } from '../utils/taskUtils';
 import { requestNotificationPermission, syncTaskNotifications } from '../utils/notificationUtils';
 import { logDiagnostic } from '../utils/diagnosticLog';
-import type { PartSupply } from '@homevault/domain';
 
 export type AppData = {
   property: Property;

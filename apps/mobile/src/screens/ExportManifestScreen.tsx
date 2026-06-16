@@ -14,7 +14,7 @@ import {
   View,
 } from 'react-native';
 
-import type { Property } from '@homevault/domain';
+import type { PartSupply, Property } from '@homevault/domain';
 import {
   buildHomeVaultExportPackage,
   buildHomeVaultExportManifest,
@@ -37,7 +37,6 @@ import type {
   TaskCompletionListItem,
   TaskListItem,
 } from '../data/homeVaultSampleData';
-import type { PartSupply } from '@homevault/domain';
 import { sampleBackupPackage } from '../data/sampleBackupPackage';
 import { colors } from '../theme/colors';
 
@@ -488,6 +487,11 @@ export function ExportManifestScreen({
             label="Repairs"
             currentValue={manifest.recordCounts.repairEvents}
             backupValue={importPreview.recordCounts.repairEvents}
+          />
+          <CompareLine
+            label="Parts & supplies"
+            currentValue={manifest.recordCounts.parts}
+            backupValue={importPreview.recordCounts.parts}
           />
           {validatedPackage?.manifest.coverage ? (
             <>

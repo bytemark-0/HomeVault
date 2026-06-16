@@ -25,6 +25,8 @@ export async function migrate(db: MigrationDatabase): Promise<void> {
 
   // v0 → v1: full schema DDL (idempotent) + columns added during pre-versioned development
   if (fromVersion < 1) {
+    await db.execAsync('BEGIN;');
+    try {
     await db.execAsync(`
       CREATE TABLE IF NOT EXISTS properties (
         id TEXT PRIMARY KEY NOT NULL,
@@ -170,6 +172,11 @@ export async function migrate(db: MigrationDatabase): Promise<void> {
     await ensureColumn(db, 'task_completions', 'kind', 'TEXT');
 
     await db.execAsync(`PRAGMA user_version = 1;`);
+    await db.execAsync('COMMIT;');
+    } catch (err) {
+      try { await db.execAsync('ROLLBACK;'); } catch { /* ignore rollback failure */ }
+      throw err;
+    }
   }
 }
 

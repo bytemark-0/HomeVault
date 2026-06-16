@@ -278,11 +278,169 @@ export async function createSQLiteHomeVaultRepository(
       await resetDemoData(db, initialSnapshot);
     },
     async restoreSnapshot(snapshot) {
-      await resetDemoData(db, snapshot);
+      await db.withTransactionAsync(async () => {
+        await deleteSnapshotRows(db);
+        await insertSnapshotRows(db, snapshot);
+      });
     },
   };
 }
 
+
+async function insertSnapshotRows(db: SQLiteDatabase, snapshot: HomeVaultSnapshot): Promise<void> {
+  for (const property of snapshot.properties) {
+    await db.runAsync(
+      `INSERT INTO properties (
+        id, household_id, label, address_label, type, year_built, purchase_date, photo_uri
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        property.id,
+        property.householdId,
+        property.label,
+        property.addressLabel ?? null,
+        property.type,
+        property.yearBuilt ?? null,
+        property.purchaseDate ?? null,
+        property.photoUri ?? null,
+      ],
+    );
+  }
+
+  for (const room of snapshot.rooms) {
+    await db.runAsync(
+      `INSERT INTO rooms (id, property_id, name, type, floor, photo_uri)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [room.id, room.propertyId, room.name, room.type, room.floor ?? null, room.photoUri ?? null],
+    );
+  }
+
+  for (const asset of snapshot.assets) {
+    await db.runAsync(
+      `INSERT INTO assets (
+        id, property_id, room_id, name, category, brand, model, serial,
+        install_date, purchase_date, warranty_expiry, photo_uri, cost_cents, status, notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        asset.id,
+        asset.propertyId,
+        asset.roomId ?? null,
+        asset.name,
+        asset.category,
+        asset.brand ?? null,
+        asset.model ?? null,
+        asset.serial ?? null,
+        asset.installDate ?? null,
+        asset.purchaseDate ?? null,
+        asset.warrantyExpiry ?? null,
+        asset.photoUri ?? null,
+        asset.costCents ?? null,
+        asset.status,
+        asset.notes ?? null,
+      ],
+    );
+  }
+
+  for (const document of snapshot.documents) {
+    await db.runAsync(
+      `INSERT INTO documents (
+        id, property_id, title, type, file_path, attachment_json, date, vendor,
+        amount_cents, ocr_text, linked_record_ids_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        document.id,
+        document.propertyId,
+        document.title,
+        document.type,
+        document.filePath ?? null,
+        stringifyAttachment(document),
+        document.date ?? null,
+        document.vendor ?? null,
+        document.amountCents ?? null,
+        document.ocrText ?? null,
+        JSON.stringify(document.linkedRecordIds),
+      ],
+    );
+  }
+
+  for (const task of snapshot.tasks) {
+    await db.runAsync(
+      `INSERT INTO maintenance_tasks (
+        id, property_id, scope, scope_id, title, due_date, recurrence_kind,
+        recurrence_label, assignee_id, state, instructions
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        task.id,
+        task.propertyId,
+        task.scope,
+        task.scopeId,
+        task.title,
+        task.dueDate,
+        task.recurrenceKind,
+        task.recurrenceLabel,
+        task.assigneeId ?? null,
+        task.state,
+        task.instructions ?? null,
+      ],
+    );
+  }
+
+  for (const repairEvent of snapshot.repairEvents) {
+    await db.runAsync(
+      `INSERT INTO repair_events (
+        id, property_id, asset_id, issue, provider, diagnosis, resolution,
+        cost_cents, date, document_ids_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        repairEvent.id,
+        repairEvent.propertyId,
+        repairEvent.assetId,
+        repairEvent.issue,
+        repairEvent.provider ?? null,
+        repairEvent.diagnosis ?? null,
+        repairEvent.resolution ?? null,
+        repairEvent.costCents ?? null,
+        repairEvent.date,
+        JSON.stringify(repairEvent.documentIds),
+      ],
+    );
+  }
+
+  for (const completion of snapshot.taskCompletions) {
+    await db.runAsync(
+      `INSERT INTO task_completions (
+        id, task_id, completed_at, completed_by_user_id, cost_cents, notes, photo_uri, kind
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        completion.id,
+        completion.taskId,
+        completion.completedAt,
+        completion.completedByUserId ?? null,
+        completion.costCents ?? null,
+        completion.notes ?? null,
+        completion.photoUri ?? null,
+        completion.kind ?? null,
+      ],
+    );
+  }
+
+  for (const part of (snapshot.parts ?? [])) {
+    await db.runAsync(
+      `INSERT INTO parts (id, property_id, asset_id, maintenance_task_id, name, part_number, size, quantity, link)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        part.id,
+        part.propertyId,
+        part.assetId ?? null,
+        part.maintenanceTaskId ?? null,
+        part.name,
+        part.partNumber ?? null,
+        part.size ?? null,
+        part.quantity ?? null,
+        part.link ?? null,
+      ],
+    );
+  }
+}
 
 async function seedIfNeeded(db: SQLiteDatabase, snapshot: HomeVaultSnapshot) {
   const row = await db.getFirstAsync<CountRow>('SELECT COUNT(*) AS count FROM properties');
@@ -292,158 +450,7 @@ async function seedIfNeeded(db: SQLiteDatabase, snapshot: HomeVaultSnapshot) {
   }
 
   await db.withTransactionAsync(async () => {
-    for (const property of snapshot.properties) {
-      await db.runAsync(
-        `INSERT INTO properties (
-          id, household_id, label, address_label, type, year_built, purchase_date, photo_uri
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          property.id,
-          property.householdId,
-          property.label,
-          property.addressLabel ?? null,
-          property.type,
-          property.yearBuilt ?? null,
-          property.purchaseDate ?? null,
-          property.photoUri ?? null,
-        ],
-      );
-    }
-
-    for (const room of snapshot.rooms) {
-      await db.runAsync(
-        `INSERT INTO rooms (id, property_id, name, type, floor, photo_uri)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [room.id, room.propertyId, room.name, room.type, room.floor ?? null, room.photoUri ?? null],
-      );
-    }
-
-    for (const asset of snapshot.assets) {
-      await db.runAsync(
-        `INSERT INTO assets (
-          id, property_id, room_id, name, category, brand, model, serial,
-          install_date, purchase_date, warranty_expiry, photo_uri, cost_cents, status, notes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          asset.id,
-          asset.propertyId,
-          asset.roomId ?? null,
-          asset.name,
-          asset.category,
-          asset.brand ?? null,
-          asset.model ?? null,
-          asset.serial ?? null,
-          asset.installDate ?? null,
-          asset.purchaseDate ?? null,
-          asset.warrantyExpiry ?? null,
-          asset.photoUri ?? null,
-          asset.costCents ?? null,
-          asset.status,
-          asset.notes ?? null,
-        ],
-      );
-    }
-
-    for (const document of snapshot.documents) {
-      await db.runAsync(
-        `INSERT INTO documents (
-          id, property_id, title, type, file_path, attachment_json, date, vendor,
-          amount_cents, ocr_text, linked_record_ids_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          document.id,
-          document.propertyId,
-          document.title,
-          document.type,
-          document.filePath ?? null,
-          stringifyAttachment(document),
-          document.date ?? null,
-          document.vendor ?? null,
-          document.amountCents ?? null,
-          document.ocrText ?? null,
-          JSON.stringify(document.linkedRecordIds),
-        ],
-      );
-    }
-
-    for (const task of snapshot.tasks) {
-      await db.runAsync(
-        `INSERT INTO maintenance_tasks (
-          id, property_id, scope, scope_id, title, due_date, recurrence_kind,
-          recurrence_label, assignee_id, state, instructions
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          task.id,
-          task.propertyId,
-          task.scope,
-          task.scopeId,
-          task.title,
-          task.dueDate,
-          task.recurrenceKind,
-          task.recurrenceLabel,
-          task.assigneeId ?? null,
-          task.state,
-          task.instructions ?? null,
-        ],
-      );
-    }
-
-    for (const repairEvent of snapshot.repairEvents) {
-      await db.runAsync(
-        `INSERT INTO repair_events (
-          id, property_id, asset_id, issue, provider, diagnosis, resolution,
-          cost_cents, date, document_ids_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          repairEvent.id,
-          repairEvent.propertyId,
-          repairEvent.assetId,
-          repairEvent.issue,
-          repairEvent.provider ?? null,
-          repairEvent.diagnosis ?? null,
-          repairEvent.resolution ?? null,
-          repairEvent.costCents ?? null,
-          repairEvent.date,
-          JSON.stringify(repairEvent.documentIds),
-        ],
-      );
-    }
-
-    for (const completion of snapshot.taskCompletions) {
-      await db.runAsync(
-        `INSERT INTO task_completions (
-          id, task_id, completed_at, completed_by_user_id, cost_cents, notes, photo_uri, kind
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          completion.id,
-          completion.taskId,
-          completion.completedAt,
-          completion.completedByUserId ?? null,
-          completion.costCents ?? null,
-          completion.notes ?? null,
-          completion.photoUri ?? null,
-          completion.kind ?? null,
-        ],
-      );
-    }
-
-    for (const part of (snapshot.parts ?? [])) {
-      await db.runAsync(
-        `INSERT INTO parts (id, property_id, asset_id, maintenance_task_id, name, part_number, size, quantity, link)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          part.id,
-          part.propertyId,
-          part.assetId ?? null,
-          part.maintenanceTaskId ?? null,
-          part.name,
-          part.partNumber ?? null,
-          part.size ?? null,
-          part.quantity ?? null,
-          part.link ?? null,
-        ],
-      );
-    }
+    await insertSnapshotRows(db, snapshot);
   });
 }
 
@@ -511,16 +518,20 @@ async function seedDemoServiceHistoryIfNeeded(
   });
 }
 
+async function deleteSnapshotRows(db: SQLiteDatabase): Promise<void> {
+  await db.runAsync('DELETE FROM task_completions');
+  await db.runAsync('DELETE FROM repair_events');
+  await db.runAsync('DELETE FROM maintenance_tasks');
+  await db.runAsync('DELETE FROM parts');
+  await db.runAsync('DELETE FROM documents');
+  await db.runAsync('DELETE FROM assets');
+  await db.runAsync('DELETE FROM rooms');
+  await db.runAsync('DELETE FROM properties');
+}
+
 async function resetDemoData(db: SQLiteDatabase, snapshot: HomeVaultSnapshot) {
   await db.withTransactionAsync(async () => {
-    await db.runAsync('DELETE FROM task_completions');
-    await db.runAsync('DELETE FROM repair_events');
-    await db.runAsync('DELETE FROM maintenance_tasks');
-    await db.runAsync('DELETE FROM parts');
-    await db.runAsync('DELETE FROM documents');
-    await db.runAsync('DELETE FROM assets');
-    await db.runAsync('DELETE FROM rooms');
-    await db.runAsync('DELETE FROM properties');
+    await deleteSnapshotRows(db);
   });
 
   await seedIfNeeded(db, snapshot);

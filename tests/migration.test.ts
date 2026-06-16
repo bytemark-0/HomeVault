@@ -1,10 +1,8 @@
 import assert from 'node:assert/strict';
 import { resolve } from 'node:path';
 
-import { migrate, CURRENT_SCHEMA_VERSION } from '../apps/mobile/src/data/sqliteMigrations';
-import type { MigrationDatabase } from '../apps/mobile/src/data/sqliteMigrations';
+import { migrate, CURRENT_SCHEMA_VERSION, type MigrationDatabase } from '../apps/mobile/src/data/sqliteMigrations';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const initSqlJs = require(resolve(process.cwd(), 'node_modules/sql.js/dist/sql-asm.js')) as (
   config?: object,
 ) => Promise<{ Database: new () => SqlJsDatabase }>;
@@ -164,6 +162,40 @@ async function main() {
       () => migrate(db),
       (err: Error) =>
         err.message.includes('version 99') && err.message.includes(`${CURRENT_SCHEMA_VERSION}`),
+    );
+  });
+
+  await test('mid-migration failure rolls back — user_version stays at 0', async () => {
+    const raw = new SQL.Database();
+    const base = makeSqlJsAdapter(raw);
+
+    // Count getAllAsync calls. The 3rd call is during ensureColumn for properties.photo_uri,
+    // which happens after all CREATE TABLE DDL has run but before PRAGMA user_version = 1.
+    let getAllCount = 0;
+    const faultyDb: MigrationDatabase = {
+      ...base,
+      getAllAsync<T>(sql: string): Promise<T[]> {
+        getAllCount++;
+        if (getAllCount >= 3) throw new Error('Simulated disk failure');
+        return base.getAllAsync<T>(sql);
+      },
+    };
+
+    await assert.rejects(() => migrate(faultyDb), /Simulated disk failure/);
+
+    // user_version must still be 0 (migration rolled back)
+    const row = raw.exec('PRAGMA user_version');
+    const version = row[0]?.values[0]?.[0];
+    assert.equal(version, 0, 'user_version must remain 0 after failed migration');
+
+    // The tables created during the failed migration must have been rolled back
+    const tables = raw.exec(
+      'SELECT name FROM sqlite_master WHERE type = "table" ORDER BY name',
+    );
+    assert.equal(
+      tables.length,
+      0,
+      'No tables should exist after a rolled-back migration',
     );
   });
 }
