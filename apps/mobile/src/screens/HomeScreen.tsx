@@ -12,6 +12,7 @@ import type {
 import { colors } from '../theme/colors';
 
 type HomeScreenProps = {
+  propertyLabel: string;
   propertyPhotoUri?: string;
   activeTasks: number;
   assetCount: number;
@@ -33,6 +34,7 @@ type HomeScreenProps = {
 };
 
 export function HomeScreen({
+  propertyLabel,
   propertyPhotoUri,
   activeTasks,
   assetCount,
@@ -52,71 +54,51 @@ export function HomeScreen({
   onViewServiceHistory,
   recentAssets,
 }: HomeScreenProps) {
-  const heroTitle =
-    activeTasks > 0
-      ? `${activeTasks} ${activeTasks === 1 ? 'task needs' : 'tasks need'} eyes today`
-      : 'Your home is caught up';
+  const isEmpty = assetCount === 0 && documentCount === 0 && activeTasks === 0;
+
+  const subtitle =
+    isEmpty
+      ? 'Start building your home record'
+      : activeTasks > 0
+        ? `${activeTasks} ${activeTasks === 1 ? 'task needs' : 'tasks need'} attention`
+        : 'Your home is caught up';
 
   return (
     <View style={styles.screen}>
-      <View style={styles.summaryPanel}>
-        <View style={styles.heroLeft}>
-          <Text style={styles.kicker}>Home health</Text>
-          <Text style={styles.heroTitle}>{heroTitle}</Text>
-        </View>
-        <View style={styles.scoreBadge}>
-          <Text style={styles.scoreValue}>{healthScore}</Text>
-          <Text style={styles.scoreLabel}>Score</Text>
-        </View>
-      </View>
-
-      {propertyPhotoUri ? (
-        <Image
-          source={{ uri: propertyPhotoUri }}
-          style={styles.propertyPhoto}
-          resizeMode="cover"
-          accessibilityLabel="Property photo"
-        />
-      ) : null}
-
-      <View style={styles.metricGrid}>
-        <MetricCard label="Assets" value={String(assetCount)} detail={`${roomCount} rooms`} />
-        <MetricCard label="Documents" value={String(documentCount)} detail="Receipts, manuals" />
-        <MetricCard label="Open tasks" value={String(activeTasks)} detail="Local reminders" />
-        <MetricCard label="Tracked costs" value={savedCostLabel} detail="Repairs, service" onPress={onViewCostSummary} accessibilityLabel="View cost summary" />
-      </View>
-
-      {assetCount === 0 && (
-        <View style={styles.gettingStartedPanel}>
-          <Text style={styles.gettingStartedTitle}>Set up your household</Text>
-          <Text style={styles.gettingStartedText}>
-            HomeVault tracks assets, documents, and maintenance so nothing slips through. Start with a few rooms and key appliances.
-          </Text>
-          <View style={styles.gettingStartedSteps}>
-            <Pressable onPress={onViewInventory} style={styles.gettingStartedStep} accessibilityRole="button">
-              <View style={styles.stepBadge}><Text style={styles.stepBadgeText}>1</Text></View>
-              <View style={styles.stepBody}>
-                <Text style={styles.stepTitle}>Add a room or area</Text>
-                <Text style={styles.stepMeta}>Kitchen, garage, basement, roof…</Text>
-              </View>
-            </Pressable>
-            <Pressable onPress={onViewInventory} style={styles.gettingStartedStep} accessibilityRole="button">
-              <View style={styles.stepBadge}><Text style={styles.stepBadgeText}>2</Text></View>
-              <View style={styles.stepBody}>
-                <Text style={styles.stepTitle}>Record an asset</Text>
-                <Text style={styles.stepMeta}>Dishwasher, HVAC, water heater…</Text>
-              </View>
-            </Pressable>
-            <Pressable onPress={onViewMaintenance} style={styles.gettingStartedStep} accessibilityRole="button">
-              <View style={styles.stepBadge}><Text style={styles.stepBadgeText}>3</Text></View>
-              <View style={styles.stepBody}>
-                <Text style={styles.stepTitle}>Add a maintenance task</Text>
-                <Text style={styles.stepMeta}>Filter changes, inspections, seasonal work…</Text>
-              </View>
-            </Pressable>
+      {/* Property identity header — NX-602 */}
+      <View style={styles.propertyHeader}>
+        {propertyPhotoUri ? (
+          <Image
+            source={{ uri: propertyPhotoUri }}
+            style={StyleSheet.absoluteFill}
+            resizeMode="cover"
+            accessibilityLabel="Property photo"
+          />
+        ) : (
+          <View style={[StyleSheet.absoluteFill, styles.propertyHeaderFallback]} />
+        )}
+        <View style={styles.propertyHeaderOverlay} />
+        <View style={styles.propertyHeaderContent}>
+          <View style={styles.propertyHeaderText}>
+            <Text style={styles.propertyName} numberOfLines={2}>{propertyLabel}</Text>
+            <Text style={styles.propertySubtitle}>{subtitle}</Text>
+          </View>
+          <View style={styles.scoreBadge}>
+            <Text style={styles.scoreValue}>{healthScore}</Text>
+            <Text style={styles.scoreLabel}>Score</Text>
           </View>
         </View>
-      )}
+      </View>
+
+      {/* Metric grid — only shown once there's data worth summarising */}
+      {!isEmpty ? (
+        <View style={styles.metricGrid}>
+          <MetricCard label="Assets" value={String(assetCount)} detail={`${roomCount} rooms`} />
+          <MetricCard label="Documents" value={String(documentCount)} detail="Receipts, manuals" />
+          <MetricCard label="Open tasks" value={String(activeTasks)} detail="Local reminders" />
+          <MetricCard label="Tracked costs" value={savedCostLabel} detail="Repairs, service" onPress={onViewCostSummary} accessibilityLabel="View cost summary" />
+        </View>
+      ) : null}
 
       <SectionTitle title="Due now" action="View all" onActionPress={onViewMaintenance} />
       {dueTasks.length > 0 ? (
@@ -198,119 +180,65 @@ const styles = StyleSheet.create({
   screen: {
     gap: 14,
   },
-  summaryPanel: {
+  propertyHeader: {
+    borderRadius: 12,
+    minHeight: 160,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  propertyHeaderFallback: {
     backgroundColor: colors.ink,
-    borderRadius: 8,
-    padding: 18,
-    minHeight: 142,
+  },
+  propertyHeaderOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.40)',
+  },
+  propertyHeaderContent: {
     flexDirection: 'row',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    padding: 16,
+    gap: 12,
   },
-  kicker: {
-    color: colors.green,
-    fontSize: 12,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 0,
-  },
-  heroLeft: {
+  propertyHeaderText: {
     flex: 1,
-    marginRight: 12,
+    gap: 4,
   },
-  heroTitle: {
+  propertyName: {
     color: '#FFFFFF',
-    fontSize: 28,
-    lineHeight: 34,
-    fontWeight: '800',
-    letterSpacing: 0,
-    marginTop: 12,
+    fontSize: 26,
+    fontWeight: '900',
+    lineHeight: 32,
+    letterSpacing: -0.3,
+  },
+  propertySubtitle: {
+    color: 'rgba(255,255,255,0.80)',
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 19,
   },
   scoreBadge: {
-    width: 78,
-    height: 78,
+    width: 72,
+    height: 72,
     borderRadius: 8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   scoreValue: {
     color: colors.green,
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '900',
   },
   scoreLabel: {
     color: colors.muted,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-  },
-  propertyPhoto: {
-    width: '100%',
-    height: 180,
-    borderRadius: 8,
   },
   metricGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
-  },
-  gettingStartedPanel: {
-    backgroundColor: colors.panel,
-    borderColor: colors.green,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 14,
-    gap: 12,
-  },
-  gettingStartedTitle: {
-    color: colors.ink,
-    fontSize: 16,
-    fontWeight: '900',
-    letterSpacing: 0,
-  },
-  gettingStartedText: {
-    color: colors.muted,
-    fontSize: 13,
-    fontWeight: '700',
-    lineHeight: 19,
-  },
-  gettingStartedSteps: {
-    gap: 10,
-  },
-  gettingStartedStep: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingTop: 10,
-    borderTopColor: colors.line,
-    borderTopWidth: 1,
-  },
-  stepBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.greenSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepBadgeText: {
-    color: colors.green,
-    fontSize: 13,
-    fontWeight: '900',
-  },
-  stepBody: {
-    flex: 1,
-    gap: 2,
-  },
-  stepTitle: {
-    color: colors.ink,
-    fontSize: 14,
-    fontWeight: '900',
-  },
-  stepMeta: {
-    color: colors.muted,
-    fontSize: 12,
-    fontWeight: '700',
   },
   warrantyRow: {
     backgroundColor: colors.panel,

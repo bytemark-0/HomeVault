@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, View, Text, Pressable } from 'react-native';
 
 import { useHomeVault } from '../../src/context/HomeVaultContext';
 import { HomeScreen } from '../../src/screens/HomeScreen';
+import { SetupChecklistCard } from '../../src/components/SetupChecklistCard';
 import { colors } from '../../src/theme/colors';
 import type { HomeActivityItem } from '../../src/data/homeVaultSampleData';
 
@@ -28,26 +29,30 @@ export default function HomeTab() {
       showsVerticalScrollIndicator={false}
     >
       {appData ? (
-        <HomeScreen
-          propertyPhotoUri={appData.property.photoUri}
-          activeTasks={appData.activeTaskCount}
-          assetCount={appData.assetCount}
-          documentCount={appData.documentCount}
-          healthScore={appData.healthScore}
-          recentActivity={appData.recentActivity}
-          dueTasks={appData.dueTasks}
-          warrantyAlerts={appData.assets.filter((a) => a.warrantyExpiringSoon)}
-          onActivityPress={handleActivityPress}
-          onAssetPress={(id) => router.push(`/asset/${id}`)}
-          onTaskPress={(id) => router.push(`/task/${id}`)}
-          onViewCostSummary={() => router.push('/cost-summary')}
-          onViewInventory={() => router.push('/(tabs)/inventory')}
-          onViewMaintenance={() => router.push('/(tabs)/maintenance')}
-          onViewServiceHistory={() => router.push('/service-history')}
-          recentAssets={appData.recentAssets}
-          roomCount={appData.roomCount}
-          savedCostLabel={appData.savedCostLabel}
-        />
+        <>
+          <SetupChecklistCard />
+          <HomeScreen
+            propertyLabel={appData.property.label}
+            propertyPhotoUri={appData.property.photoUri}
+            activeTasks={appData.activeTaskCount}
+            assetCount={appData.assetCount}
+            documentCount={appData.documentCount}
+            healthScore={appData.healthScore}
+            recentActivity={appData.recentActivity}
+            dueTasks={appData.dueTasks}
+            warrantyAlerts={appData.assets.filter((a) => a.warrantyExpiringSoon)}
+            onActivityPress={handleActivityPress}
+            onAssetPress={(id) => router.push(`/asset/${id}`)}
+            onTaskPress={(id) => router.push(`/task/${id}`)}
+            onViewCostSummary={() => router.push('/cost-summary')}
+            onViewInventory={() => router.push('/(tabs)/inventory')}
+            onViewMaintenance={() => router.push('/(tabs)/maintenance')}
+            onViewServiceHistory={() => router.push('/service-history')}
+            recentAssets={appData.recentAssets}
+            roomCount={appData.roomCount}
+            savedCostLabel={appData.savedCostLabel}
+          />
+        </>
       ) : loadError ? (
         <View style={styles.statusPanel}>
           <Text style={styles.statusTitle}>Could not load data</Text>

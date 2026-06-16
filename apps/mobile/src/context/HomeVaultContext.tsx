@@ -24,7 +24,7 @@ import {
   toTaskListItem,
 } from '../data/homeVaultSampleData';
 import { formatCurrency } from '../utils/taskUtils';
-import { requestNotificationPermission, syncTaskNotifications } from '../utils/notificationUtils';
+import { syncTaskNotifications } from '../utils/notificationUtils';
 import { logDiagnostic } from '../utils/diagnosticLog';
 
 export type AppData = {
@@ -169,7 +169,9 @@ export function HomeVaultProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    void requestNotificationPermission();
+    // Do NOT request notification permission here. Permission is requested
+    // lazily inside syncTaskNotifications once the user has created a task
+    // with a due date — contextual and expected, not a cold startup prompt.
 
     notificationListener.current = Notifications.addNotificationResponseReceivedListener(
       (response) => {

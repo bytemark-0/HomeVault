@@ -20,16 +20,27 @@ export async function requestNotificationPermission(): Promise<boolean> {
 }
 
 export async function syncTaskNotifications(tasks: TaskListItem[]): Promise<void> {
-  await Notifications.cancelAllScheduledNotificationsAsync();
-
   const now = new Date();
   const overdueCount = tasks.filter((t) => t.state === 'overdue').length;
+  const schedulable = tasks.filter(
+    (t) => t.state !== 'completed' && t.state !== 'overdue' && t.dueDate,
+  );
+
+  // Request permission only when the user has tasks that benefit from it.
+  // This is contextual — the system prompt appears after a task with a due
+  // date is created, not on cold app launch.
+  if (schedulable.length > 0 || overdueCount > 0) {
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted') {
+      await Notifications.requestPermissionsAsync();
+    }
+  }
+
+  await Notifications.cancelAllScheduledNotificationsAsync();
   await Notifications.setBadgeCountAsync(overdueCount);
 
-  for (const task of tasks) {
-    if (task.state === 'completed' || task.state === 'overdue' || !task.dueDate) continue;
-
-    const triggerDate = getTriggerDate(task.dueDate, task.state, now);
+  for (const task of schedulable) {
+    const triggerDate = getTriggerDate(task.dueDate!, task.state, now);
     if (!triggerDate) continue;
 
     await Notifications.scheduleNotificationAsync({
