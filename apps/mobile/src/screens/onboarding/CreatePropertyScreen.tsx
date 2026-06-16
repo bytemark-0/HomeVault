@@ -13,7 +13,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Property } from '@homevault/domain';
 import type { CreatePropertyInput } from '@homevault/database';
 import { getHomeVaultRepository } from '../../data/localHomeVaultRepository';
-import { useHomeVault } from '../../context/HomeVaultContext';
 import { colors } from '../../theme/colors';
 
 const PROPERTY_TYPES: Array<{ label: string; value: Property['type'] }> = [
@@ -24,10 +23,9 @@ const PROPERTY_TYPES: Array<{ label: string; value: Property['type'] }> = [
   { label: 'Other', value: 'other' },
 ];
 
-type Props = { onBack: () => void; onCreated?: () => void };
+type Props = { onBack: () => void; onCreated: (property: Property) => void };
 
 export function CreatePropertyScreen({ onBack, onCreated }: Props) {
-  const { finishOnboarding } = useHomeVault();
   const insets = useSafeAreaInsets();
 
   const [label, setLabel] = useState('');
@@ -50,9 +48,8 @@ export function CreatePropertyScreen({ onBack, onCreated }: Props) {
     try {
       const repo = await getHomeVaultRepository();
       const input: CreatePropertyInput = { label: label.trim(), type };
-      await repo.createProperty(input);
-      onCreated?.();
-      await finishOnboarding();
+      const property = await repo.createProperty(input);
+      onCreated(property);
     } finally {
       setIsSaving(false);
     }

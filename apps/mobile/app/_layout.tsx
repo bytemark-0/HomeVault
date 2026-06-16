@@ -4,10 +4,13 @@ import { StatusBar } from 'expo-status-bar';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
+import type { Property } from '@homevault/domain';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { HomeVaultProvider, useHomeVault } from '../src/context/HomeVaultContext';
 import { WelcomeScreen } from '../src/screens/onboarding/WelcomeScreen';
 import { CreatePropertyScreen } from '../src/screens/onboarding/CreatePropertyScreen';
+import { PropertyPhotoScreen } from '../src/screens/onboarding/PropertyPhotoScreen';
+import { QuickStartScreen } from '../src/screens/onboarding/QuickStartScreen';
 import {
   type OnboardingStep,
   clearOnboardingState,
@@ -40,8 +43,11 @@ function LoadErrorView() {
 }
 
 function AppContent() {
-  const { isNewUser, loadError } = useHomeVault();
+  const { isNewUser, loadError, finishOnboarding } = useHomeVault();
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>('welcome');
+  // In-memory post-create state; not persisted since the property already exists by then.
+  const [postCreateStep, setPostCreateStep] = useState<'add-photo' | 'quick-start' | null>(null);
+  const [onboardingProperty, setOnboardingProperty] = useState<Property | null>(null);
 
   // Restore persisted step so kills during setup resume at the right screen.
   useEffect(() => {
@@ -53,14 +59,39 @@ function AppContent() {
     void writeOnboardingStep(step);
   }
 
-  function goBack() {
-    goToStep('welcome');
-  }
-
   if (loadError) return <LoadErrorView />;
   if (isNewUser) {
+    if (postCreateStep === 'add-photo' && onboardingProperty) {
+      return (
+        <PropertyPhotoScreen
+          property={onboardingProperty}
+          onDone={(updated) => {
+            setOnboardingProperty(updated);
+            setPostCreateStep('quick-start');
+          }}
+          onSkip={() => setPostCreateStep('quick-start')}
+        />
+      );
+    }
+    if (postCreateStep === 'quick-start' && onboardingProperty) {
+      return (
+        <QuickStartScreen
+          property={onboardingProperty}
+          onDone={() => void finishOnboarding()}
+        />
+      );
+    }
     if (onboardingStep === 'create-property') {
-      return <CreatePropertyScreen onBack={goBack} onCreated={() => void clearOnboardingState()} />;
+      return (
+        <CreatePropertyScreen
+          onBack={() => goToStep('welcome')}
+          onCreated={(property) => {
+            void clearOnboardingState();
+            setOnboardingProperty(property);
+            setPostCreateStep('add-photo');
+          }}
+        />
+      );
     }
     return <WelcomeScreen onSetUp={() => goToStep('create-property')} />;
   }
