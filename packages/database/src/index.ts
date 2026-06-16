@@ -54,6 +54,7 @@ export type HomeVaultRepository = {
   updatePart(input: UpdatePartInput): Promise<PartSupply>;
   deletePart(partId: EntityId): Promise<void>;
   resetDemoData?(): Promise<void>;
+  clearAllData?(): Promise<void>;
   restoreSnapshot?(snapshot: HomeVaultSnapshot): Promise<void>;
 };
 
@@ -461,6 +462,16 @@ export function createMemoryHomeVaultRepository(
       snapshot.taskCompletions = freshSnapshot.taskCompletions;
       snapshot.repairEvents = freshSnapshot.repairEvents;
       snapshot.parts = freshSnapshot.parts;
+    },
+    async clearAllData() {
+      snapshot.properties = [];
+      snapshot.rooms = [];
+      snapshot.assets = [];
+      snapshot.documents = [];
+      snapshot.tasks = [];
+      snapshot.taskCompletions = [];
+      snapshot.repairEvents = [];
+      snapshot.parts = [];
     },
     async restoreSnapshot(nextSnapshot) {
       const freshSnapshot = cloneSnapshot(nextSnapshot);

@@ -75,8 +75,10 @@ export type HomeActivityItem = {
   occurredAt: string;
 };
 
+export const SAMPLE_PROPERTY_ID = 'property-maple-street';
+
 export const sampleProperty: Property = {
-  id: 'property-maple-street',
+  id: SAMPLE_PROPERTY_ID,
   householdId: 'household-maple',
   label: 'Maple Street home',
   type: 'single_family',

@@ -274,6 +274,11 @@ export async function createSQLiteHomeVaultRepository(): Promise<HomeVaultReposi
     async resetDemoData() {
       await resetDemoData(db, sampleSnapshot);
     },
+    async clearAllData() {
+      await db.withTransactionAsync(async () => {
+        await deleteSnapshotRows(db);
+      });
+    },
     async restoreSnapshot(snapshot) {
       await db.withTransactionAsync(async () => {
         await deleteSnapshotRows(db);

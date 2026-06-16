@@ -8,7 +8,7 @@ import { colors } from '../../src/theme/colors';
 import { useHomeVault } from '../../src/context/HomeVaultContext';
 
 export default function TabLayout() {
-  const { appData } = useHomeVault();
+  const { appData, isSampleMode, exitSampleMode } = useHomeVault();
   const insets = useSafeAreaInsets();
 
   return (
@@ -37,6 +37,17 @@ export default function TabLayout() {
           </Pressable>
         </View>
       </View>
+
+      {isSampleMode && (
+        <Pressable
+          style={styles.sampleBanner}
+          onPress={() => void exitSampleMode()}
+          accessibilityRole="button"
+          accessibilityLabel="Sample home — tap to exit"
+        >
+          <Text style={styles.sampleBannerText}>Sample home · Tap to create your own</Text>
+        </Pressable>
+      )}
 
       <Tabs
         screenOptions={{ headerShown: false }}
@@ -153,6 +164,19 @@ const styles = StyleSheet.create({
     fontSize: 28,
     lineHeight: 30,
     fontWeight: '500',
+  },
+  sampleBanner: {
+    backgroundColor: colors.amberSoft,
+    borderBottomColor: colors.amber,
+    borderBottomWidth: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  sampleBannerText: {
+    color: colors.amber,
+    fontSize: 12,
+    fontWeight: '700',
   },
   tabBar: {
     minHeight: 74,

@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import type { PartSupply, Property } from '@homevault/domain';
 import type { HomeVaultExportPackage } from '@homevault/export';
 import { getHomeVaultRepository } from '../data/localHomeVaultRepository';
+import { SAMPLE_PROPERTY_ID } from '../data/homeVaultSampleData';
 import {
   type AssetListItem,
   type DocumentListItem,
@@ -66,6 +67,7 @@ type ToastState = { message: string; kind: 'success' | 'error' | 'info' } | null
 type HomeVaultContextValue = {
   appData: AppData | null;
   isNewUser: boolean;
+  isSampleMode: boolean;
   loadError: boolean;
   backupSummary: BackupSummary | null;
   restoreSummary: RestoreSummary | null;
@@ -73,6 +75,8 @@ type HomeVaultContextValue = {
   setBackupSummary: (summary: BackupSummary | null) => void;
   setRestoreSummary: (summary: RestoreSummary | null) => void;
   reload: () => Promise<void>;
+  enterSampleMode: () => Promise<void>;
+  exitSampleMode: () => Promise<void>;
   showToast: (message: string, kind?: 'success' | 'error' | 'info') => void;
   dismissToast: () => void;
 };
@@ -195,8 +199,33 @@ export function HomeVaultProvider({ children }: { children: React.ReactNode }) {
     return () => { isMounted = false; };
   }, []);
 
+  const isSampleMode = appData?.property.id === SAMPLE_PROPERTY_ID;
+
   function showToast(message: string, kind: 'success' | 'error' | 'info' = 'success') {
     setToast({ message, kind });
+  }
+
+  async function enterSampleMode() {
+    try {
+      const repo = await getHomeVaultRepository();
+      await repo.resetDemoData?.();
+      await loadHomeVault();
+    } catch (error) {
+      logDiagnostic('data_load_failure', error);
+      setLoadError(true);
+    }
+  }
+
+  async function exitSampleMode() {
+    try {
+      const repo = await getHomeVaultRepository();
+      await repo.clearAllData?.();
+      setAppData(null);
+      setIsNewUser(true);
+    } catch (error) {
+      logDiagnostic('data_load_failure', error);
+      setLoadError(true);
+    }
   }
 
   return (
@@ -204,6 +233,7 @@ export function HomeVaultProvider({ children }: { children: React.ReactNode }) {
       value={{
         appData,
         isNewUser,
+        isSampleMode,
         loadError,
         backupSummary,
         restoreSummary,
@@ -211,13 +241,15 @@ export function HomeVaultProvider({ children }: { children: React.ReactNode }) {
         setBackupSummary,
         setRestoreSummary,
         reload: async () => {
-        try {
-          await loadHomeVault();
-        } catch (error) {
-          logDiagnostic('data_load_failure', error);
-          setLoadError(true);
-        }
-      },
+          try {
+            await loadHomeVault();
+          } catch (error) {
+            logDiagnostic('data_load_failure', error);
+            setLoadError(true);
+          }
+        },
+        enterSampleMode,
+        exitSampleMode,
         showToast,
         dismissToast: () => setToast(null),
       }}

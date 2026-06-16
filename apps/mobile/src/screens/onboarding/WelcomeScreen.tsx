@@ -1,12 +1,9 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useHomeVault } from '../../context/HomeVaultContext';
 import { colors } from '../../theme/colors';
-
-type WelcomeScreenProps = {
-  onSetUp?: () => void;
-  onExploreSample?: () => void;
-};
 
 const VALUE_POINTS = [
   {
@@ -26,8 +23,16 @@ const VALUE_POINTS = [
   },
 ];
 
-export function WelcomeScreen({ onSetUp, onExploreSample }: WelcomeScreenProps) {
+export function WelcomeScreen() {
+  const { enterSampleMode } = useHomeVault();
   const insets = useSafeAreaInsets();
+  const [loadingSample, setLoadingSample] = useState(false);
+
+  async function handleExploreSample() {
+    setLoadingSample(true);
+    await enterSampleMode();
+    setLoadingSample(false);
+  }
 
   return (
     <View style={styles.root}>
@@ -69,7 +74,6 @@ export function WelcomeScreen({ onSetUp, onExploreSample }: WelcomeScreenProps) 
       <View style={[styles.actions, { paddingBottom: 24 + insets.bottom }]}>
         <Pressable
           style={styles.primaryButton}
-          onPress={onSetUp}
           accessibilityRole="button"
           accessibilityLabel="Set up my home"
         >
@@ -77,12 +81,17 @@ export function WelcomeScreen({ onSetUp, onExploreSample }: WelcomeScreenProps) 
         </Pressable>
 
         <Pressable
-          style={styles.secondaryButton}
-          onPress={onExploreSample}
+          style={[styles.secondaryButton, loadingSample && styles.buttonDisabled]}
+          onPress={loadingSample ? undefined : handleExploreSample}
           accessibilityRole="button"
           accessibilityLabel="Explore a sample home"
+          accessibilityState={{ busy: loadingSample }}
         >
-          <Text style={styles.secondaryButtonText}>Explore a sample home</Text>
+          {loadingSample ? (
+            <ActivityIndicator color={colors.muted} />
+          ) : (
+            <Text style={styles.secondaryButtonText}>Explore a sample home</Text>
+          )}
         </Pressable>
       </View>
     </View>
@@ -196,5 +205,8 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontSize: 15,
     fontWeight: '600',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
 });
