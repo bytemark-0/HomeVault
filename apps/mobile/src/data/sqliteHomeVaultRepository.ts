@@ -7,6 +7,7 @@ import type {
   DocumentRecord,
   EntityId,
   MaintenanceTask,
+  PartSupply,
   Property,
   RepairEvent,
   RoomArea,
@@ -16,6 +17,7 @@ import type {
   CompleteTaskInput,
   CreateAssetInput,
   CreateDocumentInput,
+  CreatePartInput,
   CreateRepairEventInput,
   CreateRoomInput,
   CreateTaskInput,
@@ -24,6 +26,7 @@ import type {
   HomeVaultSnapshot,
   UpdateAssetInput,
   UpdateDocumentInput,
+  UpdatePartInput,
   UpdatePropertyInput,
   UpdateRepairEventInput,
   UpdateRoomInput,
@@ -256,6 +259,18 @@ export async function createSQLiteHomeVaultRepository(
     async deleteTaskCompletion(completionId) {
       return deleteTaskCompletion(db, completionId);
     },
+    async getParts(propertyId) {
+      return getParts(db, propertyId);
+    },
+    async createPart(input) {
+      return createPart(db, input);
+    },
+    async updatePart(input) {
+      return updatePart(db, input);
+    },
+    async deletePart(partId) {
+      return deletePart(db, partId);
+    },
     async resetDemoData() {
       await resetDemoData(db, initialSnapshot);
     },
@@ -377,12 +392,25 @@ async function migrate(db: SQLiteDatabase) {
       deleted_at TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS parts (
+      id TEXT PRIMARY KEY NOT NULL,
+      property_id TEXT NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+      asset_id TEXT REFERENCES assets(id) ON DELETE CASCADE,
+      maintenance_task_id TEXT,
+      name TEXT NOT NULL,
+      part_number TEXT,
+      size TEXT,
+      quantity INTEGER,
+      link TEXT
+    );
+
     CREATE INDEX IF NOT EXISTS idx_rooms_property ON rooms(property_id);
     CREATE INDEX IF NOT EXISTS idx_assets_property ON assets(property_id);
     CREATE INDEX IF NOT EXISTS idx_documents_property ON documents(property_id);
     CREATE INDEX IF NOT EXISTS idx_tasks_property_due ON maintenance_tasks(property_id, due_date);
     CREATE INDEX IF NOT EXISTS idx_task_completions_task ON task_completions(task_id);
     CREATE INDEX IF NOT EXISTS idx_repair_events_property_asset ON repair_events(property_id, asset_id, date);
+    CREATE INDEX IF NOT EXISTS idx_parts_property_asset ON parts(property_id, asset_id);
   `);
 
   await ensureColumn(db, 'documents', 'attachment_json', 'TEXT');
@@ -1113,6 +1141,82 @@ async function updateTaskCompletion(
 
 async function deleteTaskCompletion(db: SQLiteDatabase, completionId: EntityId): Promise<void> {
   await db.runAsync(`DELETE FROM task_completions WHERE id = ?`, [completionId]);
+}
+
+type PartRow = {
+  id: string;
+  property_id: string;
+  asset_id: string | null;
+  maintenance_task_id: string | null;
+  name: string;
+  part_number: string | null;
+  size: string | null;
+  quantity: number | null;
+  link: string | null;
+};
+
+function toPart(row: PartRow): PartSupply {
+  return {
+    id: row.id,
+    propertyId: row.property_id,
+    assetId: row.asset_id ?? undefined,
+    maintenanceTaskId: row.maintenance_task_id ?? undefined,
+    name: row.name,
+    partNumber: row.part_number ?? undefined,
+    size: row.size ?? undefined,
+    quantity: row.quantity ?? undefined,
+    link: row.link ?? undefined,
+  };
+}
+
+async function getParts(db: SQLiteDatabase, propertyId: EntityId): Promise<PartSupply[]> {
+  const rows = await db.getAllAsync<PartRow>(
+    `SELECT * FROM parts WHERE property_id = ? ORDER BY name`,
+    [propertyId],
+  );
+  return rows.map(toPart);
+}
+
+async function createPart(db: SQLiteDatabase, input: CreatePartInput): Promise<PartSupply> {
+  const id = input.id ?? createEntityId('part');
+  await db.runAsync(
+    `INSERT INTO parts (id, property_id, asset_id, maintenance_task_id, name, part_number, size, quantity, link)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      id,
+      input.propertyId,
+      input.assetId ?? null,
+      input.maintenanceTaskId ?? null,
+      input.name,
+      input.partNumber ?? null,
+      input.size ?? null,
+      input.quantity ?? null,
+      input.link ?? null,
+    ],
+  );
+  return { ...input, id };
+}
+
+async function updatePart(db: SQLiteDatabase, input: UpdatePartInput): Promise<PartSupply> {
+  await db.runAsync(
+    `UPDATE parts SET asset_id = ?, maintenance_task_id = ?, name = ?, part_number = ?, size = ?, quantity = ?, link = ?
+     WHERE id = ?`,
+    [
+      input.assetId ?? null,
+      input.maintenanceTaskId ?? null,
+      input.name,
+      input.partNumber ?? null,
+      input.size ?? null,
+      input.quantity ?? null,
+      input.link ?? null,
+      input.id,
+    ],
+  );
+  return { ...input };
+}
+
+async function deletePart(db: SQLiteDatabase, partId: EntityId): Promise<void> {
+  await db.runAsync(`DELETE FROM parts WHERE id = ?`, [partId]);
 }
 
 function createEntityId(prefix: string) {

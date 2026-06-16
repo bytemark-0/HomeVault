@@ -10,16 +10,18 @@ import {
   View,
 } from 'react-native';
 
-import type { Property } from '@homevault/domain';
+import type { PartSupply, Property } from '@homevault/domain';
 import type { HomeVaultExportChecklistItem, HomeVaultExportPackage } from '@homevault/export';
 import type {
+  CompleteTaskInput,
   CreateAssetInput,
   CreateDocumentInput,
+  CreatePartInput,
   CreateRepairEventInput,
   CreateRoomInput,
   CreateTaskInput,
-  CompleteTaskInput,
   UpdateDocumentInput,
+  UpdatePartInput,
   UpdatePropertyInput,
   UpdateRepairEventInput,
   UpdateTaskCompletionInput,
@@ -50,6 +52,7 @@ import {
   toTaskListItem,
 } from './src/data/homeVaultSampleData';
 import { AddAssetScreen } from './src/screens/AddAssetScreen';
+import { AddPartScreen } from './src/screens/AddPartScreen';
 import { AddDocumentScreen } from './src/screens/AddDocumentScreen';
 import { AddRepairEventScreen } from './src/screens/AddRepairEventScreen';
 import { AddRoomScreen } from './src/screens/AddRoomScreen';
@@ -114,6 +117,8 @@ type AppMode =
   | 'snoozeTask'
   | 'addRepairEvent'
   | 'editRepairEvent'
+  | 'addPart'
+  | 'editPart'
   | 'serviceHistory'
   | 'costSummary';
 
@@ -142,6 +147,7 @@ type AppData = {
   tasks: TaskListItem[];
   taskCompletions: TaskCompletionListItem[];
   repairEvents: RepairEventListItem[];
+  parts: PartSupply[];
 };
 
 type RestoreSummary = {
@@ -181,6 +187,7 @@ export default function App() {
     useState<'assetDetail' | 'maintenance'>('assetDetail');
   const [selectedRepairEventId, setSelectedRepairEventId] = useState<string | null>(null);
   const [selectedCompletionId, setSelectedCompletionId] = useState<string | null>(null);
+  const [selectedPartId, setSelectedPartId] = useState<string | null>(null);
   const [completionEditReturnTarget, setCompletionEditReturnTarget] =
     useState<'taskDetail' | 'assetDetail'>('taskDetail');
   const [copyFromAssetId, setCopyFromAssetId] = useState<string | null>(null);
@@ -206,6 +213,7 @@ export default function App() {
       tasks,
       taskCompletions,
       repairEvents,
+      parts,
     ] = await Promise.all([
       homeVaultRepository.getDashboard(property.id),
       homeVaultRepository.getRooms(property.id),
@@ -214,6 +222,7 @@ export default function App() {
       homeVaultRepository.getTasks(property.id),
       homeVaultRepository.getTaskCompletions(property.id),
       homeVaultRepository.getRepairEvents(property.id),
+      homeVaultRepository.getParts(property.id),
     ]);
 
     const assetList = assets.map((asset) =>
@@ -259,6 +268,7 @@ export default function App() {
       tasks: taskList,
       taskCompletions: taskCompletionList,
       repairEvents: repairEventList,
+      parts,
     });
 
     void syncTaskNotifications(taskList);
@@ -374,6 +384,7 @@ export default function App() {
     setSelectedDocumentId(null);
     setSelectedRoomId(null);
     setSelectedTaskId(null);
+    setSelectedPartId(null);
     setDocumentLinkTargetId(null);
     setDocumentReviewFilter(null);
     setAssetReturnTarget('inventory');
@@ -498,6 +509,7 @@ export default function App() {
         tasks: backupPackage.records.tasks,
         taskCompletions: backupPackage.records.taskCompletions,
         repairEvents: backupPackage.records.repairEvents,
+        parts: [],
       });
       await loadHomeVault();
       setSelectedAssetId(null);
@@ -807,6 +819,34 @@ export default function App() {
     setMode('assetDetail');
   }
 
+  async function handleSavePart(input: CreatePartInput) {
+    try {
+      const homeVaultRepository = await getHomeVaultRepository();
+      if (input.id) {
+        await homeVaultRepository.updatePart(input as UpdatePartInput);
+        showToast('Part updated');
+      } else {
+        await homeVaultRepository.createPart(input);
+        showToast('Part saved');
+      }
+      await loadHomeVault();
+      setMode('assetDetail');
+    } catch {
+      showToast('Could not save part. Please try again.', 'error');
+    }
+  }
+
+  async function handleDeletePart(partId: string) {
+    try {
+      const homeVaultRepository = await getHomeVaultRepository();
+      await homeVaultRepository.deletePart(partId);
+      await loadHomeVault();
+      showToast('Part deleted', 'error');
+    } catch {
+      showToast('Could not delete part. Please try again.', 'error');
+    }
+  }
+
   async function handleDeleteAsset(assetId: string) {
     try {
       const homeVaultRepository = await getHomeVaultRepository();
@@ -966,6 +1006,8 @@ export default function App() {
       : [];
   const selectedAssetRepairEvents =
     appData?.repairEvents.filter((repairEvent) => repairEvent.assetId === selectedAssetId) ?? [];
+  const selectedAssetParts =
+    appData?.parts.filter((part) => part.assetId === selectedAssetId) ?? [];
   const linkedDocumentCount =
     appData?.documents.filter((document) => document.linkedRecordIds.length > 0).length ?? 0;
   const documentedAssetCount =
@@ -1383,6 +1425,26 @@ export default function App() {
     );
   }
 
+  if ((mode === 'addPart' || mode === 'editPart') && appData && selectedAsset) {
+    const partToEdit =
+      mode === 'editPart' && selectedPartId
+        ? appData.parts.find((p) => p.id === selectedPartId)
+        : undefined;
+
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar style="dark" />
+        <AddPartScreen
+          propertyId={appData.property.id}
+          assetId={selectedAsset.id}
+          part={partToEdit}
+          onCancel={() => setMode('assetDetail')}
+          onSave={handleSavePart}
+        />
+      </SafeAreaView>
+    );
+  }
+
   if (mode === 'assetDetail' && selectedAsset) {
     return (
       <>
@@ -1392,6 +1454,7 @@ export default function App() {
         <AssetDetailScreen
           asset={selectedAsset}
           documents={selectedAssetDocuments}
+          parts={selectedAssetParts}
           repairEvents={selectedAssetRepairEvents}
           taskCompletions={selectedAssetTaskCompletions}
           onBack={() => {
@@ -1411,6 +1474,7 @@ export default function App() {
             setDocumentReturnTarget('assetDetail');
             setMode('addDocument');
           }}
+          onAddPart={() => setMode('addPart')}
           onAddTask={() => setMode('addAssetTask')}
           onDocumentPress={(documentId) => {
             setSelectedDocumentId(documentId);
@@ -1434,6 +1498,11 @@ export default function App() {
             }
           }}
           onDeleteCompletion={handleDeleteTaskCompletion}
+          onEditPart={(partId) => {
+            setSelectedPartId(partId);
+            setMode('editPart');
+          }}
+          onDeletePart={handleDeletePart}
           onRecordRepair={() => {
             setRepairReturnTarget('assetDetail');
             setMode('addRepairEvent');

@@ -2,6 +2,7 @@ import type {
   Asset,
   DocumentRecord,
   MaintenanceTask,
+  PartSupply,
   Property,
   RepairEvent,
   RoomArea,
@@ -310,6 +311,26 @@ export const sampleRepairEvents: RepairEventListItem[] = [
   },
 ];
 
+export const sampleParts: PartSupply[] = [
+  {
+    id: 'part-1',
+    propertyId: 'property-1',
+    assetId: 'asset-1',
+    name: 'HVAC filter',
+    size: '20x25x1 MERV-8',
+    quantity: 3,
+    link: 'https://www.amazon.com/s?k=20x25x1+MERV-8+filter',
+  },
+  {
+    id: 'part-2',
+    propertyId: 'property-1',
+    assetId: 'asset-2',
+    name: 'Refrigerator water filter',
+    partNumber: 'DA29-00020B',
+    quantity: 1,
+  },
+];
+
 export const sampleSnapshot: HomeVaultSnapshot = {
   properties: [sampleProperty],
   rooms: sampleRooms,
@@ -318,6 +339,7 @@ export const sampleSnapshot: HomeVaultSnapshot = {
   tasks: sampleTasks,
   taskCompletions: sampleTaskCompletions,
   repairEvents: sampleRepairEvents,
+  parts: sampleParts,
 };
 
 export function getAssetStatusLabel(status: Asset['status']) {

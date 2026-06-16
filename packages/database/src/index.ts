@@ -3,6 +3,7 @@ import type {
   DocumentRecord,
   EntityId,
   MaintenanceTask,
+  PartSupply,
   Property,
   RepairEvent,
   RoomArea,
@@ -17,6 +18,7 @@ export type HomeVaultSnapshot = {
   tasks: MaintenanceTask[];
   taskCompletions: TaskCompletion[];
   repairEvents: RepairEvent[];
+  parts: PartSupply[];
 };
 
 export type HomeVaultRepository = {
@@ -47,6 +49,10 @@ export type HomeVaultRepository = {
   completeTask(input: CompleteTaskInput): Promise<TaskCompletion>;
   updateTaskCompletion(input: UpdateTaskCompletionInput): Promise<TaskCompletion>;
   deleteTaskCompletion(completionId: EntityId): Promise<void>;
+  getParts(propertyId: EntityId): Promise<PartSupply[]>;
+  createPart(input: CreatePartInput): Promise<PartSupply>;
+  updatePart(input: UpdatePartInput): Promise<PartSupply>;
+  deletePart(partId: EntityId): Promise<void>;
   resetDemoData?(): Promise<void>;
   restoreSnapshot?(snapshot: HomeVaultSnapshot): Promise<void>;
 };
@@ -84,6 +90,9 @@ export type CreateRepairEventInput = Omit<RepairEvent, 'id'> & {
 export type UpdateRepairEventInput = RepairEvent;
 
 export type UpdateTaskCompletionInput = TaskCompletion;
+
+export type CreatePartInput = Omit<PartSupply, 'id'> & { id?: EntityId };
+export type UpdatePartInput = PartSupply;
 
 export type CompleteTaskInput = {
   taskId: EntityId;
@@ -416,6 +425,25 @@ export function createMemoryHomeVaultRepository(
 
       snapshot.taskCompletions.splice(index, 1);
     },
+    async getParts(propertyId) {
+      return snapshot.parts.filter((p) => p.propertyId === propertyId);
+    },
+    async createPart(input) {
+      const part: PartSupply = { ...input, id: input.id ?? createEntityId('part') };
+      snapshot.parts.push(part);
+      return part;
+    },
+    async updatePart(input) {
+      const index = snapshot.parts.findIndex((p) => p.id === input.id);
+      if (index === -1) throw new Error(`Part ${input.id} was not found in the local store.`);
+      snapshot.parts[index] = { ...input };
+      return snapshot.parts[index]!;
+    },
+    async deletePart(partId) {
+      const index = snapshot.parts.findIndex((p) => p.id === partId);
+      if (index === -1) throw new Error(`Part ${partId} was not found in the local store.`);
+      snapshot.parts.splice(index, 1);
+    },
     async resetDemoData() {
       const freshSnapshot = cloneSnapshot(initialSnapshot);
 
@@ -426,6 +454,7 @@ export function createMemoryHomeVaultRepository(
       snapshot.tasks = freshSnapshot.tasks;
       snapshot.taskCompletions = freshSnapshot.taskCompletions;
       snapshot.repairEvents = freshSnapshot.repairEvents;
+      snapshot.parts = freshSnapshot.parts;
     },
     async restoreSnapshot(nextSnapshot) {
       const freshSnapshot = cloneSnapshot(nextSnapshot);
@@ -461,6 +490,7 @@ function cloneSnapshot(snapshot: HomeVaultSnapshot): HomeVaultSnapshot {
       ...repairEvent,
       documentIds: [...repairEvent.documentIds],
     })),
+    parts: (snapshot.parts ?? []).map((part) => ({ ...part })),
   };
 }
 
