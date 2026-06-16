@@ -7,6 +7,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { AssetListItem, DocumentListItem, RoomListItem, TaskListItem } from '../data/homeVaultSampleData';
 import { colors } from '../theme/colors';
@@ -120,6 +121,7 @@ export function SearchScreen({
 }: SearchScreenProps) {
   const [query, setQuery] = useState('');
   const inputRef = useRef<TextInput>(null);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     const timer = setTimeout(() => inputRef.current?.focus(), 80);
@@ -147,7 +149,7 @@ export function SearchScreen({
 
   return (
     <View style={styles.screen}>
-      <View style={styles.searchBar}>
+      <View style={[styles.searchBar, { paddingTop: 12 + insets.top }]}>
         <TextInput
           ref={inputRef}
           style={styles.searchInput}
@@ -237,7 +239,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 12,
     paddingBottom: 10,
     gap: 10,
     backgroundColor: colors.panel,

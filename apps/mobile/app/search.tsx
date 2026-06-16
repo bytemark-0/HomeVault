@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { SafeAreaView, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { useHomeVault } from '../src/context/HomeVaultContext';
 import { SearchScreen } from '../src/screens/SearchScreen';
@@ -11,7 +11,7 @@ export default function SearchRoute() {
   if (!appData) return null;
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View style={styles.safe}>
       <SearchScreen
         assets={appData.assets}
         documents={appData.documents}
@@ -23,7 +23,7 @@ export default function SearchRoute() {
         onTaskPress={(id) => { router.back(); router.push(`/task/${id}`); }}
         onClose={() => router.back()}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

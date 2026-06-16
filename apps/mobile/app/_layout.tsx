@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Pressable, SafeAreaView, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { HomeVaultProvider, useHomeVault } from '../src/context/HomeVaultContext';
@@ -73,13 +74,15 @@ function AppContent() {
 
 export default function RootLayout() {
   return (
-    <ErrorBoundary>
-      <HomeVaultProvider>
-        <StatusBar style="dark" />
-        <ToastOverlay />
-        <AppContent />
-      </HomeVaultProvider>
-    </ErrorBoundary>
+    <SafeAreaProvider>
+      <ErrorBoundary>
+        <HomeVaultProvider>
+          <StatusBar style="dark" />
+          <ToastOverlay />
+          <AppContent />
+        </HomeVaultProvider>
+      </ErrorBoundary>
+    </SafeAreaProvider>
   );
 }
 

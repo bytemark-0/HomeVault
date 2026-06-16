@@ -1,6 +1,7 @@
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Tabs, router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TabIcon } from '../../src/components/TabIcon';
 import { colors } from '../../src/theme/colors';
@@ -8,10 +9,11 @@ import { useHomeVault } from '../../src/context/HomeVaultContext';
 
 export default function TabLayout() {
   const { appData } = useHomeVault();
+  const insets = useSafeAreaInsets();
 
   return (
     <View style={styles.root}>
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { paddingTop: 8 + insets.top }]}>
         <View>
           <Text style={styles.appName}>HomeVault</Text>
           <Text style={styles.homeLabel}>{appData?.property.label ?? 'Loading home'}</Text>
@@ -51,6 +53,7 @@ export default function TabLayout() {
 }
 
 function HomeVaultTabBar({ state, navigation }: BottomTabBarProps) {
+  const insets = useSafeAreaInsets();
   const tabKeys: Array<{ name: string; label: string; key: 'home' | 'inventory' | 'maintenance' | 'documents' | 'household' }> = [
     { name: 'index', label: 'Home', key: 'home' },
     { name: 'inventory', label: 'Inventory', key: 'inventory' },
@@ -60,7 +63,7 @@ function HomeVaultTabBar({ state, navigation }: BottomTabBarProps) {
   ];
 
   return (
-    <View style={styles.tabBar}>
+    <View style={[styles.tabBar, { paddingBottom: 10 + insets.bottom }]}>
       {tabKeys.map((tab, index) => {
         const isActive = state.index === index;
         const route = state.routes[index];
@@ -100,7 +103,6 @@ const styles = StyleSheet.create({
   topBar: {
     minHeight: 76,
     paddingHorizontal: 20,
-    paddingTop: 8,
     paddingBottom: 14,
     flexDirection: 'row',
     alignItems: 'center',
@@ -156,7 +158,6 @@ const styles = StyleSheet.create({
     minHeight: 74,
     paddingHorizontal: 10,
     paddingTop: 8,
-    paddingBottom: 10,
     backgroundColor: colors.panel,
     borderTopColor: colors.line,
     borderTopWidth: 1,
