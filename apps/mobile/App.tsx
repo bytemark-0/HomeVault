@@ -1,5 +1,6 @@
+import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Pressable,
   SafeAreaView,
@@ -78,6 +79,11 @@ import {
   formatCurrency,
   getTaskStateForDate,
 } from './src/utils/taskUtils';
+import {
+  clearAllNotifications,
+  requestNotificationPermission,
+  syncTaskNotifications,
+} from './src/utils/notificationUtils';
 
 type TabKey = 'home' | 'inventory' | 'maintenance' | 'documents' | 'household';
 type AssetReturnTarget = 'inventory' | 'roomDetail';
@@ -254,7 +260,30 @@ export default function App() {
       taskCompletions: taskCompletionList,
       repairEvents: repairEventList,
     });
+
+    void syncTaskNotifications(taskList);
   }
+
+  const notificationListener = useRef<Notifications.EventSubscription | null>(null);
+
+  useEffect(() => {
+    void requestNotificationPermission();
+
+    notificationListener.current = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const taskId = response.notification.request.content.data?.taskId as string | undefined;
+        if (taskId) {
+          setSelectedTaskId(taskId);
+          setActiveTab('maintenance');
+          setMode('taskDetail');
+        }
+      },
+    );
+
+    return () => {
+      notificationListener.current?.remove();
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
