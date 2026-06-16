@@ -53,6 +53,7 @@ import {
 } from './src/data/homeVaultSampleData';
 import { AddAssetScreen } from './src/screens/AddAssetScreen';
 import { AddPartScreen } from './src/screens/AddPartScreen';
+import { SearchScreen } from './src/screens/SearchScreen';
 import { AddDocumentScreen } from './src/screens/AddDocumentScreen';
 import { AddRepairEventScreen } from './src/screens/AddRepairEventScreen';
 import { AddRoomScreen } from './src/screens/AddRoomScreen';
@@ -119,6 +120,7 @@ type AppMode =
   | 'editRepairEvent'
   | 'addPart'
   | 'editPart'
+  | 'search'
   | 'serviceHistory'
   | 'costSummary';
 
@@ -1577,6 +1579,37 @@ export default function App() {
     );
   }
 
+  if (mode === 'search' && appData) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar style="dark" />
+        <SearchScreen
+          assets={appData.assets}
+          documents={appData.documents}
+          rooms={appData.rooms}
+          tasks={appData.tasks}
+          onAssetPress={(id) => {
+            openAssetDetail(id);
+          }}
+          onDocumentPress={(id) => {
+            setSelectedDocumentId(id);
+            setDocumentReturnTarget('documents');
+            setMode('documentDetail');
+          }}
+          onRoomPress={(id) => {
+            setSelectedRoomId(id);
+            setActiveTab('household');
+            setMode('roomDetail');
+          }}
+          onTaskPress={(id) => {
+            openTaskDetail(id);
+          }}
+          onClose={() => setMode('tabs')}
+        />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <>
       <Toast message={toast?.message ?? null} kind={toast?.kind} onDismiss={() => setToast(null)} />
@@ -1588,14 +1621,24 @@ export default function App() {
             <Text style={styles.appName}>HomeVault</Text>
             <Text style={styles.homeLabel}>{appData?.property.label ?? 'Loading home'}</Text>
           </View>
-          <Pressable
-            style={styles.addButton}
-            accessibilityLabel="Add record"
-            accessibilityRole="button"
-            onPress={() => setMode('quickAdd')}
-          >
-            <Text style={styles.addButtonText}>+</Text>
-          </Pressable>
+          <View style={styles.topBarActions}>
+            <Pressable
+              style={styles.searchButton}
+              accessibilityLabel="Search"
+              accessibilityRole="button"
+              onPress={() => appData && setMode('search')}
+            >
+              <Text style={styles.searchButtonText}>⌕</Text>
+            </Pressable>
+            <Pressable
+              style={styles.addButton}
+              accessibilityLabel="Add record"
+              accessibilityRole="button"
+              onPress={() => setMode('quickAdd')}
+            >
+              <Text style={styles.addButtonText}>+</Text>
+            </Pressable>
+          </View>
         </View>
 
         <ScrollView
@@ -1781,6 +1824,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginTop: 2,
+  },
+  topBarActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  searchButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderColor: colors.line,
+    borderWidth: 1,
+    backgroundColor: colors.panel,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  searchButtonText: {
+    color: colors.ink,
+    fontSize: 22,
+    lineHeight: 26,
+    fontWeight: '400',
   },
   addButton: {
     width: 44,
