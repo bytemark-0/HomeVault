@@ -23,6 +23,7 @@ import {
 } from '../data/homeVaultSampleData';
 import { formatCurrency } from '../utils/taskUtils';
 import { syncTaskNotifications } from '../utils/notificationUtils';
+import { logDiagnostic } from '../utils/diagnosticLog';
 import type { PartSupply } from '@homevault/domain';
 
 export type AppData = {
@@ -130,6 +131,7 @@ export function HomeVaultProvider({ children }: { children: React.ReactNode }) {
       Math.min(100, 100 - dashboard.activeTaskCount * 8 - attentionAssetCount * 4),
     );
 
+    setLoadError(false);
     setAppData({
       property,
       assetCount: dashboard.assetCount,
@@ -181,7 +183,8 @@ export function HomeVaultProvider({ children }: { children: React.ReactNode }) {
     async function load() {
       try {
         await loadHomeVault();
-      } catch {
+      } catch (error) {
+        logDiagnostic('data_load_failure', error);
         if (isMounted) setLoadError(true);
       }
     }
@@ -204,7 +207,14 @@ export function HomeVaultProvider({ children }: { children: React.ReactNode }) {
         toast,
         setBackupSummary,
         setRestoreSummary,
-        reload: loadHomeVault,
+        reload: async () => {
+        try {
+          await loadHomeVault();
+        } catch (error) {
+          logDiagnostic('data_load_failure', error);
+          setLoadError(true);
+        }
+      },
         showToast,
         dismissToast: () => setToast(null),
       }}
