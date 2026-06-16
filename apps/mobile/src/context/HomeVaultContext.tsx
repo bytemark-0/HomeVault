@@ -65,6 +65,7 @@ type ToastState = { message: string; kind: 'success' | 'error' | 'info' } | null
 
 type HomeVaultContextValue = {
   appData: AppData | null;
+  isNewUser: boolean;
   loadError: boolean;
   backupSummary: BackupSummary | null;
   restoreSummary: RestoreSummary | null;
@@ -80,6 +81,7 @@ const HomeVaultContext = createContext<HomeVaultContextValue | null>(null);
 
 export function HomeVaultProvider({ children }: { children: React.ReactNode }) {
   const [appData, setAppData] = useState<AppData | null>(null);
+  const [isNewUser, setIsNewUser] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [backupSummary, setBackupSummary] = useState<BackupSummary | null>(null);
   const [restoreSummary, setRestoreSummary] = useState<RestoreSummary | null>(null);
@@ -91,8 +93,12 @@ export function HomeVaultProvider({ children }: { children: React.ReactNode }) {
     const [property] = await repo.getProperties();
 
     if (!property) {
-      throw new Error('HomeVault requires at least one local property.');
+      setIsNewUser(true);
+      setAppData(null);
+      return;
     }
+
+    setIsNewUser(false);
 
     const [dashboard, rooms, assets, documents, tasks, taskCompletions, repairEvents, parts] =
       await Promise.all([
@@ -197,6 +203,7 @@ export function HomeVaultProvider({ children }: { children: React.ReactNode }) {
     <HomeVaultContext.Provider
       value={{
         appData,
+        isNewUser,
         loadError,
         backupSummary,
         restoreSummary,

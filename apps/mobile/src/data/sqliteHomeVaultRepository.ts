@@ -1,6 +1,7 @@
 import { openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite';
 
 import { migrate } from './sqliteMigrations';
+import { sampleSnapshot } from './homeVaultSampleData';
 
 import { getTaskStateForDate } from '../utils/taskUtils';
 
@@ -130,13 +131,9 @@ type RepairEventRow = {
   document_ids_json: string;
 };
 
-export async function createSQLiteHomeVaultRepository(
-  initialSnapshot: HomeVaultSnapshot,
-): Promise<HomeVaultRepository> {
+export async function createSQLiteHomeVaultRepository(): Promise<HomeVaultRepository> {
   const db = await openDatabaseAsync('homevault.db');
   await migrate(db);
-  await seedIfNeeded(db, initialSnapshot);
-  await seedDemoServiceHistoryIfNeeded(db, initialSnapshot);
 
   return {
     async getProperties() {
@@ -275,7 +272,7 @@ export async function createSQLiteHomeVaultRepository(
       return deletePart(db, partId);
     },
     async resetDemoData() {
-      await resetDemoData(db, initialSnapshot);
+      await resetDemoData(db, sampleSnapshot);
     },
     async restoreSnapshot(snapshot) {
       await db.withTransactionAsync(async () => {

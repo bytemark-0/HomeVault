@@ -5,6 +5,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { HomeVaultProvider, useHomeVault } from '../src/context/HomeVaultContext';
+import { WelcomeScreen } from '../src/screens/onboarding/WelcomeScreen';
 import { Toast } from '../src/components/Toast';
 import { colors } from '../src/theme/colors';
 
@@ -31,9 +32,10 @@ function LoadErrorView() {
 }
 
 function AppContent() {
-  const { loadError } = useHomeVault();
+  const { isNewUser, loadError } = useHomeVault();
 
   if (loadError) return <LoadErrorView />;
+  if (isNewUser) return <WelcomeScreen />;
 
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.page } }}>
