@@ -21,6 +21,7 @@ type HouseholdScreenProps = {
   onDismissRestoreNotice: () => void;
   onEditProperty: () => void;
   onExportManifest: () => void;
+  onPrintSummary: () => void;
   onResetDemoData: () => void;
   onRoomPress: (roomId: string) => void;
 };
@@ -70,6 +71,7 @@ export function HouseholdScreen({
   onDismissRestoreNotice,
   onEditProperty,
   onExportManifest,
+  onPrintSummary,
   onResetDemoData,
   onRoomPress,
 }: HouseholdScreenProps) {
@@ -307,6 +309,17 @@ export function HouseholdScreen({
             <Text style={styles.roomMeta}>Review local record coverage</Text>
           </View>
           <Text style={styles.readinessValue}>Open</Text>
+        </Pressable>
+        <Pressable
+          onPress={onPrintSummary}
+          style={styles.readinessRow}
+          accessibilityRole="button"
+        >
+          <View>
+            <Text style={styles.readinessLabel}>Print property summary</Text>
+            <Text style={styles.roomMeta}>Formatted report for insurance or sale</Text>
+          </View>
+          <Text style={styles.readinessValue}>Print</Text>
         </Pressable>
         <View style={styles.readinessRow}>
           <View>

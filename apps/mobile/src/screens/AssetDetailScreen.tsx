@@ -1,5 +1,6 @@
 import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import type { PartSupply } from '@homevault/domain';
 import {
   getAssetStatusLabel,
   type AssetDocumentListItem,
@@ -36,10 +37,12 @@ type ServiceItem =
 type AssetDetailScreenProps = {
   asset: AssetListItem;
   documents: AssetDocumentListItem[];
+  parts: PartSupply[];
   repairEvents: RepairEventListItem[];
   taskCompletions: AssetTaskCompletionListItem[];
   onBack: () => void;
   onAddDocument: () => void;
+  onAddPart: () => void;
   onAddTask: () => void;
   onDelete: () => void;
   onDocumentPress: (documentId: string) => void;
@@ -49,16 +52,20 @@ type AssetDetailScreenProps = {
   onEditRepair: (repairEventId: string) => void;
   onEditCompletion: (completionId: string) => void;
   onDeleteCompletion: (completionId: string) => Promise<void>;
+  onEditPart: (partId: string) => void;
+  onDeletePart: (partId: string) => Promise<void>;
   onRecordRepair: () => void;
 };
 
 export function AssetDetailScreen({
   asset,
   documents,
+  parts,
   repairEvents,
   taskCompletions,
   onBack,
   onAddDocument,
+  onAddPart,
   onAddTask,
   onDelete,
   onDocumentPress,
@@ -68,6 +75,8 @@ export function AssetDetailScreen({
   onEditRepair,
   onEditCompletion,
   onDeleteCompletion,
+  onEditPart,
+  onDeletePart,
   onRecordRepair,
 }: AssetDetailScreenProps) {
   const serviceItems: ServiceItem[] = [
@@ -175,6 +184,74 @@ export function AssetDetailScreen({
       <View style={styles.panel}>
         <Text style={styles.sectionTitle}>Notes</Text>
         <Text style={styles.notes}>{asset.notes ?? 'No notes yet.'}</Text>
+      </View>
+
+      <View style={styles.panel}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Parts &amp; supplies</Text>
+          <Pressable
+            onPress={onAddPart}
+            style={styles.linkButton}
+            accessibilityRole="button"
+            accessibilityLabel="Add part or supply"
+          >
+            <Text style={styles.linkButtonText}>Add</Text>
+          </Pressable>
+        </View>
+        {parts.length > 0 ? (
+          parts.map((part) => (
+            <View key={part.id} style={styles.partRow}>
+              <View style={styles.partBody}>
+                <Text style={styles.partName}>{part.name}</Text>
+                {part.partNumber ? (
+                  <Text style={styles.partMeta}>Part# {part.partNumber}</Text>
+                ) : null}
+                {part.size ? (
+                  <Text style={styles.partMeta}>{part.size}</Text>
+                ) : null}
+                {part.quantity != null ? (
+                  <Text style={styles.partMeta}>Qty: {part.quantity}</Text>
+                ) : null}
+                {part.link ? (
+                  <Pressable
+                    onPress={() => {
+                      const url = part.link!.startsWith('http') ? part.link! : `https://${part.link!}`;
+                      Linking.openURL(url).catch(() => {});
+                    }}
+                    accessibilityRole="link"
+                  >
+                    <Text style={styles.partLink}>Buy / reorder</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+              <View style={styles.serviceRowActions}>
+                <Pressable
+                  onPress={() => onEditPart(part.id)}
+                  style={styles.inlineSecondaryButton}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.inlineSecondaryText}>Edit</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() =>
+                    confirmDeletePart(part.name, () => onDeletePart(part.id))
+                  }
+                  style={styles.inlineDangerButton}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.inlineDangerText}>Delete</Text>
+                </Pressable>
+              </View>
+            </View>
+          ))
+        ) : (
+          <EmptyAssetSection
+            title="No parts or supplies"
+            detail="Track filter sizes, part numbers, battery types, paint colors, and reorder links for this asset."
+            actionLabel="Add part"
+            onActionPress={onAddPart}
+          />
+        )}
       </View>
 
       <View style={styles.panel}>
@@ -434,6 +511,21 @@ function confirmDeleteCompletion(dateLabel: string, onConfirm: () => Promise<voi
         onPress: () => {
           void onConfirm();
         },
+      },
+    ],
+  );
+}
+
+function confirmDeletePart(name: string, onConfirm: () => Promise<void>) {
+  Alert.alert(
+    'Delete part?',
+    `"${name}" will be removed from this asset.`,
+    [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => { void onConfirm(); },
       },
     ],
   );
@@ -704,6 +796,37 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '900',
+  },
+  partRow: {
+    borderTopColor: colors.line,
+    borderTopWidth: 1,
+    paddingTop: 12,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  partBody: {
+    flex: 1,
+    gap: 3,
+  },
+  partName: {
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: '900',
+    lineHeight: 19,
+  },
+  partMeta: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 17,
+  },
+  partLink: {
+    color: colors.blue,
+    fontSize: 12,
+    fontWeight: '900',
+    lineHeight: 17,
   },
   documentRow: {
     borderTopColor: colors.line,

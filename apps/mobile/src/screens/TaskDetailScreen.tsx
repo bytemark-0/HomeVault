@@ -9,6 +9,7 @@ type TaskDetailScreenProps = {
   onBack: () => void;
   onComplete: (taskId: string) => void;
   onDelete: () => Promise<void>;
+  onSkip: (taskId: string) => void;
   onSnooze: (taskId: string) => void;
   onEdit: () => void;
   onEditCompletion: (completionId: string) => void;
@@ -22,6 +23,7 @@ export function TaskDetailScreen({
   onBack,
   onComplete,
   onDelete,
+  onSkip,
   onSnooze,
   onEdit,
   onEditCompletion,
@@ -65,6 +67,18 @@ export function TaskDetailScreen({
           <Pressable
             onPress={() => {
               if (!isCompleted) {
+                confirmSkipTask(task.title, () => onSkip(task.id));
+              }
+            }}
+            disabled={isCompleted}
+            style={[styles.secondaryButton, isCompleted && styles.disabledButton]}
+            accessibilityRole="button"
+          >
+            <Text style={styles.secondaryButtonText}>Skip</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              if (!isCompleted) {
                 onSnooze(task.id);
               }
             }}
@@ -103,43 +117,62 @@ export function TaskDetailScreen({
       <View style={styles.panel}>
         <Text style={styles.sectionTitle}>Completion history</Text>
         {completions.length > 0 ? (
-          completions.map((completion) => (
-            <View key={completion.id} style={styles.completionRow}>
-              <View style={styles.completionHeader}>
-                <Text style={styles.completionDate}>{completion.completedAtLabel}</Text>
-                <View style={styles.completionHeaderRight}>
-                  <Text style={styles.completionCost}>{completion.costLabel}</Text>
-                  <Pressable
-                    onPress={() => onEditCompletion(completion.id)}
-                    style={styles.completionEditButton}
-                    accessibilityRole="button"
-                    accessibilityLabel="Edit completion"
-                  >
-                    <Text style={styles.completionEditText}>Edit</Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => confirmDeleteCompletion(completion.completedAtLabel, () => onDeleteCompletion(completion.id))}
-                    style={styles.completionDeleteButton}
-                    accessibilityRole="button"
-                    accessibilityLabel="Delete completion"
-                  >
-                    <Text style={styles.completionDeleteText}>Delete</Text>
-                  </Pressable>
+          completions.map((completion) => {
+            const isSkipped = completion.kind === 'skipped';
+            return (
+              <View key={completion.id} style={styles.completionRow}>
+                <View style={styles.completionHeader}>
+                  <View style={styles.completionHeaderLeft}>
+                    {isSkipped ? (
+                      <View style={styles.skippedBadge}>
+                        <Text style={styles.skippedBadgeText}>Skipped</Text>
+                      </View>
+                    ) : null}
+                    <Text style={styles.completionDate}>{completion.completedAtLabel}</Text>
+                  </View>
+                  <View style={styles.completionHeaderRight}>
+                    {!isSkipped ? (
+                      <Text style={styles.completionCost}>{completion.costLabel}</Text>
+                    ) : null}
+                    {!isSkipped ? (
+                      <Pressable
+                        onPress={() => onEditCompletion(completion.id)}
+                        style={styles.completionEditButton}
+                        accessibilityRole="button"
+                        accessibilityLabel="Edit completion"
+                      >
+                        <Text style={styles.completionEditText}>Edit</Text>
+                      </Pressable>
+                    ) : null}
+                    <Pressable
+                      onPress={() => confirmDeleteCompletion(completion.completedAtLabel, () => onDeleteCompletion(completion.id))}
+                      style={styles.completionDeleteButton}
+                      accessibilityRole="button"
+                      accessibilityLabel="Delete completion"
+                    >
+                      <Text style={styles.completionDeleteText}>Delete</Text>
+                    </Pressable>
+                  </View>
                 </View>
+                {!isSkipped ? (
+                  <Text style={styles.completionNotes}>
+                    {completion.notes ?? 'No notes recorded.'}
+                  </Text>
+                ) : null}
+                {completion.notes && isSkipped ? (
+                  <Text style={styles.completionNotes}>{completion.notes}</Text>
+                ) : null}
+                {completion.photoUri ? (
+                  <Image
+                    source={{ uri: completion.photoUri }}
+                    style={styles.completionPhoto}
+                    resizeMode="cover"
+                    accessibilityLabel="Completion photo"
+                  />
+                ) : null}
               </View>
-              <Text style={styles.completionNotes}>
-                {completion.notes ?? 'No notes recorded.'}
-              </Text>
-              {completion.photoUri ? (
-                <Image
-                  source={{ uri: completion.photoUri }}
-                  style={styles.completionPhoto}
-                  resizeMode="cover"
-                  accessibilityLabel="Completion photo"
-                />
-              ) : null}
-            </View>
-          ))
+            );
+          })
         ) : (
           <Text style={styles.notes}>No completions recorded yet.</Text>
         )}
@@ -181,6 +214,17 @@ function formatTaskState(state: TaskListItem['state']) {
     default:
       return 'Upcoming';
   }
+}
+
+function confirmSkipTask(title: string, onConfirm: () => void) {
+  Alert.alert(
+    'Skip this task?',
+    `"${title}" will be recorded as intentionally skipped. The skip is saved to history so you have a record that this due date was passed without completing the task.`,
+    [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Skip', style: 'destructive', onPress: onConfirm },
+    ],
+  );
 }
 
 function confirmDeleteCompletion(dateLabel: string, onConfirm: () => Promise<void>) {
@@ -388,10 +432,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
   },
+  completionHeaderLeft: {
+    flex: 1,
+    gap: 4,
+  },
   completionDate: {
     color: colors.ink,
-    flex: 1,
     fontSize: 14,
+    fontWeight: '900',
+  },
+  skippedBadge: {
+    alignSelf: 'flex-start',
+    minHeight: 20,
+    paddingHorizontal: 7,
+    borderRadius: 5,
+    backgroundColor: colors.page,
+    borderColor: colors.line,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  skippedBadgeText: {
+    color: colors.muted,
+    fontSize: 10,
     fontWeight: '900',
   },
   completionHeaderRight: {

@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Image,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -9,6 +11,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
+
+import { CameraView, useCameraPermissions } from 'expo-camera';
 
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
@@ -90,6 +94,9 @@ export function AddAssetScreen({
     notes: copyFrom ? '' : (asset?.notes ?? ''),
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
+  const [scannerBusy, setScannerBusy] = useState(false);
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const datePattern = /^\d{4}-\d{2}-\d{2}$/;
   const errors = useMemo(
     () => ({
@@ -155,6 +162,43 @@ export function AddAssetScreen({
     } finally {
       setIsSaving(false);
     }
+  }
+
+  async function handleOpenScanner() {
+    if (!cameraPermission?.granted) {
+      const result = await requestCameraPermission();
+      if (!result.granted) return;
+    }
+    setScannerBusy(false);
+    setShowScanner(true);
+  }
+
+  async function handleBarcodeScanned({ data }: { data: string }) {
+    if (scannerBusy) return;
+    setScannerBusy(true);
+
+    try {
+      const response = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${encodeURIComponent(data)}`);
+      const json = await response.json() as {
+        items?: Array<{ title?: string; brand?: string; model?: string }>;
+      };
+      const item = json.items?.[0];
+
+      setForm((current) => ({
+        ...current,
+        name: current.name.trim() || item?.title?.trim() || current.name,
+        brand: current.brand.trim() || item?.brand?.trim() || current.brand,
+        model: current.model.trim() || item?.model?.trim() || current.model,
+        serial: current.serial.trim() || data,
+      }));
+    } catch {
+      setForm((current) => ({
+        ...current,
+        serial: current.serial.trim() || data,
+      }));
+    }
+
+    setShowScanner(false);
   }
 
   async function handlePickPhoto(source: 'library' | 'camera') {
@@ -275,6 +319,18 @@ export function AddAssetScreen({
               No areas added yet. Add a room or area from the Household tab first.
             </Text>
           )}
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>Identification</Text>
+          <Pressable
+            onPress={() => void handleOpenScanner()}
+            style={styles.scanButton}
+            accessibilityRole="button"
+            accessibilityLabel="Scan barcode"
+          >
+            <Text style={styles.scanButtonText}>Scan barcode</Text>
+          </Pressable>
         </View>
 
         <Field
@@ -400,6 +456,54 @@ export function AddAssetScreen({
       >
         <Text style={styles.saveText}>{isSaving ? 'Saving' : asset ? 'Save changes' : 'Save asset'}</Text>
       </Pressable>
+
+      <Modal
+        visible={showScanner}
+        animationType="slide"
+        onRequestClose={() => setShowScanner(false)}
+      >
+        <View style={styles.scannerContainer}>
+          <CameraView
+            style={styles.scannerCamera}
+            barcodeScannerSettings={{
+              barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'code128', 'code39', 'qr'],
+            }}
+            onBarcodeScanned={scannerBusy ? undefined : (e) => void handleBarcodeScanned(e)}
+          />
+          <View style={styles.scannerOverlay}>
+            <View style={styles.scannerTopBar}>
+              <Pressable
+                onPress={() => setShowScanner(false)}
+                style={styles.scannerCloseButton}
+                accessibilityRole="button"
+              >
+                <Text style={styles.scannerCloseText}>Close</Text>
+              </Pressable>
+              <Text style={styles.scannerTitle}>Scan barcode</Text>
+            </View>
+            <View style={styles.scannerMiddle}>
+              <View style={styles.scannerViewfinder}>
+                <View style={[styles.scannerCorner, styles.scannerCornerTL]} />
+                <View style={[styles.scannerCorner, styles.scannerCornerTR]} />
+                <View style={[styles.scannerCorner, styles.scannerCornerBL]} />
+                <View style={[styles.scannerCorner, styles.scannerCornerBR]} />
+              </View>
+            </View>
+            <View style={styles.scannerBottomBar}>
+              {scannerBusy ? (
+                <View style={styles.scannerStatus}>
+                  <ActivityIndicator color="#FFFFFF" />
+                  <Text style={styles.scannerStatusText}>Looking up product…</Text>
+                </View>
+              ) : (
+                <Text style={styles.scannerHint}>
+                  Point the camera at a barcode or QR code on the appliance or its packaging
+                </Text>
+              )}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -645,5 +749,123 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '900',
+  },
+  scanButton: {
+    minHeight: 46,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.blue,
+    backgroundColor: colors.blueSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scanButtonText: {
+    color: colors.blue,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  scannerContainer: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
+  scannerCamera: {
+    flex: 1,
+  },
+  scannerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    flexDirection: 'column',
+  },
+  scannerTopBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    gap: 16,
+  },
+  scannerTitle: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '900',
+  },
+  scannerCloseButton: {
+    minHeight: 38,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scannerCloseText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  scannerMiddle: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scannerViewfinder: {
+    width: 260,
+    height: 180,
+    position: 'relative',
+  },
+  scannerCorner: {
+    position: 'absolute',
+    width: 28,
+    height: 28,
+    borderColor: '#FFFFFF',
+  },
+  scannerCornerTL: {
+    top: 0,
+    left: 0,
+    borderTopWidth: 3,
+    borderLeftWidth: 3,
+    borderTopLeftRadius: 4,
+  },
+  scannerCornerTR: {
+    top: 0,
+    right: 0,
+    borderTopWidth: 3,
+    borderRightWidth: 3,
+    borderTopRightRadius: 4,
+  },
+  scannerCornerBL: {
+    bottom: 0,
+    left: 0,
+    borderBottomWidth: 3,
+    borderLeftWidth: 3,
+    borderBottomLeftRadius: 4,
+  },
+  scannerCornerBR: {
+    bottom: 0,
+    right: 0,
+    borderBottomWidth: 3,
+    borderRightWidth: 3,
+    borderBottomRightRadius: 4,
+  },
+  scannerBottomBar: {
+    paddingHorizontal: 32,
+    paddingBottom: 60,
+    alignItems: 'center',
+  },
+  scannerStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  scannerStatusText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  scannerHint: {
+    color: 'rgba(255,255,255,0.75)',
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'center',
+    lineHeight: 21,
   },
 });
