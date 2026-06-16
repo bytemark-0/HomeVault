@@ -25,8 +25,11 @@
     "react-native-web": "^0.21.0"
   },
   "devDependencies": {
+    "@react-native/jest-preset": "^0.86.0",
+    "@testing-library/react-native": "^14.0.0",
     "@types/jszip": "^3.4.1",
     "@types/react": "~19.1.10",
+    "jest-expo": "^54.0.17",
     "typescript": "~5.9.2"
   },
   "scripts": {

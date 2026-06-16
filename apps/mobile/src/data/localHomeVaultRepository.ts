@@ -10,3 +10,7 @@ export function getHomeVaultRepository() {
 
   return repositoryPromise;
 }
+
+export function setHomeVaultRepository(repo: HomeVaultRepository): void {
+  repositoryPromise = Promise.resolve(repo);
+}

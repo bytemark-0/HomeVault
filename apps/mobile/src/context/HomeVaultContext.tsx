@@ -22,7 +22,7 @@ import {
   toTaskListItem,
 } from '../data/homeVaultSampleData';
 import { formatCurrency } from '../utils/taskUtils';
-import { syncTaskNotifications } from '../utils/notificationUtils';
+import { requestNotificationPermission, syncTaskNotifications } from '../utils/notificationUtils';
 import { logDiagnostic } from '../utils/diagnosticLog';
 import type { PartSupply } from '@homevault/domain';
 
@@ -158,10 +158,7 @@ export function HomeVaultProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    void (async () => {
-      const { requestNotificationPermission } = await import('../utils/notificationUtils');
-      void requestNotificationPermission();
-    })();
+    void requestNotificationPermission();
 
     notificationListener.current = Notifications.addNotificationResponseReceivedListener(
       (response) => {
