@@ -4,11 +4,11 @@ on:
   push:
     branches: [main, codex/homevault-stabilization]
   pull_request:
-    branches: [main]
+    branches: [main, codex/homevault-stabilization]
 
 jobs:
   typecheck-and-test:
-    name: Typecheck and test
+    name: Typecheck, lint, and test
     runs-on: ubuntu-latest
 
     steps:
@@ -29,5 +29,43 @@ jobs:
       - name: Typecheck mobile app
         run: npm run typecheck:app
 
+      - name: Lint
+        run: npm run lint
+
       - name: Run package tests
         run: npm test
+
+      - name: Upload test artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-output
+          path: .build/tests/
+          retention-days: 7
+
+  web-export:
+    name: Web export (informational)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Export web build
+        run: npm run export:web --workspace=apps/mobile
+
+      - name: Upload web export on success
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-export
+          path: apps/mobile/dist/
+          retention-days: 7
