@@ -104,5 +104,6 @@ function createSnapshot(id: string, label: string): HomeVaultSnapshot {
         documentIds: [documentId],
       },
     ],
+    parts: [],
   };
 }

@@ -63,6 +63,7 @@ function makeSnapshot(overrides?: Partial<HomeVaultSnapshot>): HomeVaultSnapshot
     tasks: [baseTask],
     taskCompletions: [],
     repairEvents: [baseRepairEvent],
+    parts: [],
     ...overrides,
   };
 }
@@ -223,6 +224,7 @@ async function main() {
       tasks: [],
       taskCompletions: [],
       repairEvents: [],
+      parts: [],
     };
 
     await repo.restoreSnapshot!(replacement);

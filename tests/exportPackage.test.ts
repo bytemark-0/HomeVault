@@ -162,6 +162,7 @@ test('restores a validated package into the local repository snapshot', async ()
     tasks: result.package.records.tasks,
     taskCompletions: result.package.records.taskCompletions,
     repairEvents: result.package.records.repairEvents,
+    parts: [],
   });
 
   const [property] = await repository.getProperties();
