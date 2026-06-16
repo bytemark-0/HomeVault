@@ -21,6 +21,7 @@ import type {
   CreateAssetInput,
   CreateDocumentInput,
   CreatePartInput,
+  CreatePropertyInput,
   CreateRepairEventInput,
   CreateRoomInput,
   CreateTaskInput,
@@ -201,6 +202,9 @@ export async function createSQLiteHomeVaultRepository(): Promise<HomeVaultReposi
     },
     async getDashboard(propertyId) {
       return getDashboard(db, propertyId);
+    },
+    async createProperty(input) {
+      return createProperty(db, input);
     },
     async updateProperty(input) {
       return updateProperty(db, input);
@@ -616,6 +620,32 @@ async function createAsset(db: SQLiteDatabase, input: CreateAssetInput): Promise
   );
 
   return asset;
+}
+
+async function createProperty(
+  db: SQLiteDatabase,
+  input: CreatePropertyInput,
+): Promise<Property> {
+  const property: Property = {
+    ...input,
+    id: input.id ?? createEntityId('property'),
+    householdId: createEntityId('household'),
+  };
+  await db.runAsync(
+    `INSERT INTO properties (id, household_id, label, address_label, type, year_built, purchase_date, photo_uri)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      property.id,
+      property.householdId,
+      property.label,
+      property.addressLabel ?? null,
+      property.type,
+      property.yearBuilt ?? null,
+      property.purchaseDate ?? null,
+      property.photoUri ?? null,
+    ],
+  );
+  return property;
 }
 
 async function updateProperty(

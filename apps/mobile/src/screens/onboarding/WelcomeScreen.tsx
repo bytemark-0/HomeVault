@@ -23,7 +23,9 @@ const VALUE_POINTS = [
   },
 ];
 
-export function WelcomeScreen() {
+type Props = { onSetUp?: () => void };
+
+export function WelcomeScreen({ onSetUp }: Props) {
   const { enterSampleMode } = useHomeVault();
   const insets = useSafeAreaInsets();
   const [loadingSample, setLoadingSample] = useState(false);
@@ -74,6 +76,7 @@ export function WelcomeScreen() {
       <View style={[styles.actions, { paddingBottom: 24 + insets.bottom }]}>
         <Pressable
           style={styles.primaryButton}
+          onPress={onSetUp}
           accessibilityRole="button"
           accessibilityLabel="Set up my home"
         >

@@ -77,6 +77,7 @@ type HomeVaultContextValue = {
   reload: () => Promise<void>;
   enterSampleMode: () => Promise<void>;
   exitSampleMode: () => Promise<void>;
+  finishOnboarding: () => Promise<void>;
   showToast: (message: string, kind?: 'success' | 'error' | 'info') => void;
   dismissToast: () => void;
 };
@@ -216,6 +217,15 @@ export function HomeVaultProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  async function finishOnboarding() {
+    try {
+      await loadHomeVault();
+    } catch (error) {
+      logDiagnostic('data_load_failure', error);
+      setLoadError(true);
+    }
+  }
+
   async function exitSampleMode() {
     try {
       const repo = await getHomeVaultRepository();
@@ -250,6 +260,7 @@ export function HomeVaultProvider({ children }: { children: React.ReactNode }) {
         },
         enterSampleMode,
         exitSampleMode,
+        finishOnboarding,
         showToast,
         dismissToast: () => setToast(null),
       }}

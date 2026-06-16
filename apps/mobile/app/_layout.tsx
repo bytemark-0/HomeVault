@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Pressable, StyleSheet, Text } from 'react-native';
@@ -6,6 +7,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { HomeVaultProvider, useHomeVault } from '../src/context/HomeVaultContext';
 import { WelcomeScreen } from '../src/screens/onboarding/WelcomeScreen';
+import { CreatePropertyScreen } from '../src/screens/onboarding/CreatePropertyScreen';
 import { Toast } from '../src/components/Toast';
 import { colors } from '../src/theme/colors';
 
@@ -33,9 +35,15 @@ function LoadErrorView() {
 
 function AppContent() {
   const { isNewUser, loadError } = useHomeVault();
+  const [onboardingStep, setOnboardingStep] = useState<'welcome' | 'create-property'>('welcome');
 
   if (loadError) return <LoadErrorView />;
-  if (isNewUser) return <WelcomeScreen />;
+  if (isNewUser) {
+    if (onboardingStep === 'create-property') {
+      return <CreatePropertyScreen onBack={() => setOnboardingStep('welcome')} />;
+    }
+    return <WelcomeScreen onSetUp={() => setOnboardingStep('create-property')} />;
+  }
 
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.page } }}>
@@ -74,6 +82,12 @@ function AppContent() {
   );
 }
 
+function AppContentWrapper() {
+  const { isNewUser } = useHomeVault();
+  // Re-mount AppContent whenever isNewUser changes so onboardingStep resets to 'welcome'.
+  return <AppContent key={String(isNewUser)} />;
+}
+
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
@@ -81,7 +95,7 @@ export default function RootLayout() {
         <HomeVaultProvider>
           <StatusBar style="dark" />
           <ToastOverlay />
-          <AppContent />
+          <AppContentWrapper />
         </HomeVaultProvider>
       </ErrorBoundary>
     </SafeAreaProvider>

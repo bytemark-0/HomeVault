@@ -30,6 +30,7 @@ export type HomeVaultRepository = {
   getTaskCompletions(propertyId: EntityId): Promise<TaskCompletion[]>;
   getRepairEvents(propertyId: EntityId): Promise<RepairEvent[]>;
   getDashboard(propertyId: EntityId): Promise<HomeVaultDashboard>;
+  createProperty(input: CreatePropertyInput): Promise<Property>;
   updateProperty(input: UpdatePropertyInput): Promise<Property>;
   createRoom(input: CreateRoomInput): Promise<RoomArea>;
   updateRoom(input: UpdateRoomInput): Promise<RoomArea>;
@@ -58,6 +59,7 @@ export type HomeVaultRepository = {
   restoreSnapshot?(snapshot: HomeVaultSnapshot): Promise<void>;
 };
 
+export type CreatePropertyInput = Omit<Property, 'id' | 'householdId'> & { id?: EntityId };
 export type UpdatePropertyInput = Property;
 
 export type CreateRoomInput = Omit<RoomArea, 'id'> & {
@@ -179,6 +181,15 @@ export function createMemoryHomeVaultRepository(
         dueTasks,
         recentAssets: assets.slice(0, 2),
       };
+    },
+    async createProperty(input) {
+      const property: Property = {
+        ...input,
+        id: input.id ?? createEntityId('property'),
+        householdId: createEntityId('household'),
+      };
+      snapshot.properties.push(property);
+      return { ...property };
     },
     async updateProperty(input) {
       const propertyIndex = snapshot.properties.findIndex((property) => property.id === input.id);
