@@ -112,6 +112,7 @@ type TaskCompletionRow = {
   cost_cents: number | null;
   notes: string | null;
   photo_uri: string | null;
+  kind: string | null;
 };
 
 type RepairEventRow = {
@@ -422,6 +423,7 @@ async function migrate(db: SQLiteDatabase) {
   await ensureColumn(db, 'assets', 'warranty_expiry', 'TEXT');
   await ensureColumn(db, 'assets', 'photo_uri', 'TEXT');
   await ensureColumn(db, 'task_completions', 'photo_uri', 'TEXT');
+  await ensureColumn(db, 'task_completions', 'kind', 'TEXT');
 }
 
 async function seedIfNeeded(db: SQLiteDatabase, snapshot: HomeVaultSnapshot) {
@@ -552,8 +554,8 @@ async function seedIfNeeded(db: SQLiteDatabase, snapshot: HomeVaultSnapshot) {
     for (const completion of snapshot.taskCompletions) {
       await db.runAsync(
         `INSERT INTO task_completions (
-          id, task_id, completed_at, completed_by_user_id, cost_cents, notes, photo_uri
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          id, task_id, completed_at, completed_by_user_id, cost_cents, notes, photo_uri, kind
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           completion.id,
           completion.taskId,
@@ -562,6 +564,7 @@ async function seedIfNeeded(db: SQLiteDatabase, snapshot: HomeVaultSnapshot) {
           completion.costCents ?? null,
           completion.notes ?? null,
           completion.photoUri ?? null,
+          completion.kind ?? null,
         ],
       );
     }
@@ -615,8 +618,8 @@ async function seedDemoServiceHistoryIfNeeded(
     for (const completion of snapshot.taskCompletions) {
       await db.runAsync(
         `INSERT OR IGNORE INTO task_completions (
-          id, task_id, completed_at, completed_by_user_id, cost_cents, notes, photo_uri
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          id, task_id, completed_at, completed_by_user_id, cost_cents, notes, photo_uri, kind
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           completion.id,
           completion.taskId,
@@ -625,6 +628,7 @@ async function seedDemoServiceHistoryIfNeeded(
           completion.costCents ?? null,
           completion.notes ?? null,
           completion.photoUri ?? null,
+          completion.kind ?? null,
         ],
       );
     }
@@ -1086,13 +1090,14 @@ async function completeTask(
     costCents: input.costCents,
     notes: input.notes,
     photoUri: input.photoUri,
+    kind: input.kind,
   };
 
   await db.withTransactionAsync(async () => {
     await db.runAsync(
       `INSERT INTO task_completions (
-        id, task_id, completed_at, completed_by_user_id, cost_cents, notes, photo_uri
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        id, task_id, completed_at, completed_by_user_id, cost_cents, notes, photo_uri, kind
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         completion.id,
         completion.taskId,
@@ -1101,16 +1106,19 @@ async function completeTask(
         completion.costCents ?? null,
         completion.notes ?? null,
         completion.photoUri ?? null,
+        completion.kind ?? null,
       ],
     );
 
-    await db.runAsync(
-      `UPDATE maintenance_tasks
-       SET state = 'completed',
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = ?`,
-      [input.taskId],
-    );
+    if (input.kind !== 'skipped') {
+      await db.runAsync(
+        `UPDATE maintenance_tasks
+         SET state = 'completed',
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [input.taskId],
+      );
+    }
   });
 
   return completion;
@@ -1372,6 +1380,7 @@ function toTaskCompletion(row: TaskCompletionRow): TaskCompletion {
     costCents: row.cost_cents ?? undefined,
     notes: row.notes ?? undefined,
     photoUri: row.photo_uri ?? undefined,
+    kind: (row.kind as TaskCompletion['kind']) ?? undefined,
   };
 }
 

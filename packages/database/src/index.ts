@@ -100,6 +100,7 @@ export type CompleteTaskInput = {
   costCents?: number;
   notes?: string;
   photoUri?: string;
+  kind?: 'completed' | 'skipped';
 };
 
 export type HomeVaultDashboard = {
@@ -398,10 +399,13 @@ export function createMemoryHomeVaultRepository(
         costCents: input.costCents,
         notes: input.notes,
         photoUri: input.photoUri,
+        kind: input.kind,
       };
 
       snapshot.taskCompletions.push(completion);
-      task.state = 'completed';
+      if (input.kind !== 'skipped') {
+        task.state = 'completed';
+      }
 
       return { ...completion };
     },

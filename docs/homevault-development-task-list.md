@@ -139,7 +139,7 @@ Features defined in the design brief that were not translated into the original 
 - [ ] **OCR label capture** — photograph a manufacturer label and extract brand, model, and serial via on-device text recognition. User confirms before saving. Requires a native build (not Expo Go). *(Must — brief sections 5, 6, 9)*
 - [ ] **PDF / printable property summary export** — formatted printable export for home sale, insurance, or handoff. Current export is JSON only. *(Should — brief section 6D)*
 - [ ] **Projects and improvements** — track renovations, upgrades, and contractor work at the property level with dates, cost, documents, and linked rooms/assets. *(roadmap — brief data model)*
-- [ ] **Skipped task state** — record a skipped occurrence without marking the task complete, preserving the history that a due date was intentionally passed. *(brief section 10)*
+- [x] **Skipped task state** — record a skipped occurrence without marking the task complete, preserving the history that a due date was intentionally passed. *(brief section 10)*
 
 ## Suggested Next Slices
 

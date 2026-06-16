@@ -737,6 +737,42 @@ export default function App() {
     }
   }
 
+  async function handleSkipTask(taskId: string) {
+    const task = appData?.tasks.find((candidate) => candidate.id === taskId);
+
+    if (!task || task.state === 'completed') {
+      return;
+    }
+
+    try {
+      const homeVaultRepository = await getHomeVaultRepository();
+      await homeVaultRepository.completeTask({
+        taskId,
+        completedAt: new Date().toISOString(),
+        kind: 'skipped',
+      });
+
+      if (task.recurrenceKind !== 'one_time') {
+        const nextDueDate = computeNextDueDate(task.recurrenceLabel, new Date().toISOString());
+        if (nextDueDate) {
+          await homeVaultRepository.updateTask({
+            ...task,
+            dueDate: nextDueDate,
+            state: getTaskStateForDate(nextDueDate),
+          });
+        }
+      }
+
+      await loadHomeVault();
+      showToast('Task skipped', 'info');
+      setSelectedTaskId(taskId);
+      setActiveTab('maintenance');
+      setMode('taskDetail');
+    } catch {
+      showToast('Could not record skip. Please try again.', 'error');
+    }
+  }
+
   async function handleDeleteTask(taskId: string) {
     const homeVaultRepository = await getHomeVaultRepository();
     await homeVaultRepository.deleteTask(taskId);
@@ -1559,6 +1595,7 @@ export default function App() {
           }}
           onComplete={openCompleteTask}
           onDelete={() => handleDeleteTask(selectedTask.id)}
+          onSkip={handleSkipTask}
           onSnooze={handleSnoozeTask}
           onEdit={() => setMode('editTask')}
           onEditCompletion={(completionId) => {

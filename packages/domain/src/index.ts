@@ -125,6 +125,7 @@ export type TaskCompletion = {
   costCents?: number;
   notes?: string;
   photoUri?: string;
+  kind?: 'completed' | 'skipped';
 };
 
 export type RepairEvent = {
