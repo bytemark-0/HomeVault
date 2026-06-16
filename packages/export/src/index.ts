@@ -2,6 +2,7 @@ import type {
   Asset,
   DocumentRecord,
   MaintenanceTask,
+  PartSupply,
   Property,
   RepairEvent,
   RoomArea,
@@ -26,6 +27,7 @@ export type HomeVaultExportManifest = {
     tasks: number;
     taskCompletions: number;
     repairEvents: number;
+    parts: number;
   };
   coverage: {
     activeTaskCount: number;
@@ -48,6 +50,7 @@ export type HomeVaultExportPackage = {
     tasks: MaintenanceTask[];
     taskCompletions: TaskCompletion[];
     repairEvents: RepairEvent[];
+    parts: PartSupply[];
   };
 };
 
@@ -110,6 +113,7 @@ export type BuildExportManifestInput = {
   property: Property;
   assets: Asset[];
   documents: DocumentRecord[];
+  parts: PartSupply[];
   repairEvents: RepairEvent[];
   rooms: RoomArea[];
   taskCompletions: TaskCompletion[];
@@ -121,6 +125,7 @@ export function buildHomeVaultExportManifest({
   property,
   assets,
   documents,
+  parts,
   repairEvents,
   rooms,
   taskCompletions,
@@ -157,6 +162,7 @@ export function buildHomeVaultExportManifest({
       tasks: tasks.length,
       taskCompletions: taskCompletions.length,
       repairEvents: repairEvents.length,
+      parts: parts.length,
     },
     coverage: {
       activeTaskCount,
@@ -204,6 +210,7 @@ export function buildHomeVaultExportPackage(
         ...repairEvent,
         documentIds: [...repairEvent.documentIds],
       })),
+      parts: input.parts.map((part) => ({ ...part })),
     },
   };
 }
@@ -290,6 +297,11 @@ export function validateHomeVaultExportPackage(
   const taskCount = validateArrayCount(records.tasks, manifest.recordCounts, 'tasks', errors);
   validateArrayCount(records.taskCompletions, manifest.recordCounts, 'taskCompletions', errors);
   validateArrayCount(records.repairEvents, manifest.recordCounts, 'repairEvents', errors);
+  // parts is optional for backward compatibility with backups created before this field was added.
+  const manifestCounts = isRecord(manifest.recordCounts) ? manifest.recordCounts : {};
+  if (Array.isArray(records.parts) || manifestCounts['parts'] !== undefined) {
+    validateArrayCount(records.parts, manifest.recordCounts, 'parts', errors);
+  }
 
   if (!isRecord(records.property)) {
     errors.push('Property record is missing.');
@@ -299,10 +311,17 @@ export function validateHomeVaultExportPackage(
     return { ok: false, errorKind: 'malformed', errors };
   }
 
+  // Normalize for backward compatibility: old backups omit parts.
+  const normalized = candidate as HomeVaultExportPackage;
+  if (!Array.isArray(records.parts)) {
+    normalized.records.parts = [];
+    normalized.manifest.recordCounts.parts = 0;
+  }
+
   return {
     ok: true,
-    package: candidate as HomeVaultExportPackage,
-    preview: buildImportPreview(candidate as HomeVaultExportPackage),
+    package: normalized,
+    preview: buildImportPreview(normalized),
     summary: `${roomCount} areas, ${assetCount} assets, ${documentCount} documents, ${taskCount} tasks`,
   };
 }

@@ -35,7 +35,7 @@ export default function ExportRoute() {
         tasks: pkg.records.tasks,
         taskCompletions: pkg.records.taskCompletions,
         repairEvents: pkg.records.repairEvents,
-        parts: [],
+        parts: pkg.records.parts ?? [],
       });
       await reload();
       setBackupSummary({
@@ -96,6 +96,7 @@ export default function ExportRoute() {
         rooms={appData.rooms}
         assets={appData.assets}
         documents={appData.documents}
+        parts={appData.parts}
         tasks={appData.tasks}
         taskCompletions={appData.taskCompletions}
         repairEvents={appData.repairEvents}

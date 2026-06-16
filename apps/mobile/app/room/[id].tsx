@@ -5,10 +5,7 @@ import { useHomeVault } from '../../src/context/HomeVaultContext';
 import { RoomDetailScreen } from '../../src/screens/RoomDetailScreen';
 import { getHomeVaultRepository } from '../../src/data/localHomeVaultRepository';
 import { colors } from '../../src/theme/colors';
-import {
-  type RoomServiceCompletionListItem,
-  toAssetDocumentListItems,
-} from '../../src/data/homeVaultSampleData';
+import { type RoomServiceCompletionListItem } from '../../src/data/homeVaultSampleData';
 
 export default function RoomDetailRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();

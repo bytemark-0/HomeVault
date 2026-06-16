@@ -239,6 +239,7 @@ export function createMemoryHomeVaultRepository(
         (c) => !deletedTaskIds.has(c.taskId),
       );
       snapshot.repairEvents = snapshot.repairEvents.filter((r) => !assetIds.has(r.assetId));
+      snapshot.parts = snapshot.parts.filter((p) => p.assetId == null || !assetIds.has(p.assetId));
       snapshot.assets = snapshot.assets.filter((asset) => asset.roomId !== roomId);
     },
     async createAsset(input) {
@@ -281,6 +282,7 @@ export function createMemoryHomeVaultRepository(
         (c) => !deletedTaskIds.has(c.taskId),
       );
       snapshot.repairEvents = snapshot.repairEvents.filter((r) => r.assetId !== assetId);
+      snapshot.parts = snapshot.parts.filter((p) => p.assetId !== assetId);
     },
     async createDocument(input) {
       const document: DocumentRecord = {
@@ -470,6 +472,7 @@ export function createMemoryHomeVaultRepository(
       snapshot.tasks = freshSnapshot.tasks;
       snapshot.taskCompletions = freshSnapshot.taskCompletions;
       snapshot.repairEvents = freshSnapshot.repairEvents;
+      snapshot.parts = freshSnapshot.parts;
     },
   };
 }

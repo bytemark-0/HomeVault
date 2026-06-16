@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { createMemoryHomeVaultRepository } from '../packages/database/src';
+import { createMemoryHomeVaultRepository, type HomeVaultSnapshot } from '../packages/database/src';
 import {
   buildHomeVaultExportManifest,
   formatHomeVaultExportPackage,
@@ -31,6 +31,7 @@ test('round-trips a full HomeVault export package', () => {
     rooms: 1,
     taskCompletions: 1,
     tasks: 1,
+    parts: 0,
   });
   assert.equal(result.preview.attachmentCount, 1);
   assert.equal(result.package.attachments[0]?.filePath, '/receipts/backup.pdf');
@@ -105,6 +106,7 @@ test('export checklist marks rooms as review when there are no rooms', () => {
     property,
     assets: snapshot.assets,
     documents: snapshot.documents,
+    parts: snapshot.parts ?? [],
     repairEvents: snapshot.repairEvents,
     rooms: [],
     taskCompletions: snapshot.taskCompletions,
@@ -128,6 +130,7 @@ test('export checklist marks linked documents as review when some are unlinked',
     property,
     assets: backupSnapshot.assets,
     documents: [unlinkedDocument],
+    parts: backupSnapshot.parts ?? [],
     repairEvents: backupSnapshot.repairEvents,
     rooms: backupSnapshot.rooms,
     taskCompletions: backupSnapshot.taskCompletions,
@@ -162,7 +165,7 @@ test('restores a validated package into the local repository snapshot', async ()
     tasks: result.package.records.tasks,
     taskCompletions: result.package.records.taskCompletions,
     repairEvents: result.package.records.repairEvents,
-    parts: [],
+    parts: result.package.records.parts,
   });
 
   const [property] = await repository.getProperties();
@@ -192,6 +195,45 @@ test('keeps the bundled app sample backup aligned with the fixture data', () => 
     sampleBackupPackage,
     JSON.parse(formatHomeVaultExportPackage(expectedPackage)),
   );
+});
+
+test('parts are included in export package records and manifest counts', () => {
+  const snapshotWithParts: HomeVaultSnapshot = {
+    ...backupSnapshot,
+    parts: [
+      {
+        id: 'part-1',
+        propertyId: 'property-backup',
+        assetId: 'asset-backup',
+        name: 'Replacement filter',
+        quantity: 2,
+      },
+    ],
+  };
+
+  const pkg = buildPackage(snapshotWithParts, sampleBackupGeneratedAt);
+
+  assert.equal(pkg.manifest.recordCounts.parts, 1);
+  assert.equal(pkg.records.parts.length, 1);
+  assert.equal(pkg.records.parts[0]?.name, 'Replacement filter');
+});
+
+test('validates old backup without parts and normalizes to empty array', () => {
+  const pkg = buildPackage(backupSnapshot, sampleBackupGeneratedAt);
+  // Simulate an old backup by removing parts from records and manifest counts.
+  const oldPkg = JSON.parse(formatHomeVaultExportPackage(pkg)) as Record<string, unknown>;
+  delete (oldPkg.records as Record<string, unknown>)['parts'];
+  delete (oldPkg.manifest as Record<string, unknown>)['recordCounts'];
+  (oldPkg.manifest as Record<string, unknown>)['recordCounts'] = {
+    rooms: 1, assets: 1, documents: 1, tasks: 1, taskCompletions: 1, repairEvents: 1,
+  };
+
+  const result = validateHomeVaultExportPackage(oldPkg);
+
+  assert.equal(result.ok, true);
+  if (!result.ok) throw new Error('Expected ok');
+  assert.deepEqual(result.package.records.parts, []);
+  assert.equal(result.package.manifest.recordCounts.parts, 0);
 });
 
 async function test(name: string, run: () => void | Promise<void>) {

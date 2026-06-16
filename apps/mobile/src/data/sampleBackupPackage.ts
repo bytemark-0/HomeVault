@@ -18,6 +18,7 @@ export const sampleBackupPackage: HomeVaultExportPackage = {
       tasks: 1,
       taskCompletions: 1,
       repairEvents: 1,
+      parts: 0,
     },
     coverage: {
       activeTaskCount: 0,
@@ -157,5 +158,6 @@ export const sampleBackupPackage: HomeVaultExportPackage = {
         documentIds: ['document-backup'],
       },
     ],
+    parts: [],
   },
 };

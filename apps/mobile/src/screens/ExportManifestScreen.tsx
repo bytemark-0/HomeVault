@@ -37,6 +37,7 @@ import type {
   TaskCompletionListItem,
   TaskListItem,
 } from '../data/homeVaultSampleData';
+import type { PartSupply } from '@homevault/domain';
 import { sampleBackupPackage } from '../data/sampleBackupPackage';
 import { colors } from '../theme/colors';
 
@@ -44,6 +45,7 @@ type ExportManifestScreenProps = {
   property: Property;
   assets: AssetListItem[];
   documents: DocumentListItem[];
+  parts: PartSupply[];
   repairEvents: RepairEventListItem[];
   rooms: RoomListItem[];
   taskCompletions: TaskCompletionListItem[];
@@ -60,6 +62,7 @@ export function ExportManifestScreen({
   property,
   assets,
   documents,
+  parts,
   repairEvents,
   rooms,
   taskCompletions,
@@ -86,6 +89,7 @@ export function ExportManifestScreen({
     property,
     assets,
     documents,
+    parts,
     repairEvents,
     rooms,
     taskCompletions,

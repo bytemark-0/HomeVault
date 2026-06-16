@@ -17,6 +17,7 @@ export function buildPackage(snapshot: HomeVaultSnapshot, generatedAt = sampleBa
     property,
     assets: snapshot.assets,
     documents: snapshot.documents,
+    parts: snapshot.parts ?? [],
     repairEvents: snapshot.repairEvents,
     rooms: snapshot.rooms,
     taskCompletions: snapshot.taskCompletions,

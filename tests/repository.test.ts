@@ -213,6 +213,54 @@ async function main() {
     assert.equal(afterDelete.length, 0);
   });
 
+  await test('restoreSnapshot replaces parts', async () => {
+    const partSnapshot = makeSnapshot({
+      parts: [{ id: 'part-1', propertyId: 'prop-1', assetId: 'asset-1', name: 'Filter' }],
+    });
+    const repo = createMemoryHomeVaultRepository(partSnapshot);
+
+    const replacement: HomeVaultSnapshot = makeSnapshot({
+      parts: [
+        { id: 'part-2', propertyId: 'prop-1', assetId: 'asset-1', name: 'Belt' },
+        { id: 'part-3', propertyId: 'prop-1', assetId: 'asset-1', name: 'Gasket' },
+      ],
+    });
+
+    await repo.restoreSnapshot!(replacement);
+
+    const parts = await repo.getParts('prop-1');
+    assert.equal(parts.length, 2);
+    assert.equal(parts[0]?.name, 'Belt');
+  });
+
+  await test('deleting an asset cascades to its parts', async () => {
+    const partSnapshot = makeSnapshot({
+      parts: [
+        { id: 'part-1', propertyId: 'prop-1', assetId: 'asset-1', name: 'Filter' },
+        { id: 'part-2', propertyId: 'prop-1', name: 'Generic supply' },
+      ],
+    });
+    const repo = createMemoryHomeVaultRepository(partSnapshot);
+
+    await repo.deleteAsset('asset-1');
+
+    const parts = await repo.getParts('prop-1');
+    assert.equal(parts.length, 1, 'asset-linked part removed; unlinked part survives');
+    assert.equal(parts[0]?.id, 'part-2');
+  });
+
+  await test('deleting a room cascades to asset parts', async () => {
+    const partSnapshot = makeSnapshot({
+      parts: [{ id: 'part-1', propertyId: 'prop-1', assetId: 'asset-1', name: 'Filter' }],
+    });
+    const repo = createMemoryHomeVaultRepository(partSnapshot);
+
+    await repo.deleteRoom('room-1');
+
+    const parts = await repo.getParts('prop-1');
+    assert.equal(parts.length, 0, 'room → asset → part cascade removes the part');
+  });
+
   await test('restoreSnapshot replaces all records', async () => {
     const repo = createMemoryHomeVaultRepository(makeSnapshot());
 

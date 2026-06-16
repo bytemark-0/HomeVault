@@ -15,7 +15,8 @@
       "documents": 1,
       "tasks": 1,
       "taskCompletions": 1,
-      "repairEvents": 1
+      "repairEvents": 1,
+      "parts": 0
     },
     "coverage": {
       "activeTaskCount": 0,
@@ -160,6 +161,7 @@
           "document-backup"
         ]
       }
-    ]
+    ],
+    "parts": []
   }
 }
