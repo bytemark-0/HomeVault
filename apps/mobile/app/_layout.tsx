@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Pressable, StyleSheet, Text } from 'react-native';
@@ -8,6 +8,12 @@ import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { HomeVaultProvider, useHomeVault } from '../src/context/HomeVaultContext';
 import { WelcomeScreen } from '../src/screens/onboarding/WelcomeScreen';
 import { CreatePropertyScreen } from '../src/screens/onboarding/CreatePropertyScreen';
+import {
+  type OnboardingStep,
+  clearOnboardingState,
+  readOnboardingStep,
+  writeOnboardingStep,
+} from '../src/utils/onboardingStorage';
 import { Toast } from '../src/components/Toast';
 import { colors } from '../src/theme/colors';
 
@@ -35,14 +41,28 @@ function LoadErrorView() {
 
 function AppContent() {
   const { isNewUser, loadError } = useHomeVault();
-  const [onboardingStep, setOnboardingStep] = useState<'welcome' | 'create-property'>('welcome');
+  const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>('welcome');
+
+  // Restore persisted step so kills during setup resume at the right screen.
+  useEffect(() => {
+    readOnboardingStep().then(setOnboardingStep);
+  }, []);
+
+  function goToStep(step: OnboardingStep) {
+    setOnboardingStep(step);
+    void writeOnboardingStep(step);
+  }
+
+  function goBack() {
+    goToStep('welcome');
+  }
 
   if (loadError) return <LoadErrorView />;
   if (isNewUser) {
     if (onboardingStep === 'create-property') {
-      return <CreatePropertyScreen onBack={() => setOnboardingStep('welcome')} />;
+      return <CreatePropertyScreen onBack={goBack} onCreated={() => void clearOnboardingState()} />;
     }
-    return <WelcomeScreen onSetUp={() => setOnboardingStep('create-property')} />;
+    return <WelcomeScreen onSetUp={() => goToStep('create-property')} />;
   }
 
   return (

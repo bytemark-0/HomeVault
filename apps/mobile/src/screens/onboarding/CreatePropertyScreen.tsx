@@ -24,9 +24,9 @@ const PROPERTY_TYPES: Array<{ label: string; value: Property['type'] }> = [
   { label: 'Other', value: 'other' },
 ];
 
-type Props = { onBack: () => void };
+type Props = { onBack: () => void; onCreated?: () => void };
 
-export function CreatePropertyScreen({ onBack }: Props) {
+export function CreatePropertyScreen({ onBack, onCreated }: Props) {
   const { finishOnboarding } = useHomeVault();
   const insets = useSafeAreaInsets();
 
@@ -51,6 +51,7 @@ export function CreatePropertyScreen({ onBack }: Props) {
       const repo = await getHomeVaultRepository();
       const input: CreatePropertyInput = { label: label.trim(), type };
       await repo.createProperty(input);
+      onCreated?.();
       await finishOnboarding();
     } finally {
       setIsSaving(false);

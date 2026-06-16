@@ -6,6 +6,7 @@ import type { PartSupply, Property } from '@homevault/domain';
 import type { HomeVaultExportPackage } from '@homevault/export';
 import { getHomeVaultRepository } from '../data/localHomeVaultRepository';
 import { SAMPLE_PROPERTY_ID } from '../data/homeVaultSampleData';
+import { clearOnboardingState } from '../utils/onboardingStorage';
 import {
   type AssetListItem,
   type DocumentListItem,
@@ -230,6 +231,7 @@ export function HomeVaultProvider({ children }: { children: React.ReactNode }) {
     try {
       const repo = await getHomeVaultRepository();
       await repo.clearAllData?.();
+      await clearOnboardingState();
       setAppData(null);
       setIsNewUser(true);
     } catch (error) {
