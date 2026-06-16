@@ -147,7 +147,7 @@ All original P0, P1, and P2 engineering tasks are complete. Current work and ope
 
 1. **Account/sync** — stay local-first for the first usable release, or start backend work now?
 2. **Room delete** — done. *(codex — deleteRoom cascades through assets, their tasks/completions/repairs; confirmation alert shows asset count; documents preserved)*
-3. **Zip-bundled export** — pack document attachments and asset photos into a zip archive alongside the JSON manifest for true portable backups.
+3. **Zip-bundled export** — done. *(codex — jszip bundles JSON manifest + document attachments + asset/room photos; "Share zip" button in Export manifest screen; File.write(Uint8Array) via expo-file-system new API; gracefully skips unreadable files)*
 4. **Onboarding polish** — done. *(codex — Home tab shows a 3-step getting-started card when vault is empty; Household demo banner is hidden once the property label is renamed away from the default; property initials derive from label; asset form shows a hint when no rooms exist yet)*
 5. **Asset lifecycle fields** — done. *(codex — install date (shown with age), purchase date, and purchase cost added to asset form and detail screen; Field gains optional keyboardType prop)*
 6. **Bug fixes and data quality** — done. *(codex — nextTaskLabel now derived from actual open tasks; snoozed tasks re-surface when snooze expires, fixed in both repos; ensureColumn migrations for install_date/purchase_date/cost_cents/properties.photo_uri/task_completions.photo_uri; lastServiceLabel now considers task completions alongside repair events; 'Open file' button on document detail; task instructions shown on complete screen; scope tap-through navigation from task detail)*

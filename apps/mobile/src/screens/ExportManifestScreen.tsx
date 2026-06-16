@@ -2,6 +2,7 @@ import { useState } from 'react';
 import * as DocumentPicker from 'expo-document-picker';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import { shareZipExport } from '../utils/exportZip';
 import {
   Alert,
   Platform,
@@ -70,6 +71,9 @@ export function ExportManifestScreen({
 }: ExportManifestScreenProps) {
   const [downloadStatus, setDownloadStatus] = useState<
     'idle' | 'sharing' | 'downloaded' | 'unsupported'
+  >('idle');
+  const [zipStatus, setZipStatus] = useState<
+    'idle' | 'building' | 'done' | 'error'
   >('idle');
   const [validationResult, setValidationResult] = useState<string | null>(null);
   const [validationErrorKind, setValidationErrorKind] =
@@ -141,6 +145,23 @@ export function ExportManifestScreen({
 
     if (didDownload) {
       onBackupCreated(exportPackage, exportFileName);
+    }
+  }
+
+  async function handleShareZip() {
+    setZipStatus('building');
+    try {
+      await shareZipExport({
+        exportPackage,
+        exportFileName,
+        assets,
+        documents,
+        rooms,
+      });
+      setZipStatus('done');
+      onBackupCreated(exportPackage, exportFileName);
+    } catch {
+      setZipStatus('error');
     }
   }
 
@@ -340,6 +361,31 @@ export function ExportManifestScreen({
               : Platform.OS === 'web'
                 ? 'Download JSON'
                 : 'Share backup'}
+          </Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.downloadPanel}>
+        <View style={styles.downloadBody}>
+          <Text style={styles.sectionTitle}>Download as zip</Text>
+          <Text style={styles.downloadMeta}>
+            {zipStatus === 'building'
+              ? 'Building archive — reading attached files...'
+              : zipStatus === 'done'
+                ? 'Zip archive shared successfully.'
+                : zipStatus === 'error'
+                  ? 'Could not build archive. Check that attached files are still accessible.'
+                  : 'Bundle the JSON backup + all attached documents and photos into a single zip file.'}
+          </Text>
+        </View>
+        <Pressable
+          onPress={() => void handleShareZip()}
+          disabled={zipStatus === 'building'}
+          style={[styles.primaryButton, zipStatus === 'building' && styles.primaryButtonBusy]}
+          accessibilityRole="button"
+        >
+          <Text style={styles.primaryButtonText}>
+            {zipStatus === 'building' ? 'Building...' : 'Share zip'}
           </Text>
         </Pressable>
       </View>

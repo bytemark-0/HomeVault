@@ -17,12 +17,14 @@
     "expo-sharing": "~14.0.8",
     "expo-sqlite": "~16.0.10",
     "expo-status-bar": "~3.0.9",
+    "jszip": "^3.10.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
     "react-native-web": "^0.21.0"
   },
   "devDependencies": {
+    "@types/jszip": "^3.4.1",
     "@types/react": "~19.1.10",
     "typescript": "~5.9.2"
   },
