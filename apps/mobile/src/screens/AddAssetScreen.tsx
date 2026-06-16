@@ -178,6 +178,7 @@ export function AddAssetScreen({
     setScannerBusy(true);
 
     try {
+      // TODO(privacy): trial endpoint — replace with a self-hosted lookup before public release.
       const response = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${encodeURIComponent(data)}`);
       const json = await response.json() as {
         items?: Array<{ title?: string; brand?: string; model?: string }>;

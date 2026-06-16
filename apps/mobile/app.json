@@ -10,7 +10,7 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "HomeVault uses the camera to scan appliance barcodes and take photos."
+        "NSPhotoLibraryUsageDescription": "HomeVault saves photos of your rooms, assets, and repairs to your device."
       }
     },
     "android": {
@@ -27,7 +27,14 @@
     },
     "plugins": [
       "expo-notifications",
-      "expo-router"
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "HomeVault saves photos of your rooms, assets, and repairs to your device.",
+          "cameraPermission": "HomeVault uses the camera to scan appliance barcodes and take photos."
+        }
+      ]
     ]
   }
 }

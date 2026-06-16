@@ -9,5 +9,6 @@
       "@homevault/domain": ["../../packages/domain/src"],
       "@homevault/export": ["../../packages/export/src"]
     }
-  }
+  },
+  "exclude": ["src/__tests__"]
 }
