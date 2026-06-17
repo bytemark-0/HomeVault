@@ -4,13 +4,13 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 
 import type { RoomArea } from '@homevault/domain';
 import type { CreateRoomInput, UpdateRoomInput } from '@homevault/database';
 
+import { FormField } from '../components/FormField';
 import { PhotoPickerField } from '../components/PhotoPickerField';
 import { colors } from '../theme/colors';
 
@@ -91,7 +91,7 @@ export function AddRoomScreen({ propertyId, room, onCancel, onSave }: AddRoomScr
       </View>
 
       <View style={styles.panel}>
-        <Field
+        <FormField
           label="Name"
           value={form.name}
           placeholder="Kitchen, basement, roof, electrical"
@@ -121,7 +121,7 @@ export function AddRoomScreen({ propertyId, room, onCancel, onSave }: AddRoomScr
           </View>
         </View>
 
-        <Field
+        <FormField
           label="Floor (optional)"
           value={form.floor}
           placeholder="Main, upstairs, lower, exterior"
@@ -150,31 +150,6 @@ export function AddRoomScreen({ propertyId, room, onCancel, onSave }: AddRoomScr
         </Text>
       </Pressable>
     </ScrollView>
-  );
-}
-
-type FieldProps = {
-  label: string;
-  value: string;
-  placeholder: string;
-  onChangeText: (value: string) => void;
-  error?: string;
-};
-
-function Field({ label, value, placeholder, onChangeText, error }: FieldProps) {
-  return (
-    <View style={styles.fieldGroup}>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-        value={value}
-        placeholder={placeholder}
-        onChangeText={onChangeText}
-        style={[styles.input, error && styles.inputError]}
-        placeholderTextColor={colors.muted}
-        accessibilityLabel={label}
-      />
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
-    </View>
   );
 }
 
@@ -245,26 +220,6 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 12,
     fontWeight: '900',
-  },
-  input: {
-    minHeight: 44,
-    borderRadius: 8,
-    borderColor: colors.line,
-    borderWidth: 1,
-    backgroundColor: '#FFFFFF',
-    color: colors.ink,
-    paddingHorizontal: 12,
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  inputError: {
-    borderColor: colors.red,
-  },
-  errorText: {
-    color: colors.red,
-    fontSize: 12,
-    fontWeight: '800',
-    lineHeight: 16,
   },
   optionGrid: {
     flexDirection: 'row',

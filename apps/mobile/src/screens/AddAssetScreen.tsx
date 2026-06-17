@@ -15,6 +15,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import type { Asset, RoomArea } from '@homevault/domain';
 import type { CreateAssetInput, UpdateAssetInput } from '@homevault/database';
 
+import { FormField } from '../components/FormField';
 import { PhotoPickerField } from '../components/PhotoPickerField';
 import { colors } from '../theme/colors';
 
@@ -230,7 +231,7 @@ export function AddAssetScreen({
       </View>
 
       <View style={styles.panel}>
-        <Field
+        <FormField
           label="Name"
           value={form.name}
           placeholder="Dishwasher, roof, breaker panel"
@@ -321,41 +322,41 @@ export function AddAssetScreen({
               </Pressable>
             </View>
 
-            <Field
+            <FormField
               label="Brand (optional)"
               value={form.brand}
               placeholder="Bosch, Trane, Rheem"
               onChangeText={(brand) => setForm((current) => ({ ...current, brand }))}
             />
-            <Field
+            <FormField
               label="Model (optional)"
               value={form.model}
               placeholder="Model number"
               autoCapitalize="characters"
               onChangeText={(model) => setForm((current) => ({ ...current, model }))}
             />
-            <Field
+            <FormField
               label="Serial number (optional)"
               value={form.serial}
               placeholder="Serial number"
               autoCapitalize="characters"
               onChangeText={(serial) => setForm((current) => ({ ...current, serial }))}
             />
-            <Field
+            <FormField
               label="Install date (optional)"
               value={form.installDate}
               placeholder="YYYY-MM-DD"
               error={errors.installDate}
               onChangeText={(installDate) => setForm((current) => ({ ...current, installDate }))}
             />
-            <Field
+            <FormField
               label="Purchase date (optional)"
               value={form.purchaseDate}
               placeholder="YYYY-MM-DD"
               error={errors.purchaseDate}
               onChangeText={(purchaseDate) => setForm((current) => ({ ...current, purchaseDate }))}
             />
-            <Field
+            <FormField
               label="Purchase cost (optional)"
               value={form.cost}
               placeholder="0.00"
@@ -386,7 +387,7 @@ export function AddAssetScreen({
               </View>
             </View>
 
-            <Field
+            <FormField
               label="Warranty expiry (optional)"
               value={form.warrantyExpiry}
               placeholder="YYYY-MM-DD"
@@ -406,7 +407,7 @@ export function AddAssetScreen({
               />
             </View>
 
-            <Field
+            <FormField
               label="Notes (optional)"
               value={form.notes}
               placeholder="Filter size, location, access notes"
@@ -474,46 +475,6 @@ export function AddAssetScreen({
         </View>
       </Modal>
     </ScrollView>
-  );
-}
-
-type FieldProps = {
-  label: string;
-  value: string;
-  placeholder: string;
-  onChangeText: (value: string) => void;
-  error?: string;
-  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
-  keyboardType?: 'default' | 'decimal-pad' | 'numeric' | 'email-address';
-  multiline?: boolean;
-};
-
-function Field({
-  label,
-  value,
-  placeholder,
-  onChangeText,
-  error,
-  autoCapitalize,
-  keyboardType,
-  multiline,
-}: FieldProps) {
-  return (
-    <View style={styles.fieldGroup}>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-        value={value}
-        placeholder={placeholder}
-        onChangeText={onChangeText}
-        autoCapitalize={autoCapitalize}
-        keyboardType={keyboardType}
-        multiline={multiline}
-        style={[styles.input, error && styles.inputError, multiline && styles.multilineInput]}
-        placeholderTextColor={colors.muted}
-        accessibilityLabel={label}
-      />
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
-    </View>
   );
 }
 

@@ -4,13 +4,13 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 
 import type { Property } from '@homevault/domain';
 import type { UpdatePropertyInput } from '@homevault/database';
 
+import { FormField } from '../components/FormField';
 import { PhotoPickerField } from '../components/PhotoPickerField';
 import { colors } from '../theme/colors';
 
@@ -107,14 +107,14 @@ export function EditPropertyScreen({ property, onCancel, onSave }: EditPropertyS
       </View>
 
       <View style={styles.panel}>
-        <Field
+        <FormField
           label="Home name"
           value={form.label}
           placeholder="Maple Street home"
           error={errors.label}
           onChangeText={(label) => setForm((current) => ({ ...current, label }))}
         />
-        <Field
+        <FormField
           label="Address (optional)"
           value={form.addressLabel}
           placeholder="Street, neighborhood, or city"
@@ -145,7 +145,7 @@ export function EditPropertyScreen({ property, onCancel, onSave }: EditPropertyS
           </View>
         </View>
 
-        <Field
+        <FormField
           label="Year built (optional)"
           value={form.yearBuilt}
           placeholder="1998"
@@ -153,7 +153,7 @@ export function EditPropertyScreen({ property, onCancel, onSave }: EditPropertyS
           error={errors.yearBuilt}
           onChangeText={(yearBuilt) => setForm((current) => ({ ...current, yearBuilt }))}
         />
-        <Field
+        <FormField
           label="Purchase date (optional)"
           value={form.purchaseDate}
           placeholder="2023-08-15"
@@ -183,33 +183,6 @@ export function EditPropertyScreen({ property, onCancel, onSave }: EditPropertyS
         <Text style={styles.saveText}>{isSaving ? 'Saving' : 'Save home'}</Text>
       </Pressable>
     </ScrollView>
-  );
-}
-
-type FieldProps = {
-  label: string;
-  value: string;
-  placeholder: string;
-  onChangeText: (value: string) => void;
-  error?: string;
-  keyboardType?: 'default' | 'number-pad';
-};
-
-function Field({ label, value, placeholder, onChangeText, error, keyboardType }: FieldProps) {
-  return (
-    <View style={styles.fieldGroup}>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-        value={value}
-        placeholder={placeholder}
-        onChangeText={onChangeText}
-        keyboardType={keyboardType}
-        style={[styles.input, error && styles.inputError]}
-        placeholderTextColor={colors.muted}
-        accessibilityLabel={label}
-      />
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
-    </View>
   );
 }
 
@@ -310,26 +283,6 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 12,
     fontWeight: '900',
-  },
-  input: {
-    minHeight: 44,
-    borderRadius: 8,
-    borderColor: colors.line,
-    borderWidth: 1,
-    backgroundColor: '#FFFFFF',
-    color: colors.ink,
-    paddingHorizontal: 12,
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  inputError: {
-    borderColor: colors.red,
-  },
-  errorText: {
-    color: colors.red,
-    fontSize: 12,
-    fontWeight: '800',
-    lineHeight: 16,
   },
   optionGrid: {
     flexDirection: 'row',

@@ -4,7 +4,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 
@@ -12,6 +11,7 @@ import type { MaintenanceTask, RoomArea } from '@homevault/domain';
 import type { CreateTaskInput, UpdateTaskInput } from '@homevault/database';
 
 import type { AssetListItem, TaskListItem } from '../data/homeVaultSampleData';
+import { FormField } from '../components/FormField';
 import { colors } from '../theme/colors';
 
 type AddTaskScreenProps = {
@@ -115,7 +115,7 @@ export function AddTaskScreen({
       </View>
 
       <View style={styles.panel}>
-        <Field
+        <FormField
           label="Title"
           value={form.title}
           placeholder="Replace filter, flush tank, test detector"
@@ -150,7 +150,7 @@ export function AddTaskScreen({
           </View>
         </View>
 
-        <Field
+        <FormField
           label="Due date"
           value={form.dueDate}
           placeholder="2026-06-12"
@@ -172,7 +172,7 @@ export function AddTaskScreen({
           </View>
         </View>
 
-        <Field
+        <FormField
           label="Instructions"
           value={form.instructions}
           placeholder="Filter size, shutoff location, safety notes"
@@ -192,33 +192,6 @@ export function AddTaskScreen({
         </Text>
       </Pressable>
     </ScrollView>
-  );
-}
-
-type FieldProps = {
-  label: string;
-  value: string;
-  placeholder: string;
-  onChangeText: (value: string) => void;
-  error?: string;
-  multiline?: boolean;
-};
-
-function Field({ label, value, placeholder, onChangeText, error, multiline }: FieldProps) {
-  return (
-    <View style={styles.fieldGroup}>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-        value={value}
-        placeholder={placeholder}
-        onChangeText={onChangeText}
-        multiline={multiline}
-        style={[styles.input, error && styles.inputError, multiline && styles.multilineInput]}
-        placeholderTextColor={colors.muted}
-        accessibilityLabel={label}
-      />
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
-    </View>
   );
 }
 
@@ -343,31 +316,6 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 12,
     fontWeight: '900',
-  },
-  input: {
-    minHeight: 44,
-    borderRadius: 8,
-    borderColor: colors.line,
-    borderWidth: 1,
-    backgroundColor: '#FFFFFF',
-    color: colors.ink,
-    paddingHorizontal: 12,
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  inputError: {
-    borderColor: colors.red,
-  },
-  errorText: {
-    color: colors.red,
-    fontSize: 12,
-    fontWeight: '800',
-    lineHeight: 16,
-  },
-  multilineInput: {
-    minHeight: 88,
-    paddingTop: 12,
-    textAlignVertical: 'top',
   },
   optionGrid: {
     flexDirection: 'row',
