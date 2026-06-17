@@ -171,6 +171,7 @@ function Field({ label, value, placeholder, onChangeText, error }: FieldProps) {
         onChangeText={onChangeText}
         style={[styles.input, error && styles.inputError]}
         placeholderTextColor={colors.muted}
+        accessibilityLabel={label}
       />
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>

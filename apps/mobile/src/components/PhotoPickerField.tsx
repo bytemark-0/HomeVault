@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
 import { copyPhotoToAppStorage } from '../utils/photoStorage';
@@ -58,7 +58,12 @@ export function PhotoPickerField({
         />
         <Pressable
           style={styles.removeButton}
-          onPress={() => onChange('')}
+          onPress={() =>
+            Alert.alert('Remove photo', 'Remove this photo?', [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Remove', style: 'destructive', onPress: () => onChange('') },
+            ])
+          }
           accessibilityRole="button"
           accessibilityLabel="Remove photo"
         >

@@ -348,6 +348,7 @@ function Field({
         multiline={multiline}
         style={[styles.input, error && styles.inputError, multiline && styles.textArea]}
         placeholderTextColor={colors.muted}
+        accessibilityLabel={label}
       />
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>

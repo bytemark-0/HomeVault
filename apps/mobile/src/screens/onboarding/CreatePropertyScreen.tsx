@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -56,7 +58,10 @@ export function CreatePropertyScreen({ onBack, onCreated }: Props) {
   }
 
   return (
-    <View style={styles.root}>
+    <KeyboardAvoidingView
+      style={styles.root}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <View style={[styles.header, { paddingTop: 16 + insets.top }]}>
         <Pressable onPress={onBack} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
           <Text style={styles.backText}>← Back</Text>
@@ -81,6 +86,7 @@ export function CreatePropertyScreen({ onBack, onCreated }: Props) {
             autoFocus
             returnKeyType="done"
             onSubmitEditing={() => void handleSave()}
+            accessibilityLabel="Home name"
           />
           {labelError ? <Text style={styles.errorText}>{labelError}</Text> : null}
         </View>
@@ -122,7 +128,7 @@ export function CreatePropertyScreen({ onBack, onCreated }: Props) {
           )}
         </Pressable>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
