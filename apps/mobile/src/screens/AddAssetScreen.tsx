@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -17,6 +17,7 @@ import type { CreateAssetInput, UpdateAssetInput } from '@homevault/database';
 
 import { FormField } from '../components/FormField';
 import { PhotoPickerField } from '../components/PhotoPickerField';
+import { deleteAppOwnedPhoto } from '../utils/photoStorage';
 import { colors } from '../theme/colors';
 
 type AddAssetScreenProps = {
@@ -74,6 +75,7 @@ export function AddAssetScreen({
   onCancel,
   onSave,
 }: AddAssetScreenProps) {
+  const originalPhotoUri = useRef(copyFrom ? '' : (asset?.photoUri ?? ''));
   const template = asset ?? copyFrom;
   const hasAdvancedData =
     asset != null &&
@@ -145,6 +147,21 @@ export function AddAssetScreen({
     [errors.category, errors.cost, errors.installDate, errors.name, errors.purchaseDate, errors.warrantyExpiry, isSaving],
   );
 
+  function handlePhotoChange(photoUri: string) {
+    const current = form.photoUri;
+    if (current && current !== originalPhotoUri.current) {
+      void deleteAppOwnedPhoto(current);
+    }
+    setForm((prev) => ({ ...prev, photoUri }));
+  }
+
+  function handleCancel() {
+    if (form.photoUri && form.photoUri !== originalPhotoUri.current) {
+      void deleteAppOwnedPhoto(form.photoUri);
+    }
+    onCancel();
+  }
+
   async function handleSave() {
     if (!canSave) {
       return;
@@ -170,6 +187,9 @@ export function AddAssetScreen({
         photoUri: form.photoUri || undefined,
         notes: cleanOptional(form.notes),
       });
+      if (originalPhotoUri.current && originalPhotoUri.current !== form.photoUri) {
+        void deleteAppOwnedPhoto(originalPhotoUri.current);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -225,7 +245,7 @@ export function AddAssetScreen({
           <Text style={styles.kicker}>Inventory</Text>
           <Text style={styles.title}>{asset ? 'Edit asset' : copyFrom ? 'Copy asset' : 'Add asset'}</Text>
         </View>
-        <Pressable onPress={onCancel} style={styles.cancelButton} accessibilityRole="button">
+        <Pressable onPress={handleCancel} style={styles.cancelButton} accessibilityRole="button">
           <Text style={styles.cancelText}>Cancel</Text>
         </Pressable>
       </View>
@@ -402,7 +422,7 @@ export function AddAssetScreen({
               <PhotoPickerField
                 prefix="asset"
                 value={form.photoUri}
-                onChange={(photoUri) => setForm((current) => ({ ...current, photoUri }))}
+                onChange={handlePhotoChange}
                 accessibilityLabel={`Photo of ${form.name || 'asset'}`}
               />
             </View>

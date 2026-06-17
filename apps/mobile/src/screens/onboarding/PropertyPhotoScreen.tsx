@@ -13,7 +13,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import type { Property } from '@homevault/domain';
 import { getHomeVaultRepository } from '../../data/localHomeVaultRepository';
-import { copyPhotoToAppStorage } from '../../utils/photoStorage';
+import { copyPhotoToAppStorage, deleteAppOwnedPhoto } from '../../utils/photoStorage';
 import { colors } from '../../theme/colors';
 
 type Props = {
@@ -49,6 +49,7 @@ export function PropertyPhotoScreen({ property, onDone, onSkip }: Props) {
       });
     }
     if (result.canceled || !result.assets[0]) return;
+    if (photoUri) void deleteAppOwnedPhoto(photoUri);
     const stored = await copyPhotoToAppStorage('property', result.assets[0].uri);
     setPhotoUri(stored ?? result.assets[0].uri);
   }
@@ -81,7 +82,7 @@ export function PropertyPhotoScreen({ property, onDone, onSkip }: Props) {
             <Image source={{ uri: photoUri }} style={styles.previewImage} resizeMode="cover" />
             <Pressable
               style={styles.removeButton}
-              onPress={() => setPhotoUri(null)}
+              onPress={() => { if (photoUri) void deleteAppOwnedPhoto(photoUri); setPhotoUri(null); }}
               accessibilityRole="button"
               accessibilityLabel="Remove photo"
             >
@@ -164,7 +165,7 @@ export function PropertyPhotoScreen({ property, onDone, onSkip }: Props) {
         ) : null}
         <Pressable
           style={styles.skipButton}
-          onPress={onSkip}
+          onPress={() => { if (photoUri) void deleteAppOwnedPhoto(photoUri); onSkip(); }}
           accessibilityRole="button"
           accessibilityLabel="Skip for now"
         >

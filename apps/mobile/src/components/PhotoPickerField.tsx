@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Alert, Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
-import { copyPhotoToAppStorage, deleteAppOwnedPhoto } from '../utils/photoStorage';
+import { copyPhotoToAppStorage } from '../utils/photoStorage';
 import { colors } from '../theme/colors';
 
 type Props = {
@@ -43,9 +43,6 @@ export function PhotoPickerField({
       });
     }
     if (result.canceled || !result.assets[0]) return;
-    if (value) {
-      await deleteAppOwnedPhoto(value);
-    }
     const stored = await copyPhotoToAppStorage(prefix, result.assets[0].uri);
     onChange(stored ?? result.assets[0].uri);
   }
@@ -67,8 +64,7 @@ export function PhotoPickerField({
               {
                 text: 'Remove',
                 style: 'destructive',
-                onPress: async () => {
-                  await deleteAppOwnedPhoto(value);
+                onPress: () => {
                   onChange('');
                 },
               },

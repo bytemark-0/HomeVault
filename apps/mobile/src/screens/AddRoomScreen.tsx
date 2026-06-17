@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -12,6 +12,7 @@ import type { CreateRoomInput, UpdateRoomInput } from '@homevault/database';
 
 import { FormField } from '../components/FormField';
 import { PhotoPickerField } from '../components/PhotoPickerField';
+import { deleteAppOwnedPhoto } from '../utils/photoStorage';
 import { colors } from '../theme/colors';
 
 type AddRoomScreenProps = {
@@ -36,6 +37,7 @@ const areaTypes: Array<{ label: string; value: RoomArea['type'] }> = [
 ];
 
 export function AddRoomScreen({ propertyId, room, onCancel, onSave }: AddRoomScreenProps) {
+  const originalPhotoUri = useRef(room?.photoUri ?? '');
   const [form, setForm] = useState<FormState>({
     name: room?.name ?? '',
     type: room?.type ?? 'room',
@@ -51,6 +53,21 @@ export function AddRoomScreen({ propertyId, room, onCancel, onSave }: AddRoomScr
   );
 
   const canSave = useMemo(() => !errors.name && !isSaving, [errors.name, isSaving]);
+
+  function handlePhotoChange(photoUri: string) {
+    const current = form.photoUri;
+    if (current && current !== originalPhotoUri.current) {
+      void deleteAppOwnedPhoto(current);
+    }
+    setForm((prev) => ({ ...prev, photoUri }));
+  }
+
+  function handleCancel() {
+    if (form.photoUri && form.photoUri !== originalPhotoUri.current) {
+      void deleteAppOwnedPhoto(form.photoUri);
+    }
+    onCancel();
+  }
 
   async function handleSave() {
     if (!canSave) {
@@ -68,6 +85,9 @@ export function AddRoomScreen({ propertyId, room, onCancel, onSave }: AddRoomScr
         floor: cleanOptional(form.floor),
         photoUri: form.photoUri || undefined,
       });
+      if (originalPhotoUri.current && originalPhotoUri.current !== form.photoUri) {
+        void deleteAppOwnedPhoto(originalPhotoUri.current);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -85,7 +105,7 @@ export function AddRoomScreen({ propertyId, room, onCancel, onSave }: AddRoomScr
           <Text style={styles.kicker}>Household</Text>
           <Text style={styles.title}>{room ? 'Edit area' : 'Add area'}</Text>
         </View>
-        <Pressable onPress={onCancel} style={styles.cancelButton} accessibilityRole="button">
+        <Pressable onPress={handleCancel} style={styles.cancelButton} accessibilityRole="button">
           <Text style={styles.cancelText}>Cancel</Text>
         </Pressable>
       </View>
@@ -133,7 +153,7 @@ export function AddRoomScreen({ propertyId, room, onCancel, onSave }: AddRoomScr
           <PhotoPickerField
             prefix="room"
             value={form.photoUri}
-            onChange={(photoUri) => setForm((current) => ({ ...current, photoUri }))}
+            onChange={handlePhotoChange}
             accessibilityLabel={`Photo of ${form.name || 'room'}`}
           />
         </View>

@@ -3,7 +3,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 
 export async function deleteAppOwnedPhoto(uri: string): Promise<void> {
   if (Platform.OS === 'web' || !FileSystem.documentDirectory) return;
-  if (!uri.startsWith(FileSystem.documentDirectory)) return;
+  if (!uri.includes('/homevault-assets/')) return;
   try {
     const info = await FileSystem.getInfoAsync(uri);
     if (info.exists) await FileSystem.deleteAsync(uri);

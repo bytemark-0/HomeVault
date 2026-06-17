@@ -107,7 +107,7 @@ function AppContent() {
       return (
         <QuickStartScreen
           property={onboardingProperty}
-          onDone={() => { void clearOnboardingState(); void finishOnboarding(); }}
+          onDone={async () => { await clearOnboardingState(); await finishOnboarding(); }}
         />
       );
     }

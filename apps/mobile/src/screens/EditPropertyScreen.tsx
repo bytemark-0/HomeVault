@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -12,6 +12,7 @@ import type { UpdatePropertyInput } from '@homevault/database';
 
 import { FormField } from '../components/FormField';
 import { PhotoPickerField } from '../components/PhotoPickerField';
+import { deleteAppOwnedPhoto } from '../utils/photoStorage';
 import { colors } from '../theme/colors';
 
 type EditPropertyScreenProps = {
@@ -38,6 +39,7 @@ const propertyTypes: Array<{ label: string; value: Property['type'] }> = [
 ];
 
 export function EditPropertyScreen({ property, onCancel, onSave }: EditPropertyScreenProps) {
+  const originalPhotoUri = useRef(property.photoUri ?? '');
   const [form, setForm] = useState<FormState>({
     label: property.label,
     addressLabel: property.addressLabel ?? '',
@@ -67,6 +69,21 @@ export function EditPropertyScreen({ property, onCancel, onSave }: EditPropertyS
     [errors.label, errors.purchaseDate, errors.yearBuilt, isSaving],
   );
 
+  function handlePhotoChange(photoUri: string) {
+    const current = form.photoUri;
+    if (current && current !== originalPhotoUri.current) {
+      void deleteAppOwnedPhoto(current);
+    }
+    setForm((prev) => ({ ...prev, photoUri }));
+  }
+
+  function handleCancel() {
+    if (form.photoUri && form.photoUri !== originalPhotoUri.current) {
+      void deleteAppOwnedPhoto(form.photoUri);
+    }
+    onCancel();
+  }
+
   async function handleSave() {
     if (!canSave) {
       return;
@@ -84,6 +101,9 @@ export function EditPropertyScreen({ property, onCancel, onSave }: EditPropertyS
         purchaseDate: cleanOptional(form.purchaseDate),
         photoUri: form.photoUri || undefined,
       });
+      if (originalPhotoUri.current && originalPhotoUri.current !== form.photoUri) {
+        void deleteAppOwnedPhoto(originalPhotoUri.current);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -101,7 +121,7 @@ export function EditPropertyScreen({ property, onCancel, onSave }: EditPropertyS
           <Text style={styles.kicker}>Household</Text>
           <Text style={styles.title}>Edit home</Text>
         </View>
-        <Pressable onPress={onCancel} style={styles.cancelButton} accessibilityRole="button">
+        <Pressable onPress={handleCancel} style={styles.cancelButton} accessibilityRole="button">
           <Text style={styles.cancelText}>Cancel</Text>
         </Pressable>
       </View>
@@ -168,7 +188,7 @@ export function EditPropertyScreen({ property, onCancel, onSave }: EditPropertyS
           <PhotoPickerField
             prefix="property"
             value={form.photoUri}
-            onChange={(photoUri) => setForm((current) => ({ ...current, photoUri }))}
+            onChange={handlePhotoChange}
             accessibilityLabel="Property photo"
           />
         </View>

@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   scoreValueEmpty: {
-    color: 'rgba(255,255,255,0.7)',
+    color: colors.muted,
     fontSize: 20,
     fontWeight: '700',
   },
