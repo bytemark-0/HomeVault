@@ -21,6 +21,7 @@ export default function NewAssetRoute() {
       const repo = await getHomeVaultRepository();
       await repo.createAsset(input);
       await reload();
+      showToast('Asset saved');
       router.replace('/(tabs)/inventory');
     } catch {
       showToast('Could not save asset. Please try again.', 'error');

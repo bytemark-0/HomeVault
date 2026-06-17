@@ -1,7 +1,5 @@
 import { useMemo, useState } from 'react';
 import {
-  Image,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,9 +10,8 @@ import {
 
 import type { Property } from '@homevault/domain';
 import type { UpdatePropertyInput } from '@homevault/database';
-import * as FileSystem from 'expo-file-system/legacy';
-import * as ImagePicker from 'expo-image-picker';
 
+import { PhotoPickerField } from '../components/PhotoPickerField';
 import { colors } from '../theme/colors';
 
 type EditPropertyScreenProps = {
@@ -92,23 +89,6 @@ export function EditPropertyScreen({ property, onCancel, onSave }: EditPropertyS
     }
   }
 
-  async function handlePickPhoto(source: 'library' | 'camera') {
-    let result: ImagePicker.ImagePickerResult;
-
-    if (source === 'camera') {
-      const permission = await ImagePicker.requestCameraPermissionsAsync();
-      if (!permission.granted) return;
-      result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [4, 3], quality: 0.8 });
-    } else {
-      result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [4, 3], quality: 0.8 });
-    }
-
-    if (result.canceled || !result.assets[0]) return;
-    const pickedUri = result.assets[0].uri;
-    const storedUri = await copyPhotoToAppStorage(pickedUri);
-    setForm((current) => ({ ...current, photoUri: storedUri ?? pickedUri }));
-  }
-
   return (
     <ScrollView
       style={styles.screen}
@@ -135,7 +115,7 @@ export function EditPropertyScreen({ property, onCancel, onSave }: EditPropertyS
           onChangeText={(label) => setForm((current) => ({ ...current, label }))}
         />
         <Field
-          label="Address label"
+          label="Address (optional)"
           value={form.addressLabel}
           placeholder="Street, neighborhood, or city"
           onChangeText={(addressLabel) =>
@@ -166,7 +146,7 @@ export function EditPropertyScreen({ property, onCancel, onSave }: EditPropertyS
         </View>
 
         <Field
-          label="Year built"
+          label="Year built (optional)"
           value={form.yearBuilt}
           placeholder="1998"
           keyboardType="number-pad"
@@ -174,7 +154,7 @@ export function EditPropertyScreen({ property, onCancel, onSave }: EditPropertyS
           onChangeText={(yearBuilt) => setForm((current) => ({ ...current, yearBuilt }))}
         />
         <Field
-          label="Purchase date"
+          label="Purchase date (optional)"
           value={form.purchaseDate}
           placeholder="2023-08-15"
           error={errors.purchaseDate}
@@ -184,31 +164,13 @@ export function EditPropertyScreen({ property, onCancel, onSave }: EditPropertyS
         />
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Photo</Text>
-          {form.photoUri ? (
-            <View style={styles.photoPreviewBox}>
-              <Image source={{ uri: form.photoUri }} style={styles.photoPreview} resizeMode="cover" />
-              <Pressable
-                onPress={() => setForm((current) => ({ ...current, photoUri: '' }))}
-                style={styles.photoRemoveButton}
-                accessibilityRole="button"
-                accessibilityLabel="Remove photo"
-              >
-                <Text style={styles.photoRemoveText}>Remove</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <View style={styles.photoPickerRow}>
-              <Pressable onPress={() => void handlePickPhoto('library')} style={styles.photoPickerButton} accessibilityRole="button">
-                <Text style={styles.photoPickerText}>Photo library</Text>
-              </Pressable>
-              {Platform.OS !== 'web' ? (
-                <Pressable onPress={() => void handlePickPhoto('camera')} style={styles.photoPickerButton} accessibilityRole="button">
-                  <Text style={styles.photoPickerText}>Camera</Text>
-                </Pressable>
-              ) : null}
-            </View>
-          )}
+          <Text style={styles.label}>Photo (optional)</Text>
+          <PhotoPickerField
+            prefix="property"
+            value={form.photoUri}
+            onChange={(photoUri) => setForm((current) => ({ ...current, photoUri }))}
+            accessibilityLabel="Property photo"
+          />
         </View>
       </View>
 
@@ -269,20 +231,6 @@ function isValidYear(value: string) {
   return Number.isInteger(parsed) && parsed >= 1700 && parsed <= currentYear + 1;
 }
 
-async function copyPhotoToAppStorage(sourceUri: string): Promise<string | null> {
-  if (!FileSystem.documentDirectory) return null;
-
-  try {
-    const dir = `${FileSystem.documentDirectory}homevault-assets/`;
-    await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
-    const ext = sourceUri.split('.').pop()?.toLowerCase() ?? 'jpg';
-    const dest = `${dir}property-${Date.now()}.${ext}`;
-    await FileSystem.copyAsync({ from: sourceUri, to: dest });
-    return dest;
-  } catch {
-    return null;
-  }
-}
 
 function isValidDateInput(value: string) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
@@ -381,49 +329,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     lineHeight: 16,
-  },
-  photoPreviewBox: {
-    position: 'relative',
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  photoPreview: {
-    width: '100%',
-    height: 180,
-    borderRadius: 8,
-  },
-  photoRemoveButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
-  },
-  photoRemoveText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '900',
-  },
-  photoPickerRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  photoPickerButton: {
-    minHeight: 40,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    borderColor: colors.line,
-    borderWidth: 1,
-    backgroundColor: colors.panel,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  photoPickerText: {
-    color: colors.blue,
-    fontSize: 13,
-    fontWeight: '900',
   },
   optionGrid: {
     flexDirection: 'row',

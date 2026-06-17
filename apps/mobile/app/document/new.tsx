@@ -19,6 +19,7 @@ export default function NewDocumentRoute() {
       const repo = await getHomeVaultRepository();
       await repo.createDocument(input);
       await reload();
+      showToast('Document saved');
       router.back();
     } catch {
       showToast('Could not save document. Please try again.', 'error');

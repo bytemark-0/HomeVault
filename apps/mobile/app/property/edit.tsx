@@ -18,6 +18,7 @@ export default function EditPropertyRoute() {
       const repo = await getHomeVaultRepository();
       await repo.updateProperty(input);
       await reload();
+      showToast('Property updated');
       router.back();
     } catch {
       showToast('Could not save property. Please try again.', 'error');

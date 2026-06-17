@@ -18,6 +18,7 @@ export default function NewRoomRoute() {
       const repo = await getHomeVaultRepository();
       await repo.createRoom(input);
       await reload();
+      showToast('Room saved');
       router.back();
     } catch {
       showToast('Could not save room. Please try again.', 'error');

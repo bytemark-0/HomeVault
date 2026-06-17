@@ -22,6 +22,7 @@ export default function EditAssetRoute() {
       const repo = await getHomeVaultRepository();
       await repo.updateAsset({ ...input, id: input.id });
       await reload();
+      showToast('Asset updated');
       router.back();
     } catch {
       showToast('Could not save asset. Please try again.', 'error');

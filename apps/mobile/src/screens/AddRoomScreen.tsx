@@ -1,7 +1,5 @@
 import { useMemo, useState } from 'react';
 import {
-  Image,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -9,12 +7,11 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import * as FileSystem from 'expo-file-system/legacy';
-import * as ImagePicker from 'expo-image-picker';
 
 import type { RoomArea } from '@homevault/domain';
 import type { CreateRoomInput, UpdateRoomInput } from '@homevault/database';
 
+import { PhotoPickerField } from '../components/PhotoPickerField';
 import { colors } from '../theme/colors';
 
 type AddRoomScreenProps = {
@@ -76,41 +73,6 @@ export function AddRoomScreen({ propertyId, room, onCancel, onSave }: AddRoomScr
     }
   }
 
-  async function handlePickPhoto(source: 'library' | 'camera') {
-    let result: ImagePicker.ImagePickerResult;
-
-    if (source === 'camera') {
-      const permission = await ImagePicker.requestCameraPermissionsAsync();
-
-      if (!permission.granted) {
-        return;
-      }
-
-      result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-      });
-    } else {
-      result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-      });
-    }
-
-    if (result.canceled || !result.assets[0]) {
-      return;
-    }
-
-    const pickedUri = result.assets[0].uri;
-    const storedUri = await copyPhotoToAppStorage(pickedUri);
-
-    setForm((current) => ({ ...current, photoUri: storedUri ?? pickedUri }));
-  }
-
   return (
     <ScrollView
       style={styles.screen}
@@ -160,44 +122,20 @@ export function AddRoomScreen({ propertyId, room, onCancel, onSave }: AddRoomScr
         </View>
 
         <Field
-          label="Floor"
+          label="Floor (optional)"
           value={form.floor}
           placeholder="Main, upstairs, lower, exterior"
           onChangeText={(floor) => setForm((current) => ({ ...current, floor }))}
         />
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Photo</Text>
-          {form.photoUri ? (
-            <View style={styles.photoPreviewBox}>
-              <Image source={{ uri: form.photoUri }} style={styles.photoPreview} resizeMode="cover" accessibilityLabel="Room photo preview" />
-              <Pressable
-                onPress={() => setForm((current) => ({ ...current, photoUri: '' }))}
-                style={styles.photoRemoveButton}
-                accessibilityRole="button"
-                accessibilityLabel="Remove photo"
-              >
-                <Text style={styles.photoRemoveText}>Remove</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <View style={styles.photoPickerRow}>
-              <Pressable
-                onPress={() => handlePickPhoto('library')}
-                style={styles.photoPickerButton}
-                accessibilityRole="button"
-              >
-                <Text style={styles.photoPickerText}>Choose from library</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => handlePickPhoto('camera')}
-                style={styles.photoPickerButton}
-                accessibilityRole="button"
-              >
-                <Text style={styles.photoPickerText}>Take photo</Text>
-              </Pressable>
-            </View>
-          )}
+          <Text style={styles.label}>Photo (optional)</Text>
+          <PhotoPickerField
+            prefix="room"
+            value={form.photoUri}
+            onChange={(photoUri) => setForm((current) => ({ ...current, photoUri }))}
+            accessibilityLabel={`Photo of ${form.name || 'room'}`}
+          />
         </View>
       </View>
 
@@ -369,68 +307,4 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '900',
   },
-  photoPreviewBox: {
-    borderRadius: 8,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  photoPreview: {
-    width: '100%',
-    height: 180,
-    borderRadius: 8,
-  },
-  photoRemoveButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    minHeight: 30,
-    paddingHorizontal: 10,
-    borderRadius: 7,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  photoRemoveText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '900',
-  },
-  photoPickerRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  photoPickerButton: {
-    flex: 1,
-    minHeight: 44,
-    borderRadius: 8,
-    borderColor: colors.line,
-    borderWidth: 1,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  photoPickerText: {
-    color: colors.blue,
-    fontSize: 13,
-    fontWeight: '900',
-  },
 });
-
-async function copyPhotoToAppStorage(sourceUri: string): Promise<string | null> {
-  if (Platform.OS === 'web' || !FileSystem.documentDirectory) {
-    return null;
-  }
-
-  try {
-    const directoryUri = `${FileSystem.documentDirectory}homevault-assets/`;
-    const fileName = `room-photo-${Date.now()}.jpg`;
-    const fileUri = `${directoryUri}${fileName}`;
-
-    await FileSystem.makeDirectoryAsync(directoryUri, { intermediates: true });
-    await FileSystem.copyAsync({ from: sourceUri, to: fileUri });
-
-    return fileUri;
-  } catch {
-    return null;
-  }
-}

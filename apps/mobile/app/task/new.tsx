@@ -18,6 +18,7 @@ export default function NewTaskRoute() {
       const repo = await getHomeVaultRepository();
       await repo.createTask(input);
       await reload();
+      showToast('Task saved');
       router.replace('/(tabs)/maintenance');
     } catch {
       showToast('Could not save task. Please try again.', 'error');

@@ -21,6 +21,7 @@ export default function EditRoomRoute() {
       const repo = await getHomeVaultRepository();
       await repo.updateRoom({ ...input, id } as UpdateRoomInput);
       await reload();
+      showToast('Room updated');
       router.back();
     } catch {
       showToast('Could not save room. Please try again.', 'error');

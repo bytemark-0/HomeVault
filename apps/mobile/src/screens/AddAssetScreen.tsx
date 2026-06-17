@@ -1,9 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,12 +12,10 @@ import {
 
 import { CameraView, useCameraPermissions } from 'expo-camera';
 
-import * as FileSystem from 'expo-file-system/legacy';
-import * as ImagePicker from 'expo-image-picker';
-
 import type { Asset, RoomArea } from '@homevault/domain';
 import type { CreateAssetInput, UpdateAssetInput } from '@homevault/database';
 
+import { PhotoPickerField } from '../components/PhotoPickerField';
 import { colors } from '../theme/colors';
 
 type AddAssetScreenProps = {
@@ -78,6 +74,20 @@ export function AddAssetScreen({
   onSave,
 }: AddAssetScreenProps) {
   const template = asset ?? copyFrom;
+  const hasAdvancedData =
+    asset != null &&
+    Boolean(
+      asset.brand ||
+        asset.model ||
+        asset.serial ||
+        asset.installDate ||
+        asset.purchaseDate ||
+        asset.costCents ||
+        asset.warrantyExpiry ||
+        asset.photoUri ||
+        asset.notes,
+    );
+  const [showAdvanced, setShowAdvanced] = useState(hasAdvancedData);
   const [form, setForm] = useState<FormState>({
     name: copyFrom ? `${copyFrom.name} (copy)` : (asset?.name ?? ''),
     category: template?.category ?? 'Appliance',
@@ -202,41 +212,6 @@ export function AddAssetScreen({
     setShowScanner(false);
   }
 
-  async function handlePickPhoto(source: 'library' | 'camera') {
-    let result: ImagePicker.ImagePickerResult;
-
-    if (source === 'camera') {
-      const permission = await ImagePicker.requestCameraPermissionsAsync();
-
-      if (!permission.granted) {
-        return;
-      }
-
-      result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-      });
-    } else {
-      result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-      });
-    }
-
-    if (result.canceled || !result.assets[0]) {
-      return;
-    }
-
-    const pickedUri = result.assets[0].uri;
-    const storedUri = await copyPhotoToAppStorage(pickedUri);
-
-    setForm((current) => ({ ...current, photoUri: storedUri ?? pickedUri }));
-  }
-
   return (
     <ScrollView
       style={styles.screen}
@@ -295,7 +270,7 @@ export function AddAssetScreen({
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Room or area</Text>
+          <Text style={styles.label}>Room or area (optional)</Text>
           {rooms.length > 0 ? (
             <View style={styles.optionGrid}>
               {rooms.map((room) => {
@@ -322,131 +297,124 @@ export function AddAssetScreen({
           )}
         </View>
 
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Identification</Text>
-          <Pressable
-            onPress={() => void handleOpenScanner()}
-            style={styles.scanButton}
-            accessibilityRole="button"
-            accessibilityLabel="Scan barcode"
-          >
-            <Text style={styles.scanButtonText}>Scan barcode</Text>
-          </Pressable>
-        </View>
+        <Pressable
+          onPress={() => setShowAdvanced((v) => !v)}
+          style={styles.advancedToggle}
+          accessibilityRole="button"
+        >
+          <Text style={styles.advancedToggleText}>
+            {showAdvanced ? 'Show less ▴' : 'More details ▾'}
+          </Text>
+        </Pressable>
 
-        <Field
-          label="Brand"
-          value={form.brand}
-          placeholder="Bosch, Trane, Rheem"
-          onChangeText={(brand) => setForm((current) => ({ ...current, brand }))}
-        />
-        <Field
-          label="Model"
-          value={form.model}
-          placeholder="Model number"
-          autoCapitalize="characters"
-          onChangeText={(model) => setForm((current) => ({ ...current, model }))}
-        />
-        <Field
-          label="Serial"
-          value={form.serial}
-          placeholder="Serial number"
-          autoCapitalize="characters"
-          onChangeText={(serial) => setForm((current) => ({ ...current, serial }))}
-        />
-        <Field
-          label="Install date"
-          value={form.installDate}
-          placeholder="YYYY-MM-DD"
-          error={errors.installDate}
-          onChangeText={(installDate) => setForm((current) => ({ ...current, installDate }))}
-        />
-        <Field
-          label="Purchase date"
-          value={form.purchaseDate}
-          placeholder="YYYY-MM-DD"
-          error={errors.purchaseDate}
-          onChangeText={(purchaseDate) => setForm((current) => ({ ...current, purchaseDate }))}
-        />
-        <Field
-          label="Purchase cost"
-          value={form.cost}
-          placeholder="0.00"
-          error={errors.cost}
-          keyboardType="decimal-pad"
-          onChangeText={(cost) => setForm((current) => ({ ...current, cost }))}
-        />
-
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Status</Text>
-          <View style={styles.optionGrid}>
-            {statusOptions.map((option) => {
-              const isSelected = option.value === form.status;
-
-              return (
-                <Pressable
-                  key={option.value}
-                  onPress={() => setForm((current) => ({ ...current, status: option.value }))}
-                  style={[styles.optionPill, isSelected && styles.optionPillActive]}
-                  accessibilityRole="button"
-                >
-                  <Text style={[styles.optionText, isSelected && styles.optionTextActive]}>
-                    {option.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-
-        <Field
-          label="Warranty expiry"
-          value={form.warrantyExpiry}
-          placeholder="YYYY-MM-DD"
-          error={errors.warrantyExpiry}
-          onChangeText={(warrantyExpiry) => setForm((current) => ({ ...current, warrantyExpiry }))}
-        />
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Photo</Text>
-          {form.photoUri ? (
-            <View style={styles.photoPreviewBox}>
-              <Image source={{ uri: form.photoUri }} style={styles.photoPreview} resizeMode="cover" />
+        {showAdvanced && (
+          <>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Identification</Text>
               <Pressable
-                onPress={() => setForm((current) => ({ ...current, photoUri: '' }))}
-                style={styles.photoRemoveButton}
+                onPress={() => void handleOpenScanner()}
+                style={styles.scanButton}
                 accessibilityRole="button"
-                accessibilityLabel="Remove photo"
+                accessibilityLabel="Scan barcode"
               >
-                <Text style={styles.photoRemoveText}>Remove</Text>
+                <Text style={styles.scanButtonText}>Scan barcode</Text>
               </Pressable>
             </View>
-          ) : (
-            <View style={styles.photoPickerRow}>
-              <Pressable
-                onPress={() => handlePickPhoto('library')}
-                style={styles.photoPickerButton}
-                accessibilityRole="button"
-              >
-                <Text style={styles.photoPickerText}>Choose from library</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => handlePickPhoto('camera')}
-                style={styles.photoPickerButton}
-                accessibilityRole="button"
-              >
-                <Text style={styles.photoPickerText}>Take photo</Text>
-              </Pressable>
-            </View>
-          )}
-        </View>
 
-        <Field
-          label="Notes"
-          value={form.notes}
-          placeholder="Filter size, location, access notes"
-          multiline
-          onChangeText={(notes) => setForm((current) => ({ ...current, notes }))}
-        />
+            <Field
+              label="Brand (optional)"
+              value={form.brand}
+              placeholder="Bosch, Trane, Rheem"
+              onChangeText={(brand) => setForm((current) => ({ ...current, brand }))}
+            />
+            <Field
+              label="Model (optional)"
+              value={form.model}
+              placeholder="Model number"
+              autoCapitalize="characters"
+              onChangeText={(model) => setForm((current) => ({ ...current, model }))}
+            />
+            <Field
+              label="Serial number (optional)"
+              value={form.serial}
+              placeholder="Serial number"
+              autoCapitalize="characters"
+              onChangeText={(serial) => setForm((current) => ({ ...current, serial }))}
+            />
+            <Field
+              label="Install date (optional)"
+              value={form.installDate}
+              placeholder="YYYY-MM-DD"
+              error={errors.installDate}
+              onChangeText={(installDate) => setForm((current) => ({ ...current, installDate }))}
+            />
+            <Field
+              label="Purchase date (optional)"
+              value={form.purchaseDate}
+              placeholder="YYYY-MM-DD"
+              error={errors.purchaseDate}
+              onChangeText={(purchaseDate) => setForm((current) => ({ ...current, purchaseDate }))}
+            />
+            <Field
+              label="Purchase cost (optional)"
+              value={form.cost}
+              placeholder="0.00"
+              error={errors.cost}
+              keyboardType="decimal-pad"
+              onChangeText={(cost) => setForm((current) => ({ ...current, cost }))}
+            />
+
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Status</Text>
+              <View style={styles.optionGrid}>
+                {statusOptions.map((option) => {
+                  const isSelected = option.value === form.status;
+
+                  return (
+                    <Pressable
+                      key={option.value}
+                      onPress={() => setForm((current) => ({ ...current, status: option.value }))}
+                      style={[styles.optionPill, isSelected && styles.optionPillActive]}
+                      accessibilityRole="button"
+                    >
+                      <Text style={[styles.optionText, isSelected && styles.optionTextActive]}>
+                        {option.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+
+            <Field
+              label="Warranty expiry (optional)"
+              value={form.warrantyExpiry}
+              placeholder="YYYY-MM-DD"
+              error={errors.warrantyExpiry}
+              onChangeText={(warrantyExpiry) =>
+                setForm((current) => ({ ...current, warrantyExpiry }))
+              }
+            />
+
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Photo (optional)</Text>
+              <PhotoPickerField
+                prefix="asset"
+                value={form.photoUri}
+                onChange={(photoUri) => setForm((current) => ({ ...current, photoUri }))}
+                accessibilityLabel={`Photo of ${form.name || 'asset'}`}
+              />
+            </View>
+
+            <Field
+              label="Notes (optional)"
+              value={form.notes}
+              placeholder="Filter size, location, access notes"
+              multiline
+              onChangeText={(notes) => setForm((current) => ({ ...current, notes }))}
+            />
+          </>
+        )}
       </View>
 
       <Pressable
@@ -552,25 +520,6 @@ function cleanOptional(value: string) {
   const trimmed = value.trim();
 
   return trimmed.length > 0 ? trimmed : undefined;
-}
-
-async function copyPhotoToAppStorage(sourceUri: string): Promise<string | null> {
-  if (Platform.OS === 'web' || !FileSystem.documentDirectory) {
-    return null;
-  }
-
-  try {
-    const directoryUri = `${FileSystem.documentDirectory}homevault-assets/`;
-    const fileName = `asset-photo-${Date.now()}.jpg`;
-    const fileUri = `${directoryUri}${fileName}`;
-
-    await FileSystem.makeDirectoryAsync(directoryUri, { intermediates: true });
-    await FileSystem.copyAsync({ from: sourceUri, to: fileUri });
-
-    return fileUri;
-  } catch {
-    return null;
-  }
 }
 
 const styles = StyleSheet.create({
@@ -693,47 +642,18 @@ const styles = StyleSheet.create({
   optionTextActive: {
     color: '#FFFFFF',
   },
-  photoPickerRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  photoPickerButton: {
-    flex: 1,
-    minHeight: 46,
+  advancedToggle: {
+    minHeight: 38,
     borderRadius: 8,
     borderColor: colors.line,
     borderWidth: 1,
-    backgroundColor: colors.panel,
+    backgroundColor: colors.page,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  photoPickerText: {
+  advancedToggleText: {
     color: colors.blue,
     fontSize: 13,
-    fontWeight: '900',
-  },
-  photoPreviewBox: {
-    gap: 10,
-  },
-  photoPreview: {
-    width: '100%',
-    height: 180,
-    borderRadius: 8,
-    backgroundColor: colors.page,
-  },
-  photoRemoveButton: {
-    alignSelf: 'flex-start',
-    minHeight: 34,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderColor: colors.red,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  photoRemoveText: {
-    color: colors.red,
-    fontSize: 12,
     fontWeight: '900',
   },
   saveButton: {
