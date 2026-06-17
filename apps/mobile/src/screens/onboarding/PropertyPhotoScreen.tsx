@@ -9,11 +9,11 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as FileSystem from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
 
 import type { Property } from '@homevault/domain';
 import { getHomeVaultRepository } from '../../data/localHomeVaultRepository';
+import { copyPhotoToAppStorage } from '../../utils/photoStorage';
 import { colors } from '../../theme/colors';
 
 type Props = {
@@ -49,7 +49,7 @@ export function PropertyPhotoScreen({ property, onDone, onSkip }: Props) {
       });
     }
     if (result.canceled || !result.assets[0]) return;
-    const stored = await copyToAppStorage(result.assets[0].uri);
+    const stored = await copyPhotoToAppStorage('property', result.assets[0].uri);
     setPhotoUri(stored ?? result.assets[0].uri);
   }
 
@@ -175,19 +175,6 @@ export function PropertyPhotoScreen({ property, onDone, onSkip }: Props) {
   );
 }
 
-async function copyToAppStorage(sourceUri: string): Promise<string | null> {
-  if (!FileSystem.documentDirectory) return null;
-  try {
-    const dir = `${FileSystem.documentDirectory}homevault-assets/`;
-    await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
-    const ext = sourceUri.split('.').pop()?.toLowerCase() ?? 'jpg';
-    const dest = `${dir}property-${Date.now()}.${ext}`;
-    await FileSystem.copyAsync({ from: sourceUri, to: dest });
-    return dest;
-  } catch {
-    return null;
-  }
-}
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.page },
