@@ -316,8 +316,8 @@ export const sampleRepairEvents: RepairEventListItem[] = [
 export const sampleParts: PartSupply[] = [
   {
     id: 'part-1',
-    propertyId: 'property-1',
-    assetId: 'asset-1',
+    propertyId: sampleProperty.id,
+    assetId: 'asset-hvac',
     name: 'HVAC filter',
     size: '20x25x1 MERV-8',
     quantity: 3,
@@ -325,10 +325,10 @@ export const sampleParts: PartSupply[] = [
   },
   {
     id: 'part-2',
-    propertyId: 'property-1',
-    assetId: 'asset-2',
-    name: 'Refrigerator water filter',
-    partNumber: 'DA29-00020B',
+    propertyId: sampleProperty.id,
+    assetId: 'asset-water-heater',
+    name: 'Anode rod',
+    partNumber: 'SP11654B',
     quantity: 1,
   },
 ];
