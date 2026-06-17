@@ -1,6 +1,6 @@
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Tabs, router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TabIcon } from '../../src/components/TabIcon';
@@ -41,7 +41,20 @@ export default function TabLayout() {
       {isSampleMode && (
         <Pressable
           style={styles.sampleBanner}
-          onPress={() => void exitSampleMode()}
+          onPress={() =>
+            Alert.alert(
+              'Leave sample home?',
+              'Your vault will be cleared so you can start your own. Any records you added while exploring will be deleted.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Create my own vault',
+                  style: 'destructive',
+                  onPress: () => void exitSampleMode(),
+                },
+              ],
+            )
+          }
           accessibilityRole="button"
           accessibilityLabel="Sample home — tap to exit"
         >

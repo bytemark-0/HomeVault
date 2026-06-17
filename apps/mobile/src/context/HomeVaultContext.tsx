@@ -24,7 +24,7 @@ import {
   toTaskListItem,
 } from '../data/homeVaultSampleData';
 import { formatCurrency } from '../utils/taskUtils';
-import { syncTaskNotifications } from '../utils/notificationUtils';
+import { clearAllNotifications, syncTaskNotifications } from '../utils/notificationUtils';
 import { logDiagnostic } from '../utils/diagnosticLog';
 
 export type AppData = {
@@ -33,7 +33,7 @@ export type AppData = {
   roomCount: number;
   documentCount: number;
   activeTaskCount: number;
-  healthScore: number;
+  healthScore: number | null;
   rooms: RoomListItem[];
   assets: AssetListItem[];
   dueTasks: TaskListItem[];
@@ -137,10 +137,12 @@ export function HomeVaultProvider({ children }: { children: React.ReactNode }) {
       0,
     );
     const attentionAssetCount = assets.filter((a) => a.status !== 'ready').length;
-    const healthScore = Math.max(
+    const hasEnoughData = assets.length > 0 && tasks.length > 0;
+    const rawScore = Math.max(
       0,
       Math.min(100, 100 - dashboard.activeTaskCount * 8 - attentionAssetCount * 4),
     );
+    const healthScore: number | null = hasEnoughData ? rawScore : null;
 
     setLoadError(false);
     setAppData({
@@ -165,7 +167,10 @@ export function HomeVaultProvider({ children }: { children: React.ReactNode }) {
       parts,
     });
 
-    void syncTaskNotifications(taskList);
+    // Sample tasks must not trigger permission prompts or real notifications.
+    if (property.id !== SAMPLE_PROPERTY_ID) {
+      void syncTaskNotifications(taskList);
+    }
   }
 
   useEffect(() => {
@@ -231,6 +236,7 @@ export function HomeVaultProvider({ children }: { children: React.ReactNode }) {
 
   async function exitSampleMode() {
     try {
+      await clearAllNotifications();
       const repo = await getHomeVaultRepository();
       await repo.clearAllData?.();
       await clearOnboardingState();

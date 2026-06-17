@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Pressable, StyleSheet, Text } from 'react-native';
@@ -14,8 +14,8 @@ import { QuickStartScreen } from '../src/screens/onboarding/QuickStartScreen';
 import {
   type OnboardingStep,
   clearOnboardingState,
-  readOnboardingStep,
-  writeOnboardingStep,
+  readOnboardingState,
+  writeOnboardingState,
 } from '../src/utils/onboardingStorage';
 import { Toast } from '../src/components/Toast';
 import { colors } from '../src/theme/colors';
@@ -43,33 +43,63 @@ function LoadErrorView() {
 }
 
 function AppContent() {
-  const { isNewUser, loadError, finishOnboarding } = useHomeVault();
+  const { isNewUser, loadError, finishOnboarding, appData } = useHomeVault();
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>('welcome');
-  // In-memory post-create state; not persisted since the property already exists by then.
   const [postCreateStep, setPostCreateStep] = useState<'add-photo' | 'quick-start' | null>(null);
   const [onboardingProperty, setOnboardingProperty] = useState<Property | null>(null);
+  const [initializing, setInitializing] = useState(true);
+  const reconciledRef = useRef(false);
 
   // Restore persisted step so kills during setup resume at the right screen.
   useEffect(() => {
-    readOnboardingStep().then(setOnboardingStep);
-  }, []);
+    if (reconciledRef.current) return;
+    // For pre-property steps isNewUser=true is known immediately.
+    // For post-property steps we need appData to arrive first.
+    if (!isNewUser && appData === null) return;
 
-  function goToStep(step: OnboardingStep) {
+    reconciledRef.current = true;
+
+    async function reconcile() {
+      const state = await readOnboardingState();
+
+      if (isNewUser) {
+        if (state.step === 'create-property') setOnboardingStep('create-property');
+      } else if (
+        appData &&
+        (state.step === 'property-photo' || state.step === 'quick-start') &&
+        state.propertyId === appData.property.id
+      ) {
+        setOnboardingProperty(appData.property);
+        setPostCreateStep(state.step === 'property-photo' ? 'add-photo' : 'quick-start');
+      }
+
+      setInitializing(false);
+    }
+
+    void reconcile();
+  }, [isNewUser, appData]);
+
+  function goToStep(step: 'welcome' | 'create-property') {
     setOnboardingStep(step);
-    void writeOnboardingStep(step);
+    void writeOnboardingState({ step });
   }
 
   if (loadError) return <LoadErrorView />;
-  if (isNewUser) {
+  if (initializing) return null;
+  if (isNewUser || postCreateStep !== null) {
     if (postCreateStep === 'add-photo' && onboardingProperty) {
       return (
         <PropertyPhotoScreen
           property={onboardingProperty}
           onDone={(updated) => {
+            void writeOnboardingState({ step: 'quick-start', propertyId: updated.id });
             setOnboardingProperty(updated);
             setPostCreateStep('quick-start');
           }}
-          onSkip={() => setPostCreateStep('quick-start')}
+          onSkip={() => {
+            void writeOnboardingState({ step: 'quick-start', propertyId: onboardingProperty!.id });
+            setPostCreateStep('quick-start');
+          }}
         />
       );
     }
@@ -77,7 +107,7 @@ function AppContent() {
       return (
         <QuickStartScreen
           property={onboardingProperty}
-          onDone={() => void finishOnboarding()}
+          onDone={() => { void clearOnboardingState(); void finishOnboarding(); }}
         />
       );
     }
@@ -86,7 +116,7 @@ function AppContent() {
         <CreatePropertyScreen
           onBack={() => goToStep('welcome')}
           onCreated={(property) => {
-            void clearOnboardingState();
+            void writeOnboardingState({ step: 'property-photo', propertyId: property.id });
             setOnboardingProperty(property);
             setPostCreateStep('add-photo');
           }}

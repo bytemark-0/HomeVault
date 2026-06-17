@@ -1,6 +1,17 @@
 import { Platform } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 
+export async function deleteAppOwnedPhoto(uri: string): Promise<void> {
+  if (Platform.OS === 'web' || !FileSystem.documentDirectory) return;
+  if (!uri.startsWith(FileSystem.documentDirectory)) return;
+  try {
+    const info = await FileSystem.getInfoAsync(uri);
+    if (info.exists) await FileSystem.deleteAsync(uri);
+  } catch {
+    // Non-fatal.
+  }
+}
+
 export async function copyPhotoToAppStorage(
   prefix: string,
   sourceUri: string,

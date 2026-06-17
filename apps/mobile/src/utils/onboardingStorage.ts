@@ -1,30 +1,31 @@
 import * as FileSystem from 'expo-file-system/legacy';
 
-export type OnboardingStep = 'welcome' | 'create-property';
+export type OnboardingStep = 'welcome' | 'create-property' | 'property-photo' | 'quick-start';
 
-type StoredState = { step: OnboardingStep };
+type StoredState = { step: OnboardingStep; propertyId?: string };
+
+const VALID_STEPS: OnboardingStep[] = ['welcome', 'create-property', 'property-photo', 'quick-start'];
 
 const FILE = `${FileSystem.documentDirectory ?? ''}onboarding_state.json`;
 
-export async function readOnboardingStep(): Promise<OnboardingStep> {
+export async function readOnboardingState(): Promise<StoredState> {
   try {
     const info = await FileSystem.getInfoAsync(FILE);
-    if (!info.exists) return 'welcome';
+    if (!info.exists) return { step: 'welcome' };
     const raw = await FileSystem.readAsStringAsync(FILE);
     const parsed = JSON.parse(raw) as StoredState;
-    if (parsed.step === 'create-property') return 'create-property';
-    return 'welcome';
+    if (!VALID_STEPS.includes(parsed.step)) return { step: 'welcome' };
+    return parsed;
   } catch {
-    // Corrupt or unreadable file — fall back to welcome safely.
-    return 'welcome';
+    return { step: 'welcome' };
   }
 }
 
-export async function writeOnboardingStep(step: OnboardingStep): Promise<void> {
+export async function writeOnboardingState(state: StoredState): Promise<void> {
   try {
-    await FileSystem.writeAsStringAsync(FILE, JSON.stringify({ step }));
+    await FileSystem.writeAsStringAsync(FILE, JSON.stringify(state));
   } catch {
-    // Non-fatal — user may see welcome on next launch instead of resuming.
+    // Non-fatal.
   }
 }
 

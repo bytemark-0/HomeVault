@@ -9,6 +9,8 @@ import { Text } from 'react-native';
 import { createMemoryHomeVaultRepository } from '@homevault/database';
 import { setHomeVaultRepository } from '../../data/localHomeVaultRepository';
 import { HomeVaultProvider, useHomeVault } from '../../context/HomeVaultContext';
+import { SAMPLE_PROPERTY_ID } from '../../data/homeVaultSampleData';
+import { syncTaskNotifications } from '../../utils/notificationUtils';
 
 // Mock expo modules that HomeVaultContext uses at module load time.
 jest.mock('expo-notifications', () => ({
@@ -138,5 +140,50 @@ describe('HomeVaultContext integration', () => {
     });
 
     await waitFor(() => expect(getByTestId('task-count').props.children).toBe(1));
+  });
+
+  it('does not call syncTaskNotifications when loading sample data', async () => {
+    const sampleSnapshot = {
+      properties: [
+        {
+          id: SAMPLE_PROPERTY_ID,
+          label: 'Sample Home',
+          address: '123 Sample St',
+          purchaseDate: '2020-01-01',
+          purchasePriceCents: 0,
+          squareFeet: 0,
+        },
+      ],
+      rooms: [],
+      assets: [],
+      documents: [],
+      tasks: [],
+      taskCompletions: [],
+      repairEvents: [],
+      parts: [],
+    };
+    const repo = createMemoryHomeVaultRepository(sampleSnapshot);
+    await repo.createTask({
+      propertyId: SAMPLE_PROPERTY_ID,
+      scope: 'property',
+      scopeId: SAMPLE_PROPERTY_ID,
+      title: 'Sample task',
+      dueDate: '2027-01-01',
+      recurrenceKind: 'one_time',
+      recurrenceLabel: 'One time',
+      state: 'upcoming',
+    });
+    setHomeVaultRepository(repo);
+
+    (syncTaskNotifications as jest.Mock).mockClear();
+
+    const { getByTestId } = await render(
+      <HomeVaultProvider>
+        <DataProbe />
+      </HomeVaultProvider>,
+    );
+
+    await waitFor(() => expect(getByTestId('property-label')).toBeTruthy());
+    expect(syncTaskNotifications as jest.Mock).not.toHaveBeenCalled();
   });
 });

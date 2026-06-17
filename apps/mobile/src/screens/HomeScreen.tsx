@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AssetRow } from '../components/AssetRow';
@@ -17,7 +18,7 @@ type HomeScreenProps = {
   activeTasks: number;
   assetCount: number;
   documentCount: number;
-  healthScore: number;
+  healthScore: number | null;
   recentActivity: HomeActivityItem[];
   roomCount: number;
   savedCostLabel: string;
@@ -54,6 +55,12 @@ export function HomeScreen({
   onViewServiceHistory,
   recentAssets,
 }: HomeScreenProps) {
+  const [photoError, setPhotoError] = useState(false);
+
+  useEffect(() => {
+    setPhotoError(false);
+  }, [propertyPhotoUri]);
+
   const isEmpty = assetCount === 0 && documentCount === 0 && activeTasks === 0;
 
   const subtitle =
@@ -67,12 +74,13 @@ export function HomeScreen({
     <View style={styles.screen}>
       {/* Property identity header — NX-602 */}
       <View style={styles.propertyHeader}>
-        {propertyPhotoUri ? (
+        {propertyPhotoUri && !photoError ? (
           <Image
             source={{ uri: propertyPhotoUri }}
             style={StyleSheet.absoluteFill}
             resizeMode="cover"
             accessibilityLabel="Property photo"
+            onError={() => setPhotoError(true)}
           />
         ) : (
           <View style={[StyleSheet.absoluteFill, styles.propertyHeaderFallback]} />
@@ -84,8 +92,17 @@ export function HomeScreen({
             <Text style={styles.propertySubtitle}>{subtitle}</Text>
           </View>
           <View style={styles.scoreBadge}>
-            <Text style={styles.scoreValue}>{healthScore}</Text>
-            <Text style={styles.scoreLabel}>Score</Text>
+            {healthScore !== null ? (
+              <>
+                <Text style={styles.scoreValue}>{healthScore}</Text>
+                <Text style={styles.scoreLabel}>Score</Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.scoreValueEmpty}>—</Text>
+                <Text style={styles.scoreLabel}>Not rated</Text>
+              </>
+            )}
           </View>
         </View>
       </View>
@@ -233,6 +250,11 @@ const styles = StyleSheet.create({
   scoreLabel: {
     color: colors.muted,
     fontSize: 11,
+    fontWeight: '700',
+  },
+  scoreValueEmpty: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 20,
     fontWeight: '700',
   },
   metricGrid: {
