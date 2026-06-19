@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { Property } from '@homevault/domain';
-import type { CreateAssetInput, CreateDocumentInput, CreateTaskInput } from '@homevault/database';
+import type { CreateDocumentInput, CreateTaskInput } from '@homevault/database';
 import { getHomeVaultRepository } from '../../data/localHomeVaultRepository';
 import { AddTaskScreen } from '../AddTaskScreen';
 import { AddDocumentScreen } from '../AddDocumentScreen';
@@ -124,8 +124,8 @@ export function QuickStartScreen({ property, onDone }: Props) {
                 setScreen({ id: 'first-task' });
               } else if (choice.id === 'document') {
                 setScreen({ id: 'first-document' });
-              } else {
-                setScreen({ id: 'first-asset', category: choice.category! });
+              } else if (choice.category) {
+                setScreen({ id: 'first-asset', category: choice.category });
               }
             }}
             accessibilityRole="button"

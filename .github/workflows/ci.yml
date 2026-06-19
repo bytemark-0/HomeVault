@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, codex/homevault-stabilization]
+    branches: [main, onboarding-rescue, codex/homevault-stabilization]
   pull_request:
-    branches: [main, codex/homevault-stabilization]
+    branches: [main, onboarding-rescue, codex/homevault-stabilization]
 
 jobs:
   typecheck-and-test:

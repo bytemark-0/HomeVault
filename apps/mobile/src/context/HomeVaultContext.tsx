@@ -8,6 +8,7 @@ import { getHomeVaultRepository } from '../data/localHomeVaultRepository';
 import { clearOnboardingState } from '../utils/onboardingStorage';
 import {
   SAMPLE_PROPERTY_ID,
+  sampleSnapshot,
   type AssetListItem,
   type DocumentListItem,
   type HomeActivityItem,
@@ -99,6 +100,7 @@ export function HomeVaultProvider({ children }: { children: React.ReactNode }) {
     const [property] = await repo.getProperties();
 
     if (!property) {
+      setLoadError(false);
       setIsNewUser(true);
       setAppData(null);
       return;
@@ -217,7 +219,11 @@ export function HomeVaultProvider({ children }: { children: React.ReactNode }) {
   async function enterSampleMode() {
     try {
       const repo = await getHomeVaultRepository();
-      await repo.resetDemoData?.();
+      if (!repo.restoreSnapshot) {
+        throw new Error('The current repository does not support loading sample data.');
+      }
+
+      await repo.restoreSnapshot(sampleSnapshot);
       await loadHomeVault();
     } catch (error) {
       logDiagnostic('data_load_failure', error);

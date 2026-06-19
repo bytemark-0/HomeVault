@@ -22,7 +22,7 @@ config.resolver.nodeModulesPaths = [
 // react-native (at workspace root) would still resolve React 19.2.7 while app
 // code resolves 19.1.0. resolveRequest intercepts before any walk, guaranteeing
 // all code in the bundle uses the same React copy.
-const REACT_PATH = path.resolve(projectRoot, 'node_modules/react');
+const REACT_PATH = path.resolve(workspaceRoot, 'node_modules/react');
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (moduleName === 'react') {
     return { filePath: path.join(REACT_PATH, 'index.js'), type: 'sourceFile' };

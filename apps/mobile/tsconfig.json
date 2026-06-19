@@ -10,5 +10,5 @@
       "@homevault/export": ["../../packages/export/src"]
     }
   },
-  "exclude": ["src/__tests__"]
+  "exclude": ["dist", "src/__tests__"]
 }
