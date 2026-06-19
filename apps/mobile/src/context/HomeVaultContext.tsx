@@ -5,9 +5,9 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import type { PartSupply, Property } from '@homevault/domain';
 import type { HomeVaultExportPackage } from '@homevault/export';
 import { getHomeVaultRepository } from '../data/localHomeVaultRepository';
-import { SAMPLE_PROPERTY_ID } from '../data/homeVaultSampleData';
 import { clearOnboardingState } from '../utils/onboardingStorage';
 import {
+  SAMPLE_PROPERTY_ID,
   type AssetListItem,
   type DocumentListItem,
   type HomeActivityItem,

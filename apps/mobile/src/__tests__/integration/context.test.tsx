@@ -62,8 +62,9 @@ const testSnapshot = {
 };
 
 function DataProbe() {
-  const { appData, loadError } = useHomeVault();
+  const { appData, isNewUser, loadError } = useHomeVault();
   if (loadError) return <Text testID="load-error">load error</Text>;
+  if (isNewUser) return <Text testID="new-user">new user</Text>;
   if (!appData) return <Text testID="loading">loading</Text>;
   return <Text testID="property-label">{appData.property.label}</Text>;
 }
@@ -101,6 +102,71 @@ describe('HomeVaultContext integration', () => {
     await waitFor(() => expect(getByTestId('load-error')).toBeTruthy());
   });
 
+  it('exposes new-user state when the repository has no properties', async () => {
+    const emptyRepo = createMemoryHomeVaultRepository({
+      properties: [],
+      rooms: [],
+      assets: [],
+      documents: [],
+      tasks: [],
+      taskCompletions: [],
+      repairEvents: [],
+      parts: [],
+    });
+    setHomeVaultRepository(emptyRepo);
+
+    const { getByTestId } = await render(
+      <HomeVaultProvider>
+        <DataProbe />
+      </HomeVaultProvider>,
+    );
+
+    await waitFor(() => expect(getByTestId('new-user')).toBeTruthy());
+  });
+
+  it('loads sample data when entering sample mode from an empty repository', async () => {
+    const emptyRepo = createMemoryHomeVaultRepository({
+      properties: [],
+      rooms: [],
+      assets: [],
+      documents: [],
+      tasks: [],
+      taskCompletions: [],
+      repairEvents: [],
+      parts: [],
+    });
+    setHomeVaultRepository(emptyRepo);
+
+    let enterSampleMode: (() => Promise<void>) | null = null;
+
+    function SampleModeProbe() {
+      const context = useHomeVault();
+      enterSampleMode = context.enterSampleMode;
+
+      if (context.isSampleMode) return <Text testID="sample-mode">sample</Text>;
+      if (context.isNewUser) return <Text testID="new-user">new user</Text>;
+      return <Text testID="loading">loading</Text>;
+    }
+
+    const { getByTestId } = await render(
+      <HomeVaultProvider>
+        <SampleModeProbe />
+      </HomeVaultProvider>,
+    );
+
+    await waitFor(() => expect(getByTestId('new-user')).toBeTruthy());
+
+    await act(async () => {
+      if (!enterSampleMode) {
+        throw new Error('enterSampleMode was not provided by HomeVaultContext.');
+      }
+
+      await enterSampleMode();
+    });
+
+    await waitFor(() => expect(getByTestId('sample-mode')).toBeTruthy());
+  });
+
   it('reloads data after a mutation', async () => {
     const repo = createMemoryHomeVaultRepository(testSnapshot);
     setHomeVaultRepository(repo);
@@ -136,7 +202,11 @@ describe('HomeVaultContext integration', () => {
     });
 
     await act(async () => {
-      await triggerReload!();
+      if (!triggerReload) {
+        throw new Error('reload was not provided by HomeVaultContext.');
+      }
+
+      await triggerReload();
     });
 
     await waitFor(() => expect(getByTestId('task-count').props.children).toBe(1));
