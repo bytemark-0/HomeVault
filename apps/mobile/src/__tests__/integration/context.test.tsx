@@ -10,7 +10,7 @@ import { createMemoryHomeVaultRepository } from '@homevault/database';
 import { setHomeVaultRepository } from '../../data/localHomeVaultRepository';
 import { HomeVaultProvider, useHomeVault } from '../../context/HomeVaultContext';
 import { SAMPLE_PROPERTY_ID } from '../../data/homeVaultSampleData';
-import { syncTaskNotifications } from '../../utils/notificationUtils';
+import { clearAllNotifications, syncTaskNotifications } from '../../utils/notificationUtils';
 
 // Mock expo modules that HomeVaultContext uses at module load time.
 jest.mock('expo-notifications', () => ({
@@ -165,6 +165,64 @@ describe('HomeVaultContext integration', () => {
     });
 
     await waitFor(() => expect(getByTestId('sample-mode')).toBeTruthy());
+  });
+
+  it('exits sample mode by clearing sample records and returning to onboarding', async () => {
+    const emptyRepo = createMemoryHomeVaultRepository({
+      properties: [],
+      rooms: [],
+      assets: [],
+      documents: [],
+      tasks: [],
+      taskCompletions: [],
+      repairEvents: [],
+      parts: [],
+    });
+    setHomeVaultRepository(emptyRepo);
+
+    let enterSampleMode: (() => Promise<void>) | null = null;
+    let exitSampleMode: (() => Promise<void>) | null = null;
+
+    function SampleExitProbe() {
+      const context = useHomeVault();
+      enterSampleMode = context.enterSampleMode;
+      exitSampleMode = context.exitSampleMode;
+
+      if (context.isSampleMode) return <Text testID="sample-mode">sample</Text>;
+      if (context.isNewUser) return <Text testID="new-user">new user</Text>;
+      return <Text testID="loading">loading</Text>;
+    }
+
+    const { getByTestId } = await render(
+      <HomeVaultProvider>
+        <SampleExitProbe />
+      </HomeVaultProvider>,
+    );
+
+    await waitFor(() => expect(getByTestId('new-user')).toBeTruthy());
+
+    await act(async () => {
+      if (!enterSampleMode) {
+        throw new Error('enterSampleMode was not provided by HomeVaultContext.');
+      }
+
+      await enterSampleMode();
+    });
+
+    await waitFor(() => expect(getByTestId('sample-mode')).toBeTruthy());
+    expect(await emptyRepo.getProperties()).toHaveLength(1);
+
+    await act(async () => {
+      if (!exitSampleMode) {
+        throw new Error('exitSampleMode was not provided by HomeVaultContext.');
+      }
+
+      await exitSampleMode();
+    });
+
+    await waitFor(() => expect(getByTestId('new-user')).toBeTruthy());
+    expect(await emptyRepo.getProperties()).toHaveLength(0);
+    expect(clearAllNotifications as jest.Mock).toHaveBeenCalled();
   });
 
   it('reloads data after a mutation', async () => {

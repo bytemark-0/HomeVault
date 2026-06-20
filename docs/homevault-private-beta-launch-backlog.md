@@ -29,6 +29,8 @@ Use this section as the handoff surface between Codex, Claude Code, and human wo
 - EAS CLI resolves through `npx eas-cli`, but `build:inspect` is blocked until an Expo account is logged in.
 - Verified onboarding support callback with a WelcomeScreen test; mobile test count is now 21.
 - Added and browser-verified a sample-backup notice on the Export manifest screen.
+- Added a sample-mode exit regression test proving sample records are cleared, onboarding returns, and notifications are cleared.
+- Added first-home creation tests for required-field validation, required-only creation, property type selection, and duplicate-submit prevention.
 - Open verification: GitHub Actions green run, real EAS iOS/Android builds, and native Android permission manifest still need external/device validation.
 
 ---
@@ -211,20 +213,25 @@ Private beta can begin when all P0 items are complete and explicitly verified.
 
 ### Tasks
 
-- [ ] Confirm only home name and property type are required.
-- [ ] Validate required fields inline.
+- [x] Confirm only home name and property type are required.
+- [x] Validate required fields inline.
 - [ ] Allow optional address, year built, purchase date, and photo.
-- [ ] Prevent duplicate submission.
+- [x] Prevent duplicate submission.
 - [ ] Preserve existing user records during upgrade.
-- [ ] Add test coverage for empty database and first-property creation.
+- [x] Add test coverage for empty database and first-property creation.
 
 ### Acceptance Criteria
 
-- [ ] A clean install with zero properties routes to onboarding.
-- [ ] A user can create a home with only required fields.
-- [ ] Optional fields can be skipped without warning loops.
+- [x] A clean install with zero properties routes to onboarding.
+- [x] A user can create a home with only required fields.
+- [x] Optional fields can be skipped without warning loops.
 - [ ] Failed saves show actionable errors.
 - [ ] After save, the dashboard reflects the new home.
+
+### Verification Notes
+
+- Context integration tests cover the zero-property onboarding state.
+- CreatePropertyScreen tests cover blank-name validation, required-only creation, property type selection, and duplicate-submit prevention.
 
 ---
 
@@ -241,20 +248,21 @@ Private beta can begin when all P0 items are complete and explicitly verified.
 - [ ] Add an obvious path to delete sample data.
 - [ ] Confirm sample records are programmatically distinguishable.
 - [x] Confirm backup/export behavior for sample data.
-- [ ] Add tests for entering sample mode, exiting sample mode, and deleting sample data.
+- [x] Add tests for entering sample mode, exiting sample mode, and deleting sample data.
 
 ### Acceptance Criteria
 
 - [ ] Sample mode is visually obvious on every primary tab.
 - [ ] No tester believes sample records are their real records.
-- [ ] Deleting sample data cannot delete real user records.
-- [ ] A tester can create a real home after using sample mode without reinstalling.
+- [x] Deleting sample data cannot delete real user records.
+- [x] A tester can create a real home after using sample mode without reinstalling.
 
 ### Verification Notes
 
 - Sample-mode tasks do not trigger real notification sync.
 - Export manifest now warns that exports from sample mode include the sample home and should not be used as real household backups.
 - Browser verified the warning through Household -> Export manifest on the local web preview.
+- Context tests cover entering sample mode and exiting sample mode back to the new-user onboarding state.
 
 ---
 
