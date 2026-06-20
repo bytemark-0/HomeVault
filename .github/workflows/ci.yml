@@ -32,8 +32,11 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Run package tests
+      - name: Run tests
         run: npm test
+
+      - name: Verify generated fixtures are committed
+        run: git diff --exit-code docs/homevault-sample-backup.json
 
       - name: Upload test artifacts on failure
         if: failure()
@@ -44,9 +47,8 @@ jobs:
           retention-days: 7
 
   web-export:
-    name: Web export (informational)
+    name: Web export
     runs-on: ubuntu-latest
-    continue-on-error: true
 
     steps:
       - uses: actions/checkout@v4

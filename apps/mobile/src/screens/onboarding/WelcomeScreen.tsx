@@ -67,8 +67,13 @@ export function WelcomeScreen({ onSetUp }: Props) {
         </View>
 
         <View style={styles.privacy}>
+          <Text style={styles.privacyHeading}>Private by default</Text>
           <Text style={styles.privacyText}>
             All your data stays on this device. HomeVault never uploads your home records to any server.
+          </Text>
+          <Text style={styles.privacyText}>
+            You choose when to create backup or export files. Beta feedback never includes your
+            household details unless you decide to share them.
           </Text>
         </View>
       </ScrollView>
@@ -169,6 +174,13 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
     borderWidth: 1,
     padding: 16,
+    gap: 8,
+  },
+  privacyHeading: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: colors.ink,
+    textAlign: 'center',
   },
   privacyText: {
     fontSize: 13,

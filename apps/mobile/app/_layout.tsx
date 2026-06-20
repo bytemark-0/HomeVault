@@ -131,6 +131,7 @@ function AppContent() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="search" options={{ presentation: 'fullScreenModal' }} />
       <Stack.Screen name="quick-add" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="support" />
       <Stack.Screen name="export" />
       <Stack.Screen name="service-history" />
       <Stack.Screen name="cost-summary" />

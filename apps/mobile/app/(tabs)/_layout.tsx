@@ -20,6 +20,14 @@ export default function TabLayout() {
         </View>
         <View style={styles.topBarActions}>
           <Pressable
+            style={styles.supportButton}
+            accessibilityLabel="Beta support and privacy"
+            accessibilityRole="button"
+            onPress={() => router.push('/support')}
+          >
+            <Text style={styles.supportButtonText}>?</Text>
+          </Pressable>
+          <Pressable
             style={styles.searchButton}
             accessibilityLabel="Search"
             accessibilityRole="button"
@@ -157,6 +165,22 @@ const styles = StyleSheet.create({
     backgroundColor: colors.panel,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  supportButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderColor: colors.line,
+    borderWidth: 1,
+    backgroundColor: colors.panel,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  supportButtonText: {
+    color: colors.ink,
+    fontSize: 18,
+    lineHeight: 22,
+    fontWeight: '900',
   },
   searchButtonText: {
     color: colors.ink,
