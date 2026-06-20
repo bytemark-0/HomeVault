@@ -23,9 +23,12 @@ const VALUE_POINTS = [
   },
 ];
 
-type Props = { onSetUp?: () => void };
+type Props = {
+  onSetUp?: () => void;
+  onSupport?: () => void;
+};
 
-export function WelcomeScreen({ onSetUp }: Props) {
+export function WelcomeScreen({ onSetUp, onSupport }: Props) {
   const { enterSampleMode } = useHomeVault();
   const insets = useSafeAreaInsets();
   const [loadingSample, setLoadingSample] = useState(false);
@@ -101,6 +104,17 @@ export function WelcomeScreen({ onSetUp }: Props) {
             <Text style={styles.secondaryButtonText}>Explore a sample home</Text>
           )}
         </Pressable>
+
+        {onSupport ? (
+          <Pressable
+            style={styles.tertiaryButton}
+            onPress={onSupport}
+            accessibilityRole="button"
+            accessibilityLabel="Privacy and beta support"
+          >
+            <Text style={styles.tertiaryButtonText}>Privacy & beta support</Text>
+          </Pressable>
+        ) : null}
       </View>
     </View>
   );
@@ -223,5 +237,16 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  tertiaryButton: {
+    minHeight: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+  },
+  tertiaryButtonText: {
+    color: colors.blue,
+    fontSize: 13,
+    fontWeight: '800',
   },
 });

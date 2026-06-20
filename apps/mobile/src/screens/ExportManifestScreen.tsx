@@ -29,13 +29,14 @@ import {
   validateHomeVaultExportPackage,
 } from '@homevault/export';
 
-import type {
-  AssetListItem,
-  DocumentListItem,
-  RepairEventListItem,
-  RoomListItem,
-  TaskCompletionListItem,
-  TaskListItem,
+import {
+  SAMPLE_PROPERTY_ID,
+  type AssetListItem,
+  type DocumentListItem,
+  type RepairEventListItem,
+  type RoomListItem,
+  type TaskCompletionListItem,
+  type TaskListItem,
 } from '../data/homeVaultSampleData';
 import { sampleBackupPackage } from '../data/sampleBackupPackage';
 import { colors } from '../theme/colors';
@@ -96,6 +97,7 @@ export function ExportManifestScreen({
   };
   const manifest = buildHomeVaultExportManifest(exportInput);
   const exportPackage = buildHomeVaultExportPackage(exportInput);
+  const isSampleExport = property.id === SAMPLE_PROPERTY_ID;
   const {
     activeTaskCount,
     attachedDocumentCount,
@@ -305,6 +307,16 @@ export function ExportManifestScreen({
         <Text style={styles.heroTitle}>{heroTitle}</Text>
         <Text style={styles.heroMeta}>{heroMeta}</Text>
       </View>
+
+      {isSampleExport ? (
+        <View style={styles.sampleNotice}>
+          <Text style={styles.sampleNoticeTitle}>Sample backup only</Text>
+          <Text style={styles.sampleNoticeText}>
+            Exports from this screen include the sample home you are exploring. Create your own
+            vault before using backups for real household records.
+          </Text>
+        </View>
+      ) : null}
 
       <View style={styles.metricGrid}>
         <Metric label="Linked docs" value={`${linkedDocumentCount}/${documents.length}`} />
@@ -1040,6 +1052,25 @@ const styles = StyleSheet.create({
     color: colors.blueSoft,
     fontSize: 13,
     fontWeight: '800',
+  },
+  sampleNotice: {
+    backgroundColor: colors.amberSoft,
+    borderColor: colors.amber,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 14,
+    gap: 6,
+  },
+  sampleNoticeTitle: {
+    color: colors.amber,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  sampleNoticeText: {
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 19,
   },
   downloadPanel: {
     borderRadius: 8,

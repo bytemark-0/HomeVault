@@ -53,4 +53,15 @@ describe('WelcomeScreen', () => {
 
     await waitFor(() => expect(enterSampleMode).toHaveBeenCalledTimes(1));
   });
+
+  it('calls support callback from the tertiary action', async () => {
+    const onSupport = jest.fn();
+    const { getByText } = await render(
+      <WelcomeScreen onSetUp={jest.fn()} onSupport={onSupport} />,
+    );
+
+    await fireEvent.press(getByText('Privacy & beta support'));
+
+    expect(onSupport).toHaveBeenCalledTimes(1);
+  });
 });

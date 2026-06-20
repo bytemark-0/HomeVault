@@ -25,6 +25,10 @@ Use this section as the handoff surface between Codex, Claude Code, and human wo
 - Added in-app Beta Support route with privacy notes, permission explanations, backup/delete guidance, known beta limits, app context, and a mail feedback template.
 - Added `docs/homevault-beta-privacy-notes.md` as the private beta privacy/support position.
 - Browser verified the main top-bar support control opens Beta Support and renders privacy, permissions, device context, and feedback copy.
+- Added a Welcome screen Privacy & beta support action so privacy/support details are reachable before setup.
+- EAS CLI resolves through `npx eas-cli`, but `build:inspect` is blocked until an Expo account is logged in.
+- Verified onboarding support callback with a WelcomeScreen test; mobile test count is now 21.
+- Added and browser-verified a sample-backup notice on the Export manifest screen.
 - Open verification: GitHub Actions green run, real EAS iOS/Android builds, and native Android permission manifest still need external/device validation.
 
 ---
@@ -176,20 +180,26 @@ Private beta can begin when all P0 items are complete and explicitly verified.
 
 ### Tasks
 
-- [ ] Review the welcome screen copy for clarity and brevity.
-- [ ] Ensure the primary action is setup, not sample mode.
-- [ ] Keep the local-first privacy message visible but concise.
-- [ ] Avoid permission prompts before the user understands why they are needed.
-- [ ] Add accessible labels and reading order for onboarding controls.
+- [x] Review the welcome screen copy for clarity and brevity.
+- [x] Ensure the primary action is setup, not sample mode.
+- [x] Keep the local-first privacy message visible but concise.
+- [x] Avoid permission prompts before the user understands why they are needed.
+- [x] Add accessible labels and reading order for onboarding controls.
 - [ ] Test welcome screen on small phones and large text settings.
 
 ### Acceptance Criteria
 
 - [ ] A tester can describe HomeVault's purpose after seeing the welcome screen for 10 seconds.
-- [ ] The primary setup action is visually dominant.
-- [ ] Sample mode is clearly optional.
-- [ ] No account, subscription, or permission prompt appears before setup intent.
+- [x] The primary setup action is visually dominant.
+- [x] Sample mode is clearly optional.
+- [x] No account, subscription, or permission prompt appears before setup intent.
 - [ ] Text does not truncate or overlap on small screens.
+
+### Verification Notes
+
+- Welcome screen has primary setup, secondary sample, and tertiary privacy/support actions.
+- Welcome tests cover setup, sample entry, and privacy/support callbacks.
+- Device-size and large-text verification remain open.
 
 ---
 
@@ -230,7 +240,7 @@ Private beta can begin when all P0 items are complete and explicitly verified.
 - [ ] Add an obvious path to create a real vault from sample mode.
 - [ ] Add an obvious path to delete sample data.
 - [ ] Confirm sample records are programmatically distinguishable.
-- [ ] Confirm backup/export behavior for sample data.
+- [x] Confirm backup/export behavior for sample data.
 - [ ] Add tests for entering sample mode, exiting sample mode, and deleting sample data.
 
 ### Acceptance Criteria
@@ -239,6 +249,12 @@ Private beta can begin when all P0 items are complete and explicitly verified.
 - [ ] No tester believes sample records are their real records.
 - [ ] Deleting sample data cannot delete real user records.
 - [ ] A tester can create a real home after using sample mode without reinstalling.
+
+### Verification Notes
+
+- Sample-mode tasks do not trigger real notification sync.
+- Export manifest now warns that exports from sample mode include the sample home and should not be used as real household backups.
+- Browser verified the warning through Household -> Export manifest on the local web preview.
 
 ---
 

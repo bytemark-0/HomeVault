@@ -14,7 +14,11 @@ const KNOWN_LIMITATIONS = [
   'OCR label capture, cloud sync, and larger project tracking are planned after launch readiness.',
 ];
 
-export function BetaSupportScreen() {
+type BetaSupportScreenProps = {
+  onBack?: () => void;
+};
+
+export function BetaSupportScreen({ onBack }: BetaSupportScreenProps) {
   const { appData, isSampleMode } = useHomeVault();
   const insets = useSafeAreaInsets();
   const appVersion = Constants.expoConfig?.version ?? 'unknown';
@@ -67,7 +71,7 @@ export function BetaSupportScreen() {
     >
       <View style={styles.header}>
         <Pressable
-          onPress={() => router.back()}
+          onPress={onBack ?? (() => router.back())}
           style={styles.backButton}
           accessibilityRole="button"
           accessibilityLabel="Go back"

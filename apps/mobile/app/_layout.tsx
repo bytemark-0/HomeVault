@@ -11,6 +11,7 @@ import { WelcomeScreen } from '../src/screens/onboarding/WelcomeScreen';
 import { CreatePropertyScreen } from '../src/screens/onboarding/CreatePropertyScreen';
 import { PropertyPhotoScreen } from '../src/screens/onboarding/PropertyPhotoScreen';
 import { QuickStartScreen } from '../src/screens/onboarding/QuickStartScreen';
+import { BetaSupportScreen } from '../src/screens/BetaSupportScreen';
 import {
   type OnboardingStep,
   clearOnboardingState,
@@ -47,6 +48,7 @@ function AppContent() {
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>('welcome');
   const [postCreateStep, setPostCreateStep] = useState<'add-photo' | 'quick-start' | null>(null);
   const [onboardingProperty, setOnboardingProperty] = useState<Property | null>(null);
+  const [showOnboardingSupport, setShowOnboardingSupport] = useState(false);
   const [initializing, setInitializing] = useState(true);
   const reconciledRef = useRef(false);
 
@@ -87,6 +89,9 @@ function AppContent() {
   if (loadError) return <LoadErrorView />;
   if (initializing) return null;
   if (isNewUser || postCreateStep !== null) {
+    if (showOnboardingSupport) {
+      return <BetaSupportScreen onBack={() => setShowOnboardingSupport(false)} />;
+    }
     if (postCreateStep === 'add-photo' && onboardingProperty) {
       return (
         <PropertyPhotoScreen
@@ -123,7 +128,12 @@ function AppContent() {
         />
       );
     }
-    return <WelcomeScreen onSetUp={() => goToStep('create-property')} />;
+    return (
+      <WelcomeScreen
+        onSetUp={() => goToStep('create-property')}
+        onSupport={() => setShowOnboardingSupport(true)}
+      />
+    );
   }
 
   return (

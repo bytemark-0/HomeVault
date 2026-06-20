@@ -92,15 +92,25 @@ Current config note:
 Run from `apps/mobile`:
 
 ```bash
-npx eas build --profile preview --platform ios
-npx eas build --profile preview --platform android
+npx eas-cli build --profile preview --platform ios
+npx eas-cli build --profile preview --platform android
 ```
 
 Optional simulator build:
 
 ```bash
-npx eas build --profile preview:simulator --platform ios
+npx eas-cli build --profile preview:simulator --platform ios
 ```
+
+Optional native pre-build inspection:
+
+```bash
+npx eas-cli build:inspect --platform android --profile preview --stage pre-build --output /private/tmp/homevault-android-inspect --force
+```
+
+Current blocker:
+
+- `npx eas-cli build:inspect ...` requires an Expo account login before it can generate the native project.
 
 Beta distribution decision for now:
 
