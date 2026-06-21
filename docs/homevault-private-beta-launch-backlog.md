@@ -31,6 +31,7 @@ Use this section as the handoff surface between Codex, Claude Code, and human wo
 - Added and browser-verified a sample-backup notice on the Export manifest screen.
 - Added a sample-mode exit regression test proving sample records are cleared, onboarding returns, and notifications are cleared.
 - Added first-home creation tests for required-field validation, required-only creation, property type selection, and duplicate-submit prevention.
+- Added first-home save-failure handling with an inline retry message and regression coverage.
 - Open verification: GitHub Actions green run, real EAS iOS/Android builds, and native Android permission manifest still need external/device validation.
 
 ---
@@ -225,13 +226,14 @@ Private beta can begin when all P0 items are complete and explicitly verified.
 - [x] A clean install with zero properties routes to onboarding.
 - [x] A user can create a home with only required fields.
 - [x] Optional fields can be skipped without warning loops.
-- [ ] Failed saves show actionable errors.
+- [x] Failed saves show actionable errors.
 - [ ] After save, the dashboard reflects the new home.
 
 ### Verification Notes
 
 - Context integration tests cover the zero-property onboarding state.
 - CreatePropertyScreen tests cover blank-name validation, required-only creation, property type selection, and duplicate-submit prevention.
+- CreatePropertyScreen tests cover failed saves preserving input, showing retry guidance, and allowing a successful retry.
 
 ---
 

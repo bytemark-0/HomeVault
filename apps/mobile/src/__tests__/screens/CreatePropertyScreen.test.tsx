@@ -110,4 +110,33 @@ describe('CreatePropertyScreen', () => {
     });
     await waitFor(() => expect(onCreated).toHaveBeenCalledWith(createdProperty));
   });
+
+  it('shows an actionable error and allows retrying after a failed save', async () => {
+    const createProperty = jest
+      .fn()
+      .mockRejectedValueOnce(new Error('write failed'))
+      .mockResolvedValueOnce(createdProperty);
+    mockGetHomeVaultRepository.mockResolvedValue({ createProperty } as never);
+    const onCreated = jest.fn();
+    const { getByLabelText, getByText } = await render(
+      <CreatePropertyScreen onBack={jest.fn()} onCreated={onCreated} />,
+    );
+
+    await fireEvent.changeText(getByLabelText('Home name'), 'Oak Street home');
+    await fireEvent.press(getByText('Create my home'));
+
+    await waitFor(() =>
+      expect(
+        getByText(
+          'We could not create your home. Your information is still here. Check storage permissions and try again.',
+        ),
+      ).toBeTruthy(),
+    );
+    expect(onCreated).not.toHaveBeenCalled();
+
+    await fireEvent.press(getByText('Create my home'));
+
+    await waitFor(() => expect(createProperty).toHaveBeenCalledTimes(2));
+    expect(onCreated).toHaveBeenCalledWith(createdProperty);
+  });
 });

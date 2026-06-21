@@ -34,10 +34,12 @@ export function CreatePropertyScreen({ onBack, onCreated }: Props) {
   const [type, setType] = useState<Property['type']>('single_family');
   const [isSaving, setIsSaving] = useState(false);
   const [labelError, setLabelError] = useState<string | undefined>();
+  const [saveError, setSaveError] = useState<string | undefined>();
 
   function validate(): boolean {
     if (label.trim().length === 0) {
       setLabelError('Give your home a name to continue.');
+      setSaveError(undefined);
       return false;
     }
     setLabelError(undefined);
@@ -47,11 +49,16 @@ export function CreatePropertyScreen({ onBack, onCreated }: Props) {
   async function handleSave() {
     if (!validate() || isSaving) return;
     setIsSaving(true);
+    setSaveError(undefined);
     try {
       const repo = await getHomeVaultRepository();
       const input: CreatePropertyInput = { label: label.trim(), type };
       const property = await repo.createProperty(input);
       onCreated(property);
+    } catch {
+      setSaveError(
+        'We could not create your home. Your information is still here. Check storage permissions and try again.',
+      );
     } finally {
       setIsSaving(false);
     }
@@ -89,6 +96,7 @@ export function CreatePropertyScreen({ onBack, onCreated }: Props) {
             accessibilityLabel="Home name"
           />
           {labelError ? <Text style={styles.errorText}>{labelError}</Text> : null}
+          {saveError ? <Text style={styles.saveErrorText}>{saveError}</Text> : null}
         </View>
 
         <View style={styles.field}>
@@ -200,6 +208,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: colors.red,
+  },
+  saveErrorText: {
+    borderRadius: 8,
+    backgroundColor: colors.redSoft,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: colors.red,
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 18,
   },
   typeGrid: {
     flexDirection: 'row',
