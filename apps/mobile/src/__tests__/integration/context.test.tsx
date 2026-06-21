@@ -124,6 +124,52 @@ describe('HomeVaultContext integration', () => {
     await waitFor(() => expect(getByTestId('new-user')).toBeTruthy());
   });
 
+  it('loads the newly created home when onboarding finishes', async () => {
+    const emptyRepo = createMemoryHomeVaultRepository({
+      properties: [],
+      rooms: [],
+      assets: [],
+      documents: [],
+      tasks: [],
+      taskCompletions: [],
+      repairEvents: [],
+      parts: [],
+    });
+    setHomeVaultRepository(emptyRepo);
+
+    let finishOnboarding: (() => Promise<void>) | null = null;
+
+    function FinishOnboardingProbe() {
+      const context = useHomeVault();
+      finishOnboarding = context.finishOnboarding;
+
+      if (context.isNewUser) return <Text testID="new-user">new user</Text>;
+      if (!context.appData) return <Text testID="loading">loading</Text>;
+      return <Text testID="property-label">{context.appData.property.label}</Text>;
+    }
+
+    const { getByTestId } = await render(
+      <HomeVaultProvider>
+        <FinishOnboardingProbe />
+      </HomeVaultProvider>,
+    );
+
+    await waitFor(() => expect(getByTestId('new-user')).toBeTruthy());
+
+    await emptyRepo.createProperty({ label: 'Oak Street home', type: 'single_family' });
+
+    await act(async () => {
+      if (!finishOnboarding) {
+        throw new Error('finishOnboarding was not provided by HomeVaultContext.');
+      }
+
+      await finishOnboarding();
+    });
+
+    await waitFor(() => expect(getByTestId('property-label')).toBeTruthy());
+    expect(getByTestId('property-label').props.children).toBe('Oak Street home');
+  });
+
   it('loads sample data when entering sample mode from an empty repository', async () => {
     const emptyRepo = createMemoryHomeVaultRepository({
       properties: [],
