@@ -64,9 +64,9 @@ export default function TabLayout() {
             )
           }
           accessibilityRole="button"
-          accessibilityLabel="Sample home — tap to exit"
+          accessibilityLabel="Sample data only. Create your own vault"
         >
-          <Text style={styles.sampleBannerText}>Sample home · Tap to create your own</Text>
+          <Text style={styles.sampleBannerText}>Sample data only · Create your own vault</Text>
         </Pressable>
       )}
 

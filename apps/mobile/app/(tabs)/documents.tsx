@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet } from 'react-native';
 
 import { useHomeVault } from '../../src/context/HomeVaultContext';
+import { SampleModeNotice } from '../../src/components/SampleModeNotice';
 import { DocumentsScreen, type DocumentReviewFilter } from '../../src/screens/DocumentsScreen';
 
 export default function DocumentsTab() {
@@ -12,6 +13,7 @@ export default function DocumentsTab() {
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <SampleModeNotice />
       <DocumentsScreen
         assets={appData.assets}
         rooms={appData.rooms}

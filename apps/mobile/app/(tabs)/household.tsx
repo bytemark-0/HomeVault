@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { ScrollView, StyleSheet } from 'react-native';
 
 import { useHomeVault } from '../../src/context/HomeVaultContext';
+import { SampleModeNotice } from '../../src/components/SampleModeNotice';
 import { HouseholdScreen } from '../../src/screens/HouseholdScreen';
 import { printPropertySummary } from '../../src/utils/printReport';
 import { getHomeVaultRepository } from '../../src/data/localHomeVaultRepository';
@@ -32,6 +33,7 @@ export default function HouseholdTab() {
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <SampleModeNotice />
       <HouseholdScreen
         activeTaskCount={appData.activeTaskCount}
         assetCount={appData.assetCount}

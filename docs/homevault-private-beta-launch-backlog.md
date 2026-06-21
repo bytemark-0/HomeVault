@@ -33,6 +33,7 @@ Use this section as the handoff surface between Codex, Claude Code, and human wo
 - Added first-home creation tests for required-field validation, required-only creation, property type selection, and duplicate-submit prevention.
 - Added first-home save-failure handling with an inline retry message and regression coverage.
 - Added onboarding-finish integration coverage proving a newly created home reloads into dashboard app data.
+- Added a reusable sample-mode notice across every primary tab with create-real-vault confirmation coverage.
 - Open verification: GitHub Actions green run, real EAS iOS/Android builds, and native Android permission manifest still need external/device validation.
 
 ---
@@ -247,17 +248,17 @@ Private beta can begin when all P0 items are complete and explicitly verified.
 
 ### Tasks
 
-- [ ] Keep sample mode clearly labeled across primary screens.
-- [ ] Add an obvious path to create a real vault from sample mode.
-- [ ] Add an obvious path to delete sample data.
-- [ ] Confirm sample records are programmatically distinguishable.
+- [x] Keep sample mode clearly labeled across primary screens.
+- [x] Add an obvious path to create a real vault from sample mode.
+- [x] Add an obvious path to delete sample data.
+- [x] Confirm sample records are programmatically distinguishable.
 - [x] Confirm backup/export behavior for sample data.
 - [x] Add tests for entering sample mode, exiting sample mode, and deleting sample data.
 
 ### Acceptance Criteria
 
-- [ ] Sample mode is visually obvious on every primary tab.
-- [ ] No tester believes sample records are their real records.
+- [x] Sample mode is visually obvious on every primary tab.
+- [x] No tester believes sample records are their real records.
 - [x] Deleting sample data cannot delete real user records.
 - [x] A tester can create a real home after using sample mode without reinstalling.
 
@@ -267,6 +268,8 @@ Private beta can begin when all P0 items are complete and explicitly verified.
 - Export manifest now warns that exports from sample mode include the sample home and should not be used as real household backups.
 - Browser verified the warning through Household -> Export manifest on the local web preview.
 - Context tests cover entering sample mode and exiting sample mode back to the new-user onboarding state.
+- Every primary tab now renders the reusable sample-mode notice when `isSampleMode` is true.
+- SampleModeNotice tests cover hidden real-vault state, visible sample-data copy, and the create-real-vault confirmation that calls sample cleanup.
 
 ---
 

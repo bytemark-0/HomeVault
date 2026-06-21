@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { ScrollView, StyleSheet } from 'react-native';
 
 import { useHomeVault } from '../../src/context/HomeVaultContext';
+import { SampleModeNotice } from '../../src/components/SampleModeNotice';
 import { InventoryScreen } from '../../src/screens/InventoryScreen';
 
 export default function InventoryTab() {
@@ -11,6 +12,7 @@ export default function InventoryTab() {
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <SampleModeNotice />
       <InventoryScreen
         assets={appData.assets}
         onAddAsset={() => router.push('/asset/new')}

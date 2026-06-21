@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { ScrollView, StyleSheet } from 'react-native';
 
 import { useHomeVault } from '../../src/context/HomeVaultContext';
+import { SampleModeNotice } from '../../src/components/SampleModeNotice';
 import { MaintenanceScreen } from '../../src/screens/MaintenanceScreen';
 
 export default function MaintenanceTab() {
@@ -11,6 +12,7 @@ export default function MaintenanceTab() {
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <SampleModeNotice />
       <MaintenanceScreen
         tasks={appData.tasks}
         onAddTask={() => router.push('/task/new')}

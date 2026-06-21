@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, View, Text, Pressable } from 'react-native';
 import { useHomeVault } from '../../src/context/HomeVaultContext';
 import { HomeScreen } from '../../src/screens/HomeScreen';
 import { SetupChecklistCard } from '../../src/components/SetupChecklistCard';
+import { SampleModeNotice } from '../../src/components/SampleModeNotice';
 import { colors } from '../../src/theme/colors';
 import type { HomeActivityItem } from '../../src/data/homeVaultSampleData';
 
@@ -30,6 +31,7 @@ export default function HomeTab() {
     >
       {appData ? (
         <>
+          <SampleModeNotice />
           <SetupChecklistCard />
           <HomeScreen
             propertyLabel={appData.property.label}
