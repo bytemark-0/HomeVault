@@ -3,6 +3,7 @@ import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useHomeVault } from '../../src/context/HomeVaultContext';
+import { MissingRecordView } from '../../src/components/MissingRecordView';
 import { RoomDetailScreen } from '../../src/screens/RoomDetailScreen';
 import { getHomeVaultRepository } from '../../src/data/localHomeVaultRepository';
 import { colors } from '../../src/theme/colors';
@@ -15,7 +16,18 @@ export default function RoomDetailRoute() {
   if (!appData) return null;
 
   const room = appData.rooms.find((r) => r.id === id);
-  if (!room) { router.back(); return null; }
+  if (!room) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <MissingRecordView
+          title="Room not found"
+          detail="This room may have been deleted or moved while you were viewing it. Return to Household to continue with the current home structure."
+          actionLabel="Back to Household"
+          onActionPress={() => router.replace('/(tabs)/household')}
+        />
+      </SafeAreaView>
+    );
+  }
 
   const roomAssets = appData.assets.filter((a) => a.roomId === id);
   const roomAssetIds = roomAssets.map((a) => a.id);

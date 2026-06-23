@@ -34,6 +34,7 @@ Use this section as the handoff surface between Codex, Claude Code, and human wo
 - Added first-home save-failure handling with an inline retry message and regression coverage.
 - Added onboarding-finish integration coverage proving a newly created home reloads into dashboard app data.
 - Added a reusable sample-mode notice across every primary tab with create-real-vault confirmation coverage.
+- Added room missing-record recovery screens and deletion-impact regression coverage for L-301.
 - Open verification: GitHub Actions green run, real EAS iOS/Android builds, and native Android permission manifest still need external/device validation.
 
 ---
@@ -284,18 +285,25 @@ Private beta can begin when all P0 items are complete and explicitly verified.
 ### Tasks
 
 - [ ] Verify room create, edit, detail, photo, and delete flows.
-- [ ] Confirm room deletion explains impact on linked assets and records.
-- [ ] Add empty states for no rooms.
-- [ ] Add invalid-record recovery for deleted or stale route IDs.
+- [x] Confirm room deletion explains impact on linked assets and records.
+- [x] Add empty states for no rooms.
+- [x] Add invalid-record recovery for deleted or stale route IDs.
 - [ ] Verify navigation back behavior from room-related screens.
 
 ### Acceptance Criteria
 
 - [ ] A user can create, edit, view, and delete a room.
-- [ ] A user understands what will happen before deleting a room.
+- [x] A user understands what will happen before deleting a room.
 - [ ] Linked records remain consistent after room changes.
-- [ ] Empty states explain the next useful action.
-- [ ] No room flow crashes after record deletion.
+- [x] Empty states explain the next useful action.
+- [x] No room flow crashes after record deletion.
+
+### Verification Notes
+
+- HouseholdScreen already shows a no-rooms empty state with "Map the first area" and an Add area action.
+- MissingRecordView is now used for stale/deleted room detail and edit routes instead of navigating during render.
+- MissingRecordView tests cover recovery copy and the Back to Household action.
+- RoomDetailScreen tests cover linked asset deletion impact copy, the confirmation dialog, and the destructive delete callback.
 
 ---
 
