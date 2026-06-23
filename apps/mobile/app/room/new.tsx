@@ -20,8 +20,9 @@ export default function NewRoomRoute() {
       await reload();
       showToast('Room saved');
       router.back();
-    } catch {
+    } catch (error) {
       showToast('Could not save room. Please try again.', 'error');
+      throw error;
     }
   }
 

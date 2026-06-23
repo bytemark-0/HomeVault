@@ -45,6 +45,7 @@ export function AddRoomScreen({ propertyId, room, onCancel, onSave }: AddRoomScr
     photoUri: room?.photoUri ?? '',
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | undefined>();
   const errors = useMemo(
     () => ({
       name: form.name.trim().length === 0 ? 'Name is required.' : undefined,
@@ -75,6 +76,7 @@ export function AddRoomScreen({ propertyId, room, onCancel, onSave }: AddRoomScr
     }
 
     setIsSaving(true);
+    setSaveError(undefined);
 
     try {
       await onSave({
@@ -88,6 +90,8 @@ export function AddRoomScreen({ propertyId, room, onCancel, onSave }: AddRoomScr
       if (originalPhotoUri.current && originalPhotoUri.current !== form.photoUri) {
         void deleteAppOwnedPhoto(originalPhotoUri.current);
       }
+    } catch {
+      setSaveError('Could not save this area. Your details are still here. Check storage permissions and try again.');
     } finally {
       setIsSaving(false);
     }
@@ -158,6 +162,8 @@ export function AddRoomScreen({ propertyId, room, onCancel, onSave }: AddRoomScr
           />
         </View>
       </View>
+
+      {saveError ? <Text style={styles.saveErrorText}>{saveError}</Text> : null}
 
       <Pressable
         onPress={handleSave}
@@ -277,6 +283,16 @@ const styles = StyleSheet.create({
   },
   saveButtonDisabled: {
     backgroundColor: colors.muted,
+  },
+  saveErrorText: {
+    borderRadius: 8,
+    backgroundColor: colors.redSoft,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: colors.red,
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
   },
   saveText: {
     color: '#FFFFFF',

@@ -35,8 +35,9 @@ export default function EditRoomRoute() {
       await reload();
       showToast('Room updated');
       router.back();
-    } catch {
+    } catch (error) {
       showToast('Could not save room. Please try again.', 'error');
+      throw error;
     }
   };
 

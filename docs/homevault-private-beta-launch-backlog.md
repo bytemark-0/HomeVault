@@ -35,6 +35,7 @@ Use this section as the handoff surface between Codex, Claude Code, and human wo
 - Added onboarding-finish integration coverage proving a newly created home reloads into dashboard app data.
 - Added a reusable sample-mode notice across every primary tab with create-real-vault confirmation coverage.
 - Added room missing-record recovery screens and deletion-impact regression coverage for L-301.
+- Added room form validation, create/edit save payload, and failed-save retry regression coverage for L-301.
 - Open verification: GitHub Actions green run, real EAS iOS/Android builds, and native Android permission manifest still need external/device validation.
 
 ---
@@ -304,6 +305,8 @@ Private beta can begin when all P0 items are complete and explicitly verified.
 - MissingRecordView is now used for stale/deleted room detail and edit routes instead of navigating during render.
 - MissingRecordView tests cover recovery copy and the Back to Household action.
 - RoomDetailScreen tests cover linked asset deletion impact copy, the confirmation dialog, and the destructive delete callback.
+- AddRoomScreen tests cover required name validation, failed create retry while preserving input, and edit save payloads with the existing room id.
+- Room create/edit routes now rethrow save failures after showing the existing toast so the form can show inline retry guidance.
 
 ---
 
