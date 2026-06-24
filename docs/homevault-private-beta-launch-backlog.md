@@ -36,7 +36,34 @@ Use this section as the handoff surface between Codex, Claude Code, and human wo
 - Added a reusable sample-mode notice across every primary tab with create-real-vault confirmation coverage.
 - Added room missing-record recovery screens and deletion-impact regression coverage for L-301.
 - Added room form validation, create/edit save payload, and failed-save retry regression coverage for L-301.
+- Added room photo save/cancel cleanup regression coverage plus route-level create/edit/detail/delete navigation tests for L-301.
+- Added asset create/edit/photo/room-assignment regression coverage, asset detail linked-record rendering coverage, and stale-route/delete navigation recovery tests for L-302.
+- Added document, task, repair, and part route recovery plus broader screen regression coverage across search, empty states, completion, snooze, and linked-record detail flows for Epic L-3.
+- Added document property-link coverage and recurring-task cadence save coverage to tighten Epic L-3 verification before cleanup.
 - Open verification: GitHub Actions green run, real EAS iOS/Android builds, and native Android permission manifest still need external/device validation.
+
+### June 23, 2026 - Codex
+
+- Added optional onboarding property address, year-built, and purchase-date fields with regression coverage for first-home creation and edit flows.
+- Added first-home onboarding draft persistence so partially entered property details survive app interruption and successful creation clears the saved draft.
+- Added onboarding restart recovery coverage for welcome, property creation, property photo, and quick-start steps, plus safe fallback for stale or corrupt onboarding state.
+- Fixed quick-start completion so onboarding clears and hands off to the main app after the first useful record or skip action, with route-level regression coverage.
+- Added quick-start path coverage for appliance, system, maintenance reminder, document, skip, and cancel loops, plus first-asset onboarding save/duplicate-submit regression coverage.
+- Added shared setup-checklist progress logic, zero/partial/completed dashboard checklist tests, and a Household "Getting started" restore action for dismissed setup guidance.
+- Added asset-detail regression coverage for serial, warranty, purchase/install dates, and notes rendering.
+- Added ZIP backup validation plus restore rebuilding for document attachments and room/asset photos, with archive inspection and restore regression coverage.
+- Added document attachment recovery guidance for failed import and failed open-file actions.
+- Added maintenance UX coverage for recurrence helper copy, due-state grouping, notification-permission context, snoozed-task recovery, and dashboard due-count consistency.
+- Added shared task/service-history currency and date formatting coverage plus helpful service-history empty-state guidance.
+- Added first-home back/cancel regression coverage, duplicate-submit coverage for quick-start task/document saves, and direct dashboard header/empty-state regression coverage.
+- Added dashboard status-summary coverage across new, partial, and established vault states plus one-tap route coverage for home-screen quick actions.
+- Hardened notification-permission handling so task data still loads when reminder sync fails, with integration coverage for the denial/failure path.
+- Added replace/remove controls to the shared photo picker and verified app-owned temp-photo cleanup on replacement and removal.
+- Added a true two-step first-asset onboarding flow with minimum-first fields, optional room selection, expandable extra details, and an optional post-save photo step.
+- Added first-asset onboarding regression coverage for minimum and expanded saves, duplicate-submit protection, and optional post-save photo save/skip behavior.
+- Added property-photo coverage for canceled picks plus zip backup/restore rebuilding of property, room, asset, and document files.
+- Added export-manifest regression coverage for invalid backup warnings and restore overwrite guidance before destructive restore actions.
+- Marked the newly verified onboarding/dashboard P0 checklist items complete in the UX backlog.
 
 ---
 
@@ -70,12 +97,12 @@ Private beta can begin when all P0 items are complete and explicitly verified.
 
 - [ ] GitHub CI is green on the beta branch.
 - [ ] Installable iOS and Android preview builds exist.
-- [ ] Fresh install onboarding works without unexplained sample data.
-- [ ] A user can create a real home and add at least one useful record.
-- [ ] Core CRUD flows work for properties, rooms, assets, documents, tasks, repairs, and parts.
+- [x] Fresh install onboarding works without unexplained sample data.
+- [x] A user can create a real home and add at least one useful record.
+- [x] Core CRUD flows work for properties, rooms, assets, documents, tasks, repairs, and parts.
 - [ ] Backup export and restore pass on at least one physical device.
-- [ ] The app has a documented privacy/data handling position.
-- [ ] A tester can submit feedback or support context.
+- [x] The app has a documented privacy/data handling position.
+- [x] A tester can submit feedback or support context.
 - [ ] Manual smoke QA has passed on the target beta devices.
 - [ ] No open P0 data loss, migration, restore, crash, or onboarding-confusion bugs remain.
 
@@ -158,7 +185,7 @@ Private beta can begin when all P0 items are complete and explicitly verified.
 
 - [x] Run dependency audit from a clean install.
 - [x] Classify each moderate-or-higher vulnerability as fixed, accepted, blocked by upstream, or irrelevant to the shipped app.
-- [ ] Apply safe dependency upgrades.
+- [x] Apply safe dependency upgrades.
 - [x] Avoid risky upgrades that destabilize Expo unless necessary.
 - [x] Document any accepted vulnerabilities with rationale.
 
@@ -166,14 +193,15 @@ Private beta can begin when all P0 items are complete and explicitly verified.
 
 - [x] No critical or high vulnerabilities remain unreviewed.
 - [x] Moderate vulnerabilities are either fixed or documented as accepted risk.
-- [ ] Typecheck, lint, tests, and web export pass after dependency changes.
+- [x] Typecheck, lint, tests, and web export pass after dependency changes.
 - [x] The launch checklist includes the final audit result and decision.
 
 ### Verification Notes
 
-- `npm audit --audit-level=moderate` reports 0 critical, 0 high, and 38 moderate findings.
+- `npm audit --audit-level=moderate` re-run on June 23, 2026 still reports 0 critical, 0 high, and 38 moderate findings.
 - Moderate findings are currently accepted for private beta because the available automatic fixes require breaking Expo/React Native/Jest upgrades.
-- No dependency changes were applied in this slice.
+- No safe non-breaking dependency upgrades are currently available for this slice; the remaining fix paths require framework-breaking upgrades.
+- Local verification remains green after the audit review: `npm run typecheck`, `npm run lint`, `npm test`, and `npm run export:web --workspace=apps/mobile`.
 
 ---
 
@@ -220,7 +248,7 @@ Private beta can begin when all P0 items are complete and explicitly verified.
 
 - [x] Confirm only home name and property type are required.
 - [x] Validate required fields inline.
-- [ ] Allow optional address, year built, purchase date, and photo.
+- [x] Allow optional address, year built, purchase date, and photo.
 - [x] Prevent duplicate submission.
 - [ ] Preserve existing user records during upgrade.
 - [x] Add test coverage for empty database and first-property creation.
@@ -237,6 +265,8 @@ Private beta can begin when all P0 items are complete and explicitly verified.
 
 - Context integration tests cover the zero-property onboarding state.
 - CreatePropertyScreen tests cover blank-name validation, required-only creation, property type selection, and duplicate-submit prevention.
+- CreatePropertyScreen now captures optional address, year built, and purchase date values with inline validation, then continues to the existing onboarding photo step; tests cover optional-field saves and invalid date rejection.
+- CreatePropertyScreen persists a non-sensitive draft of the first-home form, restores it on relaunch, and clears it after a successful create; tests cover resumed state and draft cleanup.
 - CreatePropertyScreen tests cover failed saves preserving input, showing retry guidance, and allowing a successful retry.
 - Context integration tests cover finishOnboarding reloading a newly created home into app data.
 
@@ -285,17 +315,17 @@ Private beta can begin when all P0 items are complete and explicitly verified.
 
 ### Tasks
 
-- [ ] Verify room create, edit, detail, photo, and delete flows.
+- [x] Verify room create, edit, detail, photo, and delete flows.
 - [x] Confirm room deletion explains impact on linked assets and records.
 - [x] Add empty states for no rooms.
 - [x] Add invalid-record recovery for deleted or stale route IDs.
-- [ ] Verify navigation back behavior from room-related screens.
+- [x] Verify navigation back behavior from room-related screens.
 
 ### Acceptance Criteria
 
-- [ ] A user can create, edit, view, and delete a room.
+- [x] A user can create, edit, view, and delete a room.
 - [x] A user understands what will happen before deleting a room.
-- [ ] Linked records remain consistent after room changes.
+- [x] Linked records remain consistent after room changes.
 - [x] Empty states explain the next useful action.
 - [x] No room flow crashes after record deletion.
 
@@ -305,8 +335,11 @@ Private beta can begin when all P0 items are complete and explicitly verified.
 - MissingRecordView is now used for stale/deleted room detail and edit routes instead of navigating during render.
 - MissingRecordView tests cover recovery copy and the Back to Household action.
 - RoomDetailScreen tests cover linked asset deletion impact copy, the confirmation dialog, and the destructive delete callback.
-- AddRoomScreen tests cover required name validation, failed create retry while preserving input, and edit save payloads with the existing room id.
+- RoomDetailRoute tests cover back-navigation fallback plus successful room deletion returning to Household.
+- AddRoomScreen tests cover required name validation, failed create retry while preserving input, photo save/cancel cleanup, and edit save payloads with the existing room id.
+- Room new/edit route tests cover successful save navigation when history exists and deterministic fallback targets when it does not.
 - Room create/edit routes now rethrow save failures after showing the existing toast so the form can show inline retry guidance.
+- Repository tests already cover room deletion cascading through linked assets, tasks, repairs, and parts.
 
 ---
 
@@ -318,19 +351,30 @@ Private beta can begin when all P0 items are complete and explicitly verified.
 
 ### Tasks
 
-- [ ] Verify asset create, edit, detail, photo, room assignment, and delete flows.
-- [ ] Confirm warranty, serial number, purchase date, install date, and notes fields behave consistently.
-- [ ] Add clear empty states for no assets.
-- [ ] Verify asset search results open correct detail screens.
-- [ ] Add regression tests for asset creation and update.
+- [x] Verify asset create, edit, detail, photo, room assignment, and delete flows.
+- [x] Confirm warranty, serial number, purchase date, install date, and notes fields behave consistently.
+- [x] Add clear empty states for no assets.
+- [x] Verify asset search results open correct detail screens.
+- [x] Add regression tests for asset creation and update.
 
 ### Acceptance Criteria
 
 - [ ] A user can add an asset in under two minutes.
-- [ ] A user can attach or remove an asset photo.
-- [ ] Asset detail shows linked tasks, documents, repairs, and parts when present.
-- [ ] Search can find the asset by meaningful fields.
-- [ ] Deleting an asset does not leave broken linked screens.
+- [x] A user can attach or remove an asset photo.
+- [x] Asset detail shows linked tasks, documents, repairs, and parts when present.
+- [x] Search can find the asset by meaningful fields.
+- [x] Deleting an asset does not leave broken linked screens.
+
+### Verification Notes
+
+- AddAssetScreen tests now cover required-name validation, create payload shaping, room assignment, photo save/cancel cleanup, and edit payloads with the existing asset id.
+- InventoryScreen tests now cover the no-assets empty state and Add asset call-to-action.
+- AssetDetailScreen tests cover linked document, part, repair, and maintenance-history rendering plus destructive delete copy.
+- AssetDetailScreen tests now also cover part and repair delete callbacks from the linked asset detail surface.
+- AssetDetailScreen tests now also cover serial, install date, purchase date, warranty state, and notes fallbacks so the detail fields stay consistent with add/edit flows.
+- Asset detail and edit routes now use MissingRecordView for stale or deleted asset ids instead of navigating during render.
+- Asset route tests cover create, edit, stale-detail recovery, back-navigation fallback, and successful delete returning to Inventory.
+- SearchScreen tests now cover asset lookup by model and successful asset-result opening.
 
 ---
 
@@ -342,19 +386,31 @@ Private beta can begin when all P0 items are complete and explicitly verified.
 
 ### Tasks
 
-- [ ] Verify document create, edit, attach, preview/open, delete, and search flows.
-- [ ] Confirm attachment storage paths are not exposed in user-facing errors.
-- [ ] Add useful document type choices.
-- [ ] Confirm document backup/export includes intended attachments.
-- [ ] Confirm restore recovers document metadata and files.
+- [x] Verify document create, edit, attach, preview/open, delete, and search flows.
+- [x] Confirm attachment storage paths are not exposed in user-facing errors.
+- [x] Add useful document type choices.
+- [x] Confirm document backup/export includes intended attachments.
+- [x] Confirm restore recovers document metadata and files.
 
 ### Acceptance Criteria
 
-- [ ] A user can add a document with or without an attachment.
-- [ ] A user can link a document to a property, room, or asset.
-- [ ] Attachment errors explain what to do next.
-- [ ] Backup and restore preserve document records and expected attachments.
-- [ ] Search finds documents by title and type.
+- [x] A user can add a document with or without an attachment.
+- [x] A user can link a document to a property, room, or asset.
+- [x] Attachment errors explain what to do next.
+- [x] Backup and restore preserve document records and expected attachments.
+- [x] Search finds documents by title and type.
+
+### Verification Notes
+
+- AddDocumentScreen tests cover required-title validation plus attachment import payloads with linked asset and room records.
+- AddDocumentScreen tests also cover saving a document linked to the property, a room, and an asset together.
+- DocumentDetailScreen tests cover linked-record rendering, generic human-readable attachment location labels, and open-file behavior.
+- DocumentsScreen tests now cover the no-documents empty state and Import document action.
+- Document detail and edit routes now use MissingRecordView for stale or deleted document ids instead of navigating during render.
+- Document route tests cover create, edit, stale-detail recovery, delete, and deterministic fallback navigation to Documents or the saved document detail screen.
+- SearchScreen tests now cover document lookup by both type and title and successful document-result opening.
+- Backup import tests now validate ZIP archives, count bundled document/photo files, and verify restore rebuilds app-owned attachment URIs from the archive before restoring records.
+- Document create/detail tests now cover next-step recovery guidance when file import fails or an attached file can no longer be opened.
 
 ---
 
@@ -366,20 +422,35 @@ Private beta can begin when all P0 items are complete and explicitly verified.
 
 ### Tasks
 
-- [ ] Verify task create, edit, complete, snooze, skip, and delete flows.
-- [ ] Confirm recurrence options are understandable.
-- [ ] Verify due/overdue/upcoming grouping.
-- [ ] Verify notification permission messaging.
-- [ ] Confirm notification scheduling does not happen unexpectedly in sample mode.
-- [ ] Add smoke tests for completion and recurrence behavior.
+- [x] Verify task create, edit, complete, snooze, skip, and delete flows.
+- [x] Confirm recurrence options are understandable.
+- [x] Verify due/overdue/upcoming grouping.
+- [x] Verify notification permission messaging.
+- [x] Confirm notification scheduling does not happen unexpectedly in sample mode.
+- [x] Add smoke tests for completion and recurrence behavior.
 
 ### Acceptance Criteria
 
-- [ ] A user can create a recurring maintenance task.
-- [ ] Completing a task schedules or calculates the next occurrence correctly.
-- [ ] Snooze and skip states are visible and reversible where appropriate.
-- [ ] Notification prompts include context and can be declined.
-- [ ] Dashboard due-task counts match the task list.
+- [x] A user can create a recurring maintenance task.
+- [x] Completing a task schedules or calculates the next occurrence correctly.
+- [x] Snooze and skip states are visible and reversible where appropriate.
+- [x] Notification prompts include context and can be declined.
+- [x] Dashboard due-task counts match the task list.
+
+### Verification Notes
+
+- AddTaskScreen tests cover new-task validation and payload shaping plus edit-mode prefill behavior.
+- AddTaskScreen tests also cover saving a recurring task with an explicit repeat cadence.
+- TaskDetailScreen tests cover back, complete, edit, skip, and destructive delete interactions.
+- CompleteTaskScreen tests cover required-date validation and completion payload shaping.
+- SnoozeTaskScreen tests cover invalid custom dates and successful custom-date snoozes.
+- MaintenanceScreen tests now cover the no-tasks empty state and New task call-to-action.
+- AddTaskScreen now explains each recurrence cadence and clarifies that notification permission can be declined without losing task tracking; screen tests cover both pieces of helper copy.
+- MaintenanceScreen tests now cover state-based filtering, snoozed-task guidance, and the notification-permission explainer shown before any prompt.
+- TaskDetailScreen tests now cover snoozed-task messaging plus Resume now so delayed tasks are visible and reversible from detail view.
+- Context integration tests now verify dashboard due-task counts stay aligned with the due-task list and that sample-mode loads do not schedule task notifications.
+- Task detail, edit, complete, snooze, and completion-edit routes now use MissingRecordView for stale ids instead of navigating during render.
+- Task route tests cover stale-detail recovery, edit saves, delete, successful completion scheduling, successful snooze saves, and deterministic fallback navigation back to Maintenance or the parent task.
 
 ---
 
@@ -391,19 +462,30 @@ Private beta can begin when all P0 items are complete and explicitly verified.
 
 ### Tasks
 
-- [ ] Verify repair create, edit, delete, and asset-link flows.
-- [ ] Verify part create, edit, delete, and asset-link flows.
-- [ ] Confirm cost fields format consistently.
-- [ ] Confirm service history summary calculations.
-- [ ] Add empty states and helpful next actions.
+- [x] Verify repair create, edit, delete, and asset-link flows.
+- [x] Verify part create, edit, delete, and asset-link flows.
+- [x] Confirm cost fields format consistently.
+- [x] Confirm service history summary calculations.
+- [x] Add empty states and helpful next actions.
 
 ### Acceptance Criteria
 
-- [ ] A user can record a completed repair.
-- [ ] A user can record a part or consumable.
-- [ ] Costs display consistently across list and detail views.
-- [ ] Repairs and parts appear on linked asset detail screens.
-- [ ] Deleting a linked asset leaves safe recovery states.
+- [x] A user can record a completed repair.
+- [x] A user can record a part or consumable.
+- [x] Costs display consistently across list and detail views.
+- [x] Repairs and parts appear on linked asset detail screens.
+- [x] Deleting a linked asset leaves safe recovery states.
+
+### Verification Notes
+
+- AddRepairEventScreen tests cover required-issue validation and repair save payloads for a selected asset.
+- AddPartScreen tests cover required-name validation, create payload shaping, and edit payloads with the existing part id.
+- AssetDetailScreen tests cover linked repair and part rendering plus delete callbacks from the parent asset detail screen.
+- Asset add-repair/add-part routes now use MissingRecordView for stale asset ids and deterministic fallback navigation back to the parent asset.
+- Repair and part edit routes now use MissingRecordView for stale linked records instead of navigating during render.
+- Repair/part route tests cover stale-route recovery plus successful save navigation back to the parent asset detail screen.
+- Shared task/service-history formatting tests now cover whole-dollar cost labels, missing-cost fallback text, due labels, and date labels so summary and detail surfaces stay aligned.
+- CostSummaryScreen tests verify the grouped totals and consistent currency rendering, and ServiceHistoryScreen tests cover the new empty-state next action back to Maintenance.
 
 ---
 
@@ -419,18 +501,24 @@ Private beta can begin when all P0 items are complete and explicitly verified.
 
 - [ ] Run backup export on physical iOS and Android devices.
 - [ ] Run restore from exported backup on a clean install.
-- [ ] Verify invalid backup handling.
-- [ ] Verify restore confirmation copy warns about replacement behavior.
+- [x] Verify invalid backup handling.
+- [x] Verify restore confirmation copy warns about replacement behavior.
 - [ ] Verify backup includes expected records and attachments.
-- [ ] Add or update restore validation tests.
+- [x] Add or update restore validation tests.
 
 ### Acceptance Criteria
 
 - [ ] Export completes without crash on beta devices.
 - [ ] Restore rebuilds representative property, rooms, assets, documents, tasks, repairs, parts, and photos.
-- [ ] Invalid backups are rejected with actionable errors.
-- [ ] Destructive restore behavior requires explicit confirmation.
+- [x] Invalid backups are rejected with actionable errors.
+- [x] Destructive restore behavior requires explicit confirmation.
 - [ ] No backup or restore flow logs sensitive household data.
+
+### Verification Notes
+
+- Backup import tests validate zip archives, count bundled property/document/photo files, and rebuild app-owned property, room, asset, and document attachment URIs during restore.
+- Export manifest tests cover invalid-backup messaging plus the explicit overwrite guidance shown before restore is enabled.
+- Physical-device export and restore runs remain open before beta.
 
 ---
 
@@ -650,20 +738,25 @@ Private beta can begin when all P0 items are complete and explicitly verified.
 
 ### Tasks
 
-- [ ] Define the minimum beta device matrix.
+- [x] Define the minimum beta device matrix.
 - [ ] Test one current iPhone.
 - [ ] Test one smaller/older iPhone if available.
 - [ ] Test one current Android device or emulator.
 - [ ] Test one smaller/older Android device or emulator.
 - [ ] Record OS versions and build numbers.
-- [ ] Create a repeatable smoke checklist.
+- [x] Create a repeatable smoke checklist.
 
 ### Acceptance Criteria
 
-- [ ] The device matrix is documented.
+- [x] The device matrix is documented.
 - [ ] Each P0 workflow is smoke-tested on the matrix or explicitly waived.
 - [ ] Layout issues are logged with screenshots.
 - [ ] Any device-specific P0/P1 bug is fixed before beta or listed as a known limitation.
+
+### Verification Notes
+
+- Added `docs/homevault-beta-device-matrix.md` with the minimum matrix, P0 smoke flows, run-log template, and focus areas.
+- Physical-device and emulator execution remains open.
 
 ---
 
@@ -836,11 +929,16 @@ Private beta can begin when all P0 items are complete and explicitly verified.
 ### Tasks
 
 - [ ] Recruit five friendly testers.
-- [ ] Prepare a 20-minute first-use script.
+- [x] Prepare a 20-minute first-use script.
 - [ ] Ask testers to install, create a home, add one asset, add one document or task, and explain what they think the app does.
 - [ ] Record confusion points.
 - [ ] Record completion rates and time-to-first-useful-record.
 - [ ] Turn findings into P0/P1/P2 issues.
+
+### Verification Notes
+
+- Added `docs/homevault-first-user-pilot-script.md` with moderator rules, participant tasks, severity guide, and observation table.
+- Recruiting and running the sessions remains open.
 
 ### Acceptance Criteria
 

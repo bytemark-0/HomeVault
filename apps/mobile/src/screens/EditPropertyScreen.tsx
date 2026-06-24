@@ -13,6 +13,12 @@ import type { UpdatePropertyInput } from '@homevault/database';
 import { FormField } from '../components/FormField';
 import { PhotoPickerField } from '../components/PhotoPickerField';
 import { deleteAppOwnedPhoto } from '../utils/photoStorage';
+import {
+  cleanOptional,
+  isValidDateInput,
+  isValidYear,
+  parseYear,
+} from '../utils/propertyForm';
 import { colors } from '../theme/colors';
 
 type EditPropertyScreenProps = {
@@ -204,42 +210,6 @@ export function EditPropertyScreen({ property, onCancel, onSave }: EditPropertyS
       </Pressable>
     </ScrollView>
   );
-}
-
-function cleanOptional(value: string) {
-  const trimmed = value.trim();
-
-  return trimmed.length > 0 ? trimmed : undefined;
-}
-
-function parseYear(value: string) {
-  const parsed = Number(value.trim());
-
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
-}
-
-function isValidYear(value: string) {
-  const parsed = Number(value.trim());
-  const currentYear = new Date().getFullYear();
-
-  return Number.isInteger(parsed) && parsed >= 1700 && parsed <= currentYear + 1;
-}
-
-
-function isValidDateInput(value: string) {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
-
-  if (!match) {
-    return false;
-  }
-
-  const [, yearValue, monthValue, dayValue] = match;
-  const year = Number(yearValue);
-  const month = Number(monthValue);
-  const day = Number(dayValue);
-  const date = new Date(year, month - 1, day);
-
-  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
 }
 
 const styles = StyleSheet.create({

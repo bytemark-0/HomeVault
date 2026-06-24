@@ -1,10 +1,10 @@
-import { router } from 'expo-router';
 import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useHomeVault } from '../../src/context/HomeVaultContext';
 import { AddRoomScreen } from '../../src/screens/AddRoomScreen';
 import { getHomeVaultRepository } from '../../src/data/localHomeVaultRepository';
+import { navigateBackOrReplace } from '../../src/utils/navigation';
 import type { CreateRoomInput } from '@homevault/database';
 import { colors } from '../../src/theme/colors';
 
@@ -16,10 +16,10 @@ export default function NewRoomRoute() {
   async function handleSave(input: CreateRoomInput) {
     try {
       const repo = await getHomeVaultRepository();
-      await repo.createRoom(input);
+      const room = await repo.createRoom(input);
       await reload();
       showToast('Room saved');
-      router.back();
+      navigateBackOrReplace(`/room/${room.id}`);
     } catch (error) {
       showToast('Could not save room. Please try again.', 'error');
       throw error;
@@ -30,7 +30,7 @@ export default function NewRoomRoute() {
     <SafeAreaView style={styles.safe}>
       <AddRoomScreen
         propertyId={appData.property.id}
-        onCancel={() => router.back()}
+        onCancel={() => navigateBackOrReplace('/(tabs)/household')}
         onSave={handleSave}
       />
     </SafeAreaView>

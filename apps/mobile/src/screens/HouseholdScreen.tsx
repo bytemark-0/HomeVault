@@ -21,9 +21,11 @@ type HouseholdScreenProps = {
   onDismissRestoreNotice: () => void;
   onEditProperty: () => void;
   onExportManifest: () => void;
+  onShowGettingStarted?: () => void;
   onPrintSummary: () => void;
   onResetDemoData: () => void;
   onRoomPress: (roomId: string) => void;
+  showGettingStartedAction?: boolean;
 };
 
 type RestoreSummary = {
@@ -71,9 +73,11 @@ export function HouseholdScreen({
   onDismissRestoreNotice,
   onEditProperty,
   onExportManifest,
+  onShowGettingStarted,
   onPrintSummary,
   onResetDemoData,
   onRoomPress,
+  showGettingStartedAction = false,
 }: HouseholdScreenProps) {
   const readinessScore = calculateReadinessScore({
     activeTaskCount,
@@ -310,6 +314,19 @@ export function HouseholdScreen({
           </View>
           <Text style={styles.readinessValue}>Open</Text>
         </Pressable>
+        {showGettingStartedAction && onShowGettingStarted ? (
+          <Pressable
+            onPress={onShowGettingStarted}
+            style={styles.readinessRow}
+            accessibilityRole="button"
+          >
+            <View>
+              <Text style={styles.readinessLabel}>Getting started</Text>
+              <Text style={styles.roomMeta}>Restore the setup checklist on the dashboard</Text>
+            </View>
+            <Text style={styles.readinessValue}>Open</Text>
+          </Pressable>
+        ) : null}
         <Pressable
           onPress={onPrintSummary}
           style={styles.readinessRow}

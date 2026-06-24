@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -15,6 +15,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Property } from '@homevault/domain';
 import type { CreatePropertyInput } from '@homevault/database';
 import { getHomeVaultRepository } from '../../data/localHomeVaultRepository';
+import {
+  clearCreatePropertyDraft,
+  readCreatePropertyDraft,
+  writeCreatePropertyDraft,
+} from '../../utils/onboardingStorage';
+import {
+  cleanOptional,
+  isValidDateInput,
+  isValidYear,
+  parseYear,
+} from '../../utils/propertyForm';
 import { colors } from '../../theme/colors';
 
 const PROPERTY_TYPES: Array<{ label: string; value: Property['type'] }> = [
@@ -31,18 +42,94 @@ export function CreatePropertyScreen({ onBack, onCreated }: Props) {
   const insets = useSafeAreaInsets();
 
   const [label, setLabel] = useState('');
+  const [addressLabel, setAddressLabel] = useState('');
   const [type, setType] = useState<Property['type']>('single_family');
+  const [yearBuilt, setYearBuilt] = useState('');
+  const [purchaseDate, setPurchaseDate] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [labelError, setLabelError] = useState<string | undefined>();
+  const [yearBuiltError, setYearBuiltError] = useState<string | undefined>();
+  const [purchaseDateError, setPurchaseDateError] = useState<string | undefined>();
   const [saveError, setSaveError] = useState<string | undefined>();
+  const [draftLoaded, setDraftLoaded] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadDraft() {
+      const draft = await readCreatePropertyDraft();
+      if (!isMounted) return;
+
+      if (draft) {
+        setLabel(draft.label);
+        setAddressLabel(draft.addressLabel);
+        setType(draft.type);
+        setYearBuilt(draft.yearBuilt);
+        setPurchaseDate(draft.purchaseDate);
+      }
+
+      setDraftLoaded(true);
+    }
+
+    void loadDraft();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!draftLoaded) return;
+
+    const hasDraft =
+      label.trim().length > 0 ||
+      addressLabel.trim().length > 0 ||
+      yearBuilt.trim().length > 0 ||
+      purchaseDate.trim().length > 0 ||
+      type !== 'single_family';
+
+    if (!hasDraft) {
+      void clearCreatePropertyDraft();
+      return;
+    }
+
+    void writeCreatePropertyDraft({
+      label,
+      addressLabel,
+      type,
+      yearBuilt,
+      purchaseDate,
+    });
+  }, [addressLabel, draftLoaded, label, purchaseDate, type, yearBuilt]);
 
   function validate(): boolean {
+    let hasError = false;
+
     if (label.trim().length === 0) {
       setLabelError('Give your home a name to continue.');
+      hasError = true;
+    } else {
+      setLabelError(undefined);
+    }
+
+    if (yearBuilt.trim().length > 0 && !isValidYear(yearBuilt)) {
+      setYearBuiltError('Enter a four-digit year.');
+      hasError = true;
+    } else {
+      setYearBuiltError(undefined);
+    }
+
+    if (purchaseDate.trim().length > 0 && !isValidDateInput(purchaseDate)) {
+      setPurchaseDateError('Use YYYY-MM-DD.');
+      hasError = true;
+    } else {
+      setPurchaseDateError(undefined);
+    }
+
+    if (hasError) {
       setSaveError(undefined);
       return false;
     }
-    setLabelError(undefined);
+
     return true;
   }
 
@@ -52,8 +139,15 @@ export function CreatePropertyScreen({ onBack, onCreated }: Props) {
     setSaveError(undefined);
     try {
       const repo = await getHomeVaultRepository();
-      const input: CreatePropertyInput = { label: label.trim(), type };
+      const input: CreatePropertyInput = {
+        label: label.trim(),
+        addressLabel: cleanOptional(addressLabel),
+        type,
+        yearBuilt: parseYear(yearBuilt),
+        purchaseDate: cleanOptional(purchaseDate),
+      };
       const property = await repo.createProperty(input);
+      await clearCreatePropertyDraft();
       onCreated(property);
     } catch {
       setSaveError(
@@ -70,7 +164,12 @@ export function CreatePropertyScreen({ onBack, onCreated }: Props) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={[styles.header, { paddingTop: 16 + insets.top }]}>
-        <Pressable onPress={onBack} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back">
+        <Pressable
+          onPress={onBack}
+          style={styles.backButton}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+        >
           <Text style={styles.backText}>← Back</Text>
         </Pressable>
         <Text style={styles.heading}>Set up your home</Text>
@@ -87,7 +186,12 @@ export function CreatePropertyScreen({ onBack, onCreated }: Props) {
           <TextInput
             style={[styles.input, labelError ? styles.inputError : null]}
             value={label}
-            onChangeText={(v: string) => { setLabel(v); if (labelError) setLabelError(undefined); }}
+            onChangeText={(value: string) => {
+              setLabel(value);
+              if (labelError) {
+                setLabelError(undefined);
+              }
+            }}
             placeholder="e.g. Oak Street home"
             placeholderTextColor={colors.muted}
             autoFocus
@@ -111,12 +215,74 @@ export function CreatePropertyScreen({ onBack, onCreated }: Props) {
                 accessibilityState={{ checked: type === pt.value }}
                 accessibilityLabel={pt.label}
               >
-                <Text style={[styles.typeChipText, type === pt.value && styles.typeChipTextSelected]}>
+                <Text
+                  style={[styles.typeChipText, type === pt.value && styles.typeChipTextSelected]}
+                >
                   {pt.label}
                 </Text>
               </Pressable>
             ))}
           </View>
+        </View>
+
+        <View style={styles.optionalSection}>
+          <Text style={styles.optionalHeading}>Optional details</Text>
+          <Text style={styles.optionalBody}>
+            Add a little more context now, or leave these blank and finish setup in under a minute.
+          </Text>
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Address or location (optional)</Text>
+          <TextInput
+            style={styles.input}
+            value={addressLabel}
+            onChangeText={setAddressLabel}
+            placeholder="Street, neighborhood, or city"
+            placeholderTextColor={colors.muted}
+            autoCapitalize="words"
+            accessibilityLabel="Address or location"
+          />
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Year built (optional)</Text>
+          <TextInput
+            style={[styles.input, yearBuiltError ? styles.inputError : null]}
+            value={yearBuilt}
+            onChangeText={(value: string) => {
+              setYearBuilt(value);
+              if (yearBuiltError) setYearBuiltError(undefined);
+            }}
+            placeholder="1998"
+            placeholderTextColor={colors.muted}
+            keyboardType="number-pad"
+            accessibilityLabel="Year built"
+          />
+          {yearBuiltError ? <Text style={styles.errorText}>{yearBuiltError}</Text> : null}
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Purchase date (optional)</Text>
+          <TextInput
+            style={[styles.input, purchaseDateError ? styles.inputError : null]}
+            value={purchaseDate}
+            onChangeText={(value: string) => {
+              setPurchaseDate(value);
+              if (purchaseDateError) setPurchaseDateError(undefined);
+            }}
+            placeholder="2023-08-15"
+            placeholderTextColor={colors.muted}
+            autoCapitalize="none"
+            accessibilityLabel="Purchase date"
+          />
+          {purchaseDateError ? <Text style={styles.errorText}>{purchaseDateError}</Text> : null}
+        </View>
+
+        <View style={styles.tipCard}>
+          <Text style={styles.tipText}>
+            You can add a home photo on the next step, or skip it and come back later.
+          </Text>
         </View>
       </ScrollView>
 
@@ -185,6 +351,25 @@ const styles = StyleSheet.create({
   field: {
     gap: 10,
   },
+  optionalSection: {
+    gap: 6,
+    padding: 14,
+    borderRadius: 12,
+    borderColor: colors.line,
+    borderWidth: 1,
+    backgroundColor: colors.panel,
+  },
+  optionalHeading: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.ink,
+  },
+  optionalBody: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.muted,
+    lineHeight: 19,
+  },
   label: {
     fontSize: 14,
     fontWeight: '700',
@@ -218,6 +403,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     lineHeight: 18,
+  },
+  tipCard: {
+    borderRadius: 12,
+    borderColor: colors.line,
+    borderWidth: 1,
+    backgroundColor: colors.blueSoft,
+    padding: 14,
+  },
+  tipText: {
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: '500',
+    lineHeight: 19,
   },
   typeGrid: {
     flexDirection: 'row',

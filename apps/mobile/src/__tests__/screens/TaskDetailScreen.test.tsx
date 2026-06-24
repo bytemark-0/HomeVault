@@ -67,8 +67,33 @@ describe('TaskDetailScreen', () => {
     expect(onDelete).toHaveBeenCalledTimes(1);
   });
 
+  it('calls onSkip when skip is pressed', async () => {
+    const { getByText } = await render(<TaskDetailScreen {...defaultProps} />);
+    await fireEvent.press(getByText('Skip'));
+    expect(onSkip).toHaveBeenCalledWith(task.id);
+  });
+
   it('shows recurrence label', async () => {
     const { getByText } = await render(<TaskDetailScreen {...defaultProps} />);
     expect(getByText(/Every 90 days/i)).toBeTruthy();
+  });
+
+  it('shows resume guidance for snoozed tasks and resumes immediately', async () => {
+    const onResume = jest.fn();
+    const { getByText } = await render(
+      <TaskDetailScreen
+        {...defaultProps}
+        task={{
+          ...task,
+          state: 'snoozed',
+          dueLabel: 'Snoozed to Jul 1, 2026',
+        }}
+        onResume={onResume}
+      />,
+    );
+
+    expect(getByText('Snoozed task')).toBeTruthy();
+    await fireEvent.press(getByText('Resume now'));
+    expect(onResume).toHaveBeenCalledWith(task.id);
   });
 });

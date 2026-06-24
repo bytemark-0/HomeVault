@@ -68,14 +68,14 @@ This prerequisite backlog is complete when:
 
 ### Tasks
 
-- [ ] Identify where demo data is automatically seeded.
-- [ ] Stop automatic demo seeding for production first launch.
-- [ ] Preserve demo fixtures for tests and optional sample mode.
-- [ ] Support a database containing zero properties.
-- [ ] Add a first-launch state flag or derive first launch safely from data state.
-- [ ] Route zero-property users to onboarding.
-- [ ] Preserve existing installations and existing records during upgrade.
-- [ ] Add automated tests for:
+- [x] Identify where demo data is automatically seeded.
+- [x] Stop automatic demo seeding for production first launch.
+- [x] Preserve demo fixtures for tests and optional sample mode.
+- [x] Support a database containing zero properties.
+- [x] Add a first-launch state flag or derive first launch safely from data state.
+- [x] Route zero-property users to onboarding.
+- [x] Preserve existing installations and existing records during upgrade.
+- [x] Add automated tests for:
   - New empty database
   - Existing database with records
   - Existing database containing old demo records
@@ -83,12 +83,12 @@ This prerequisite backlog is complete when:
 
 ### Completion Criteria
 
-- [ ] A clean install contains zero properties, rooms, assets, documents, tasks, repairs, and parts.
-- [ ] The app does not crash when no property exists.
-- [ ] Existing installations open normally with existing data.
-- [ ] Restoring a backup bypasses new-user onboarding when a property exists.
-- [ ] Demo fixtures remain available to automated tests.
-- [ ] No production startup path silently creates sample data.
+- [x] A clean install contains zero properties, rooms, assets, documents, tasks, repairs, and parts.
+- [x] The app does not crash when no property exists.
+- [x] Existing installations open normally with existing data.
+- [x] Restoring a backup bypasses new-user onboarding when a property exists.
+- [x] Demo fixtures remain available to automated tests.
+- [x] No production startup path silently creates sample data.
 
 ### Success Criteria
 
@@ -108,18 +108,18 @@ This prerequisite backlog is complete when:
 
 ### Tasks
 
-- [ ] Create a concise welcome screen.
-- [ ] Add a one-sentence value proposition.
-- [ ] Add three brief value points:
+- [x] Create a concise welcome screen.
+- [x] Add a one-sentence value proposition.
+- [x] Add three brief value points:
   - Keep home records together
   - Stay ahead of maintenance
   - Preserve documents and service history
-- [ ] Add a short local-first privacy statement.
-- [ ] Add primary action: **Set up my home**.
-- [ ] Add secondary action: **Explore a sample home**.
-- [ ] Add tertiary access to privacy/support.
-- [ ] Avoid requesting permissions on this screen.
-- [ ] Add analytics events using only anonymous event names:
+- [x] Add a short local-first privacy statement.
+- [x] Add primary action: **Set up my home**.
+- [x] Add secondary action: **Explore a sample home**.
+- [x] Add tertiary access to privacy/support.
+- [x] Avoid requesting permissions on this screen.
+- [x] Add analytics events using only anonymous event names:
   - Welcome viewed
   - Setup selected
   - Sample selected
@@ -128,11 +128,11 @@ This prerequisite backlog is complete when:
 ### Completion Criteria
 
 - [ ] The screen fits without scrolling on a standard phone.
-- [ ] The primary action is visually dominant.
-- [ ] Sample mode is clearly optional.
-- [ ] No account, subscription, or permission is requested.
-- [ ] Privacy copy accurately describes current local-first behavior.
-- [ ] Screen has accessible reading order and labels.
+- [x] The primary action is visually dominant.
+- [x] Sample mode is clearly optional.
+- [x] No account, subscription, or permission is requested.
+- [x] Privacy copy accurately describes current local-first behavior.
+- [x] Screen has accessible reading order and labels.
 
 ### Success Criteria
 
@@ -210,26 +210,26 @@ This prerequisite backlog is complete when:
 
 ### Tasks
 
-- [ ] Create a streamlined first-property form.
-- [ ] Make only name and property type required.
-- [ ] Add friendly property-type choices.
-- [ ] Allow skipping all optional fields.
-- [ ] Save partially entered non-sensitive state across accidental app restarts.
-- [ ] Add inline validation.
-- [ ] Add clear cancel/back behavior.
-- [ ] Prevent duplicate submission.
-- [ ] Route successful creation to the next onboarding step.
-- [ ] Add tests for minimal, full, cancelled, resumed, and invalid submissions.
+- [x] Create a streamlined first-property form.
+- [x] Make only name and property type required.
+- [x] Add friendly property-type choices.
+- [x] Allow skipping all optional fields.
+- [x] Save partially entered non-sensitive state across accidental app restarts.
+- [x] Add inline validation.
+- [x] Add clear cancel/back behavior.
+- [x] Prevent duplicate submission.
+- [x] Route successful creation to the next onboarding step.
+- [x] Add tests for minimal, full, cancelled, resumed, and invalid submissions.
 
 ### Completion Criteria
 
-- [ ] Property creation works with only two fields.
-- [ ] Address is not required.
-- [ ] Photo is not required.
-- [ ] The app never blocks setup because a permission was denied.
-- [ ] Duplicate taps create only one property.
-- [ ] Validation errors identify exactly what needs correction.
-- [ ] Restart during setup resumes safely or clearly restarts without corrupting data.
+- [x] Property creation works with only two fields.
+- [x] Address is not required.
+- [x] Photo is not required.
+- [x] The app never blocks setup because a permission was denied.
+- [x] Duplicate taps create only one property.
+- [x] Validation errors identify exactly what needs correction.
+- [x] Restart during setup resumes safely or clearly restarts without corrupting data.
 
 ### Success Criteria
 
@@ -251,34 +251,34 @@ This prerequisite backlog is complete when:
 
 ### Tasks
 
-- [ ] Add a property-photo step during onboarding.
-- [ ] Offer:
+- [x] Add a property-photo step during onboarding.
+- [x] Offer:
   - Take a photo
   - Choose from library
   - Skip for now
-- [ ] Show a pre-permission explanation before camera or library prompts.
-- [ ] Copy the selected image into app-owned storage.
+- [x] Show a pre-permission explanation before camera or library prompts.
+- [x] Copy the selected image into app-owned storage.
 - [ ] Generate an appropriately sized display image.
 - [ ] Preserve sufficient quality for dashboard and detail views.
 - [ ] Handle portrait, landscape, HEIC, JPEG, and PNG inputs where supported.
 - [ ] Correct orientation metadata.
 - [ ] Show crop/position preview for the dashboard header.
-- [ ] Allow replacing or removing the image.
-- [ ] Delete obsolete app-owned image copies when replaced or removed.
-- [ ] Add fallback artwork when no image exists.
-- [ ] Add tests for image selection cancellation, denial, replacement, removal, and missing-file recovery.
+- [x] Allow replacing or removing the image.
+- [x] Delete obsolete app-owned image copies when replaced or removed.
+- [x] Add fallback artwork when no image exists.
+- [x] Add tests for image selection cancellation, denial, replacement, removal, and missing-file recovery.
 
 ### Completion Criteria
 
-- [ ] User can skip the image without interrupting onboarding.
-- [ ] Camera permission is requested only after choosing **Take a photo**.
-- [ ] Library permission is requested only after choosing **Choose from library**.
+- [x] User can skip the image without interrupting onboarding.
+- [x] Camera permission is requested only after choosing **Take a photo**.
+- [x] Library permission is requested only after choosing **Choose from library**.
 - [ ] Selected image persists after app restart.
 - [ ] Property image displays correctly on dashboard and property detail.
-- [ ] Replacing the image removes or retires the previous app-owned copy.
+- [x] Replacing the image removes or retires the previous app-owned copy.
 - [ ] Missing/corrupt image shows a fallback instead of crashing.
 - [ ] Image handling does not block the main thread for an unreasonable period.
-- [ ] Image is included in backup/archive behavior according to documented rules.
+- [x] Image is included in backup/archive behavior according to documented rules.
 
 ### Success Criteria
 
@@ -379,22 +379,22 @@ This prerequisite backlog is complete when:
 
 ### Tasks
 
-- [ ] Create a quick-start choice screen.
-- [ ] Explain each choice in one sentence.
-- [ ] Reuse existing record-creation screens in onboarding mode.
-- [ ] Return to onboarding after successful creation.
-- [ ] Allow skipping without penalty.
-- [ ] Record completion state without collecting record contents.
-- [ ] Add tests for each path.
+- [x] Create a quick-start choice screen.
+- [x] Explain each choice in one sentence.
+- [x] Reuse existing record-creation screens in onboarding mode.
+- [x] Return to onboarding after successful creation.
+- [x] Allow skipping without penalty.
+- [x] Record completion state without collecting record contents.
+- [x] Add tests for each path.
 
 ### Completion Criteria
 
-- [ ] Every option routes to a working creation flow.
-- [ ] User can skip and return later.
-- [ ] Successful creation immediately updates the vault.
-- [ ] Cancelling returns to the choice screen.
-- [ ] No path requires unrelated permissions.
-- [ ] Onboarding does not create duplicate records.
+- [x] Every option routes to a working creation flow.
+- [x] User can skip and return later.
+- [x] Successful creation immediately updates the vault.
+- [x] Cancelling returns to the choice screen.
+- [x] No path requires unrelated permissions.
+- [x] Onboarding does not create duplicate records.
 
 ### Success Criteria
 
@@ -432,21 +432,21 @@ This prerequisite backlog is complete when:
 
 ### Tasks
 
-- [ ] Add onboarding-mode asset form.
-- [ ] Show only minimum fields initially.
-- [ ] Place optional fields under **Add more details**.
-- [ ] Allow room creation inline or skip room assignment.
-- [ ] Offer photo after the core record saves.
-- [ ] Route to dashboard with a clear success state.
-- [ ] Add tests for minimum and expanded forms.
+- [x] Add onboarding-mode asset form.
+- [x] Show only minimum fields initially.
+- [x] Place optional fields under **Add more details**.
+- [x] Allow room creation inline or skip room assignment.
+- [x] Offer photo after the core record saves.
+- [x] Route to dashboard with a clear success state.
+- [x] Add tests for minimum and expanded forms.
 
 ### Completion Criteria
 
-- [ ] First asset can be created with name and category.
-- [ ] Room is optional.
-- [ ] Advanced details do not block completion.
-- [ ] Record appears immediately on the dashboard/inventory.
-- [ ] User is offered, not forced, to add more information.
+- [x] First asset can be created with name and category.
+- [x] Room is optional.
+- [x] Advanced details do not block completion.
+- [x] Record appears immediately on the dashboard/inventory.
+- [x] User is offered, not forced, to add more information.
 
 ### Success Criteria
 
@@ -477,23 +477,23 @@ This prerequisite backlog is complete when:
 
 ### Tasks
 
-- [ ] Build setup-progress calculation.
-- [ ] Add a compact progress card.
-- [ ] Prioritize one recommended next action.
-- [ ] Update progress immediately after record changes.
-- [ ] Stop promoting completed steps.
-- [ ] Allow dismissing or collapsing the checklist.
-- [ ] Bring the checklist back through Help/Getting Started.
-- [ ] Add zero, partial, and completed-state tests.
+- [x] Build setup-progress calculation.
+- [x] Add a compact progress card.
+- [x] Prioritize one recommended next action.
+- [x] Update progress immediately after record changes.
+- [x] Stop promoting completed steps.
+- [x] Allow dismissing or collapsing the checklist.
+- [x] Bring the checklist back through Help/Getting Started.
+- [x] Add zero, partial, and completed-state tests.
 
 ### Completion Criteria
 
-- [ ] Empty dashboard contains meaningful guidance.
-- [ ] Dashboard does not show a wall of zero-value statistics.
-- [ ] Recommended action reflects the user’s actual missing setup.
-- [ ] Checklist is not shown as incomplete when corresponding records exist.
-- [ ] Completed users can dismiss setup guidance permanently.
-- [ ] Dashboard remains useful after setup is complete.
+- [x] Empty dashboard contains meaningful guidance.
+- [x] Dashboard does not show a wall of zero-value statistics.
+- [x] Recommended action reflects the user’s actual missing setup.
+- [x] Checklist is not shown as incomplete when corresponding records exist.
+- [x] Completed users can dismiss setup guidance permanently.
+- [x] Dashboard remains useful after setup is complete.
 
 ### Success Criteria
 
@@ -513,25 +513,25 @@ This prerequisite backlog is complete when:
 
 ### Tasks
 
-- [ ] Add property image/header area.
-- [ ] Show property name prominently.
-- [ ] Add context-aware status summary:
+- [x] Add property image/header area.
+- [x] Show property name prominently.
+- [x] Add context-aware status summary:
   - Setup in progress
   - Tasks due
   - Recently added records
   - Backup status
-- [ ] Add quick actions.
-- [ ] Use fallbacks when photo or records are missing.
-- [ ] Avoid overly dense stat grids for new users.
-- [ ] Test across new, partial, and established accounts.
+- [x] Add quick actions.
+- [x] Use fallbacks when photo or records are missing.
+- [x] Avoid overly dense stat grids for new users.
+- [x] Test across new, partial, and established accounts.
 
 ### Completion Criteria
 
-- [ ] Property identity is the most prominent dashboard element.
+- [x] Property identity is the most prominent dashboard element.
 - [ ] Property image displays without cropping important content unpredictably.
-- [ ] A new vault and an established vault have appropriately different dashboard states.
-- [ ] Quick actions are reachable with one tap.
-- [ ] No section appears broken when its data is empty.
+- [x] A new vault and an established vault have appropriately different dashboard states.
+- [x] Quick actions are reachable with one tap.
+- [x] No section appears broken when its data is empty.
 
 ### Success Criteria
 
@@ -720,22 +720,22 @@ Define:
 
 ### Tasks
 
-- [ ] Remove notification request from app startup.
-- [ ] Add pre-permission camera explanation.
-- [ ] Add pre-permission photo-library explanation.
-- [ ] Add pre-permission notification explanation.
-- [ ] Add pre-permission file-selection explanation where applicable.
-- [ ] Add manual alternatives after denial.
-- [ ] Add settings link for permanently denied permissions.
-- [ ] Avoid repeatedly prompting after denial.
+- [x] Remove notification request from app startup.
+- [x] Add pre-permission camera explanation.
+- [x] Add pre-permission photo-library explanation.
+- [x] Add pre-permission notification explanation.
+- [x] Add pre-permission file-selection explanation where applicable.
+- [x] Add manual alternatives after denial.
+- [x] Add settings link for permanently denied permissions.
+- [x] Avoid repeatedly prompting after denial.
 - [ ] Align copy with privacy policy.
 
 ### Completion Criteria
 
-- [ ] No permission is requested before a relevant user action.
+- [x] No permission is requested before a relevant user action.
 - [ ] Onboarding completes with every optional permission denied.
-- [ ] Denied camera/library still permits skipping image upload.
-- [ ] Notification denial does not break task creation.
+- [x] Denied camera/library still permits skipping image upload.
+- [x] Notification denial does not break task creation.
 - [ ] Permission status is handled consistently across restarts.
 - [ ] iOS and Android denial/recovery flows are verified.
 
@@ -759,22 +759,22 @@ Define:
 
 ### Tasks
 
-- [ ] Define onboarding state model.
-- [ ] Persist completed onboarding steps.
-- [ ] Reconcile persisted state with actual repository data.
-- [ ] Resume at the first incomplete logical step.
-- [ ] Avoid forcing onboarding when a usable property already exists.
-- [ ] Add restart tests after every major step.
-- [ ] Add recovery for inconsistent state.
+- [x] Define onboarding state model.
+- [x] Persist completed onboarding steps.
+- [x] Reconcile persisted state with actual repository data.
+- [x] Resume at the first incomplete logical step.
+- [x] Avoid forcing onboarding when a usable property already exists.
+- [x] Add restart tests after every major step.
+- [x] Add recovery for inconsistent state.
 
 ### Completion Criteria
 
-- [ ] Restart after welcome returns to the correct choice.
-- [ ] Restart after property creation does not create another property.
-- [ ] Restart after first record leads to dashboard or next logical step.
-- [ ] Deleted records cause setup progress to recalculate safely.
-- [ ] Restored backup supersedes stale onboarding progress.
-- [ ] Corrupt onboarding state falls back safely.
+- [x] Restart after welcome returns to the correct choice.
+- [x] Restart after property creation does not create another property.
+- [x] Restart after first record leads to dashboard or next logical step.
+- [x] Deleted records cause setup progress to recalculate safely.
+- [x] Restored backup supersedes stale onboarding progress.
+- [x] Corrupt onboarding state falls back safely.
 
 ### Success Criteria
 
@@ -815,7 +815,7 @@ Ask participants to:
 ### Tasks
 
 - [ ] Prepare clean test builds.
-- [ ] Prepare observation script.
+- [x] Prepare observation script.
 - [ ] Do not coach participants.
 - [ ] Record task completion and confusion points.
 - [ ] Record time to first useful vault.

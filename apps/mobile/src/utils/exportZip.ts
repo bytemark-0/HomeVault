@@ -3,11 +3,13 @@ import * as Sharing from 'expo-sharing';
 import JSZip from 'jszip';
 
 import type { HomeVaultExportPackage } from '@homevault/export';
+import type { Property } from '@homevault/domain';
 import type { AssetListItem, DocumentListItem, RoomListItem } from '../data/homeVaultSampleData';
 
 type ZipExportInput = {
   exportPackage: HomeVaultExportPackage;
   exportFileName: string;
+  property: Property;
   assets: AssetListItem[];
   documents: DocumentListItem[];
   rooms: RoomListItem[];
@@ -35,7 +37,7 @@ export async function shareZipExport(input: ZipExportInput): Promise<void> {
 }
 
 async function buildZip(input: ZipExportInput): Promise<File> {
-  const { exportPackage, exportFileName, assets, documents, rooms } = input;
+  const { exportPackage, exportFileName, property, assets, documents, rooms } = input;
   const zip = new JSZip();
 
   // JSON backup
@@ -60,6 +62,20 @@ async function buildZip(input: ZipExportInput): Promise<File> {
       } catch {
         // File unreadable or moved — skip silently
       }
+    }
+  }
+
+  // Property photo
+  const propertyPhotosFolder = zip.folder('photos/property');
+  if (propertyPhotosFolder && property.photoUri && isLocalUri(property.photoUri)) {
+    try {
+      const fileRef = new File(property.photoUri);
+      const base64 = await fileRef.base64();
+      const ext = guessExtension(property.photoUri, 'photo');
+      const safeName = slugify(property.label);
+      propertyPhotosFolder.file(`${property.id}-${safeName}.${ext}`, base64, { base64: true });
+    } catch {
+      // skip
     }
   }
 
@@ -153,6 +169,7 @@ function buildReadme(pkg: HomeVaultExportPackage): string {
     '--------',
     '  backup.json            — Full backup (records + manifest)',
     '  documents/             — App-owned document attachment files',
+    '  photos/property/       — Property photo',
     '  photos/assets/         — Asset photos',
     '  photos/rooms/          — Room photos',
     '',

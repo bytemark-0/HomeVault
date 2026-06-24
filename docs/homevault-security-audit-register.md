@@ -1,7 +1,8 @@
 # HomeVault Security Audit Register
 
-**Prepared:** June 20, 2026  
-**Scope:** Dependency audit triage for private beta readiness.  
+**Prepared:** June 20, 2026
+**Last reviewed:** June 23, 2026
+**Scope:** Dependency audit triage for private beta readiness.
 **Command:** `npm audit --audit-level=moderate`
 
 ---
@@ -21,6 +22,7 @@ Private beta decision:
 - Accept these moderate findings temporarily for private beta.
 - Do not run `npm audit fix --force` on the beta branch.
 - Revisit after beta build validation or when Expo SDK-compatible patches are available.
+- Local verification after the June 23 review remains green: `npm run typecheck`, `npm run lint`, `npm test`, and `npm run export:web --workspace=apps/mobile`.
 
 ---
 
@@ -97,4 +99,3 @@ Before each beta candidate:
 - [ ] Confirm there are still no critical or high findings.
 - [ ] Confirm moderate findings are limited to the accepted tooling paths above, or add new findings to this register.
 - [ ] Do not ship if a runtime dependency vulnerability appears in user-data handling, attachment parsing, backup/restore, file export, or networking behavior without a specific mitigation.
-

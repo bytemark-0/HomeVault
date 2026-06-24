@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  Linking,
   Platform,
   Pressable,
   StyleSheet,
@@ -9,11 +10,15 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';
 
 import type { Property } from '@homevault/domain';
 import { getHomeVaultRepository } from '../../data/localHomeVaultRepository';
 import { copyPhotoToAppStorage, deleteAppOwnedPhoto } from '../../utils/photoStorage';
+import {
+  ensureMediaPermission,
+  launchImageSelection,
+  type MediaSource,
+} from '../../utils/mediaPicker';
 import { colors } from '../../theme/colors';
 
 type Props = {
@@ -22,49 +27,71 @@ type Props = {
   onSkip: () => void;
 };
 
+type PermissionNotice = {
+  blocked: boolean;
+  source: MediaSource;
+};
+
 export function PropertyPhotoScreen({ property, onDone, onSkip }: Props) {
   const insets = useSafeAreaInsets();
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [photoUri, setPhotoUri] = useState<string | null>(property.photoUri ?? null);
   const [isSaving, setIsSaving] = useState(false);
-  const [pendingSource, setPendingSource] = useState<'camera' | 'library' | null>(null);
+  const [pendingSource, setPendingSource] = useState<MediaSource | null>(null);
+  const [permissionNotice, setPermissionNotice] = useState<PermissionNotice | null>(null);
+  const [saveError, setSaveError] = useState<string | undefined>();
 
-  async function handlePick(source: 'camera' | 'library') {
+  async function handlePick(source: MediaSource) {
     setPendingSource(null);
-    let result: ImagePicker.ImagePickerResult;
-    if (source === 'camera') {
-      const perm = await ImagePicker.requestCameraPermissionsAsync();
-      if (!perm.granted) return;
-      result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.85,
-      });
-    } else {
-      result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.85,
-      });
+    setPermissionNotice(null);
+    setSaveError(undefined);
+
+    const permission = await ensureMediaPermission(source);
+
+    if (!permission.granted) {
+      setPermissionNotice({ blocked: permission.blocked, source });
+      return;
     }
-    if (result.canceled || !result.assets[0]) return;
-    if (photoUri) void deleteAppOwnedPhoto(photoUri);
-    const stored = await copyPhotoToAppStorage('property', result.assets[0].uri);
-    setPhotoUri(stored ?? result.assets[0].uri);
+
+    const asset = await launchImageSelection(source);
+
+    if (!asset) return;
+
+    if (photoUri) {
+      void deleteAppOwnedPhoto(photoUri);
+    }
+
+    const stored = await copyPhotoToAppStorage('property', asset.uri);
+    setPhotoUri(stored ?? asset.uri);
   }
 
   async function handleSave() {
     if (!photoUri || isSaving) return;
     setIsSaving(true);
+    setSaveError(undefined);
     try {
       const repo = await getHomeVaultRepository();
       const updated: Property = { ...property, photoUri };
       await repo.updateProperty(updated);
       onDone(updated);
+    } catch {
+      setSaveError(
+        'We could not save this photo yet. You can try again or skip for now and add it later.',
+      );
     } finally {
       setIsSaving(false);
     }
+  }
+
+  function handleSkip() {
+    if (photoUri && photoUri !== property.photoUri) {
+      void deleteAppOwnedPhoto(photoUri);
+    }
+
+    onSkip();
+  }
+
+  function openSettings() {
+    void Linking.openSettings().catch(() => {});
   }
 
   return (
@@ -82,7 +109,13 @@ export function PropertyPhotoScreen({ property, onDone, onSkip }: Props) {
             <Image source={{ uri: photoUri }} style={styles.previewImage} resizeMode="cover" />
             <Pressable
               style={styles.removeButton}
-              onPress={() => { if (photoUri) void deleteAppOwnedPhoto(photoUri); setPhotoUri(null); }}
+              onPress={() => {
+                if (photoUri) {
+                  void deleteAppOwnedPhoto(photoUri);
+                }
+
+                setPhotoUri(null);
+              }}
               accessibilityRole="button"
               accessibilityLabel="Remove photo"
             >
@@ -118,9 +151,68 @@ export function PropertyPhotoScreen({ property, onDone, onSkip }: Props) {
                 accessibilityRole="button"
                 accessibilityLabel="Cancel"
               >
-                <Text style={styles.cancelExplanationText}>Cancel</Text>
-              </Pressable>
+              <Text style={styles.cancelExplanationText}>Cancel</Text>
+            </Pressable>
+          </View>
+        </View>
+        ) : permissionNotice ? (
+          <View style={[styles.explanationCard, permissionNotice.blocked && styles.warningCard]}>
+            <Text style={styles.explanationText}>
+              {permissionNotice.source === 'camera'
+                ? permissionNotice.blocked
+                  ? 'Camera access is turned off for HomeVault. Open Settings to enable it, choose a library photo instead, or skip for now.'
+                  : 'HomeVault could not use the camera this time. You can try again, choose a library photo instead, or skip for now.'
+                : permissionNotice.blocked
+                  ? 'Photo library access is turned off for HomeVault. Open Settings to enable it, take a new photo instead, or skip for now.'
+                  : 'HomeVault could not open your photo library this time. You can try again, take a new photo instead, or skip for now.'}
+            </Text>
+            <View style={styles.permissionActions}>
+              {permissionNotice.blocked ? (
+                <Pressable
+                  style={styles.continueButton}
+                  onPress={openSettings}
+                  accessibilityRole="button"
+                  accessibilityLabel="Open settings"
+                >
+                  <Text style={styles.continueText}>Open settings</Text>
+                </Pressable>
+              ) : (
+                <Pressable
+                  style={styles.continueButton}
+                  onPress={() => void handlePick(permissionNotice.source)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Try again"
+                >
+                  <Text style={styles.continueText}>Try again</Text>
+                </Pressable>
+              )}
+              {Platform.OS !== 'web' ? (
+                <Pressable
+                  style={styles.cancelExplanationButton}
+                  onPress={() =>
+                    setPendingSource(permissionNotice.source === 'camera' ? 'library' : 'camera')
+                  }
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    permissionNotice.source === 'camera'
+                      ? 'Choose from library instead'
+                      : 'Take a photo instead'
+                  }
+                >
+                  <Text style={styles.cancelExplanationText}>
+                    {permissionNotice.source === 'camera' ? 'Use library instead' : 'Take a photo instead'}
+                  </Text>
+                </Pressable>
+              ) : null}
             </View>
+            <Pressable
+              style={styles.permissionDismissButton}
+              onPress={handleSkip}
+              accessibilityRole="button"
+              accessibilityLabel="Skip for now"
+            >
+              <Text style={styles.permissionDismissText}>Skip for now</Text>
+            </Pressable>
           </View>
         ) : !photoUri ? (
           <View style={styles.pickerRow}>
@@ -144,6 +236,8 @@ export function PropertyPhotoScreen({ property, onDone, onSkip }: Props) {
             </Pressable>
           </View>
         ) : null}
+
+        {saveError ? <Text style={styles.errorText}>{saveError}</Text> : null}
       </View>
 
       <View style={[styles.actions, { paddingBottom: 24 + insets.bottom }]}>
@@ -165,7 +259,7 @@ export function PropertyPhotoScreen({ property, onDone, onSkip }: Props) {
         ) : null}
         <Pressable
           style={styles.skipButton}
-          onPress={() => { if (photoUri) void deleteAppOwnedPhoto(photoUri); onSkip(); }}
+          onPress={handleSkip}
           accessibilityRole="button"
           accessibilityLabel="Skip for now"
         >
@@ -240,8 +334,12 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 14,
   },
+  warningCard: {
+    backgroundColor: colors.amberSoft,
+  },
   explanationText: { fontSize: 14, fontWeight: '500', color: colors.ink, lineHeight: 21 },
   explanationRow: { flexDirection: 'row', gap: 10 },
+  permissionActions: { flexDirection: 'row', gap: 10 },
   continueButton: {
     flex: 1,
     minHeight: 42,
@@ -262,6 +360,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cancelExplanationText: { color: colors.muted, fontSize: 14, fontWeight: '700' },
+  permissionDismissButton: {
+    minHeight: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  permissionDismissText: {
+    color: colors.muted,
+    fontSize: 14,
+    fontWeight: '700',
+  },
   actions: {
     paddingHorizontal: 28,
     paddingTop: 16,
@@ -287,4 +395,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   skipText: { color: colors.muted, fontSize: 15, fontWeight: '600' },
+  errorText: {
+    color: colors.red,
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 19,
+  },
 });

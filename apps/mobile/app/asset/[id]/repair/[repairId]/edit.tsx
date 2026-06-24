@@ -3,8 +3,10 @@ import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useHomeVault } from '../../../../../src/context/HomeVaultContext';
+import { MissingRecordView } from '../../../../../src/components/MissingRecordView';
 import { AddRepairEventScreen } from '../../../../../src/screens/AddRepairEventScreen';
 import { getHomeVaultRepository } from '../../../../../src/data/localHomeVaultRepository';
+import { navigateBackOrReplace } from '../../../../../src/utils/navigation';
 import type { UpdateRepairEventInput } from '@homevault/database';
 import { colors } from '../../../../../src/theme/colors';
 
@@ -15,7 +17,18 @@ export default function EditRepairRoute() {
   if (!appData) return null;
   const asset = appData.assets.find((a) => a.id === id);
   const repairEvent = appData.repairEvents.find((r) => r.id === repairId);
-  if (!repairEvent) { router.back(); return null; }
+  if (!asset || !repairEvent) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <MissingRecordView
+          title="Repair not found"
+          detail="This repair record is no longer available to edit. Return to the asset to review the latest service history."
+          actionLabel="Back to Asset"
+          onActionPress={() => router.replace(asset ? `/asset/${id}` : '/(tabs)/inventory')}
+        />
+      </SafeAreaView>
+    );
+  }
 
   async function handleSave(input: UpdateRepairEventInput) {
     try {
@@ -23,7 +36,7 @@ export default function EditRepairRoute() {
       await repo.updateRepairEvent(input);
       await reload();
       showToast('Repair updated');
-      router.back();
+      navigateBackOrReplace(`/asset/${id}`);
     } catch {
       showToast('Could not update repair. Please try again.', 'error');
     }
@@ -32,11 +45,11 @@ export default function EditRepairRoute() {
   return (
     <SafeAreaView style={styles.safe}>
       <AddRepairEventScreen
-        asset={asset ?? undefined}
+        asset={asset}
         assets={appData.assets}
         propertyId={appData.property.id}
         repairEvent={repairEvent}
-        onCancel={() => router.back()}
+        onCancel={() => navigateBackOrReplace(`/asset/${id}`)}
         onSave={(input) => handleSave(input as UpdateRepairEventInput)}
       />
     </SafeAreaView>

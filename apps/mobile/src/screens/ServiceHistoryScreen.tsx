@@ -184,7 +184,7 @@ export function ServiceHistoryScreen({
           <Text style={styles.emptyTitle}>No service history</Text>
           <Text style={styles.emptyText}>
             {items.length === 0
-              ? 'Completed tasks and recorded repairs will appear here.'
+              ? 'Complete a task or record a repair from Maintenance to build service history.'
               : 'Try a different search, kind, or year filter.'}
           </Text>
         </View>

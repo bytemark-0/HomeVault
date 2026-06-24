@@ -3,8 +3,10 @@ import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useHomeVault } from '../../../src/context/HomeVaultContext';
+import { MissingRecordView } from '../../../src/components/MissingRecordView';
 import { AddPartScreen } from '../../../src/screens/AddPartScreen';
 import { getHomeVaultRepository } from '../../../src/data/localHomeVaultRepository';
+import { navigateBackOrReplace } from '../../../src/utils/navigation';
 import type { CreatePartInput } from '@homevault/database';
 import { colors } from '../../../src/theme/colors';
 
@@ -13,6 +15,19 @@ export default function AssetAddPartRoute() {
   const { appData, reload, showToast } = useHomeVault();
 
   if (!appData) return null;
+  const asset = appData.assets.find((a) => a.id === id);
+  if (!asset) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <MissingRecordView
+          title="Asset not found"
+          detail="This asset is no longer available for parts and supplies. Return to Inventory to choose another asset."
+          actionLabel="Back to Inventory"
+          onActionPress={() => router.replace('/(tabs)/inventory')}
+        />
+      </SafeAreaView>
+    );
+  }
 
   async function handleSave(input: CreatePartInput) {
     try {
@@ -20,7 +35,7 @@ export default function AssetAddPartRoute() {
       await repo.createPart(input);
       await reload();
       showToast('Part saved');
-      router.back();
+      navigateBackOrReplace(`/asset/${id}`);
     } catch {
       showToast('Could not save part. Please try again.', 'error');
     }
@@ -31,7 +46,7 @@ export default function AssetAddPartRoute() {
       <AddPartScreen
         propertyId={appData.property.id}
         assetId={id}
-        onCancel={() => router.back()}
+        onCancel={() => navigateBackOrReplace(`/asset/${id}`)}
         onSave={handleSave}
       />
     </SafeAreaView>

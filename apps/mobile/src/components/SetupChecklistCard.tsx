@@ -1,73 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import * as FileSystem from 'expo-file-system/legacy';
 import { router } from 'expo-router';
 
 import { useHomeVault } from '../context/HomeVaultContext';
 import { colors } from '../theme/colors';
-
-type Step = {
-  key: string;
-  label: string;
-  hint: string;
-  route: string;
-};
-
-const STEPS: Step[] = [
-  {
-    key: 'room',
-    label: 'Add a room or area',
-    hint: 'Kitchen, garage, basement, roof…',
-    route: '/room/new',
-  },
-  {
-    key: 'asset',
-    label: 'Add an appliance or system',
-    hint: 'Dishwasher, HVAC, water heater…',
-    route: '/asset/new',
-  },
-  {
-    key: 'task',
-    label: 'Add a maintenance reminder',
-    hint: 'Filter changes, seasonal checks…',
-    route: '/task/new',
-  },
-  {
-    key: 'document',
-    label: 'Save a document',
-    hint: 'Manuals, warranties, receipts…',
-    route: '/document/new',
-  },
-  {
-    key: 'photo',
-    label: 'Add a property photo',
-    hint: 'Makes your vault feel personal.',
-    route: '/property/edit',
-  },
-  {
-    key: 'backup',
-    label: 'Create a backup',
-    hint: 'Keep a copy of your home records.',
-    route: '/(tabs)/household',
-  },
-];
-
-const DISMISSED_FILE = `${FileSystem.documentDirectory ?? ''}setup_checklist_dismissed`;
-
-async function readDismissed(): Promise<boolean> {
-  try {
-    const info = await FileSystem.getInfoAsync(DISMISSED_FILE);
-    return info.exists;
-  } catch {
-    return false;
-  }
-}
-
-async function writeDismissed(): Promise<void> {
-  try {
-    await FileSystem.writeAsStringAsync(DISMISSED_FILE, '1');
-  } catch {}
-}
+import {
+  SETUP_CHECKLIST_STEPS,
+  dismissSetupChecklist,
+  getSetupChecklistProgress,
+  readSetupChecklistDismissed,
+} from '../utils/setupChecklist';
 
 export function SetupChecklistCard() {
   const { appData, backupSummary } = useHomeVault();
@@ -75,29 +17,25 @@ export function SetupChecklistCard() {
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
-    readDismissed().then((v) => setDismissed(v));
+    readSetupChecklistDismissed().then((v) => setDismissed(v));
   }, []);
 
   if (!appData || dismissed) return null;
 
-  const done = new Set<string>();
-  if (appData.roomCount > 0) done.add('room');
-  if (appData.assetCount > 0) done.add('asset');
-  if (appData.tasks.length > 0) done.add('task');
-  if (appData.documentCount > 0) done.add('document');
-  if (appData.property.photoUri) done.add('photo');
-  if (backupSummary) done.add('backup');
-
-  const incomplete = STEPS.filter((s) => !done.has(s.key));
+  const { done, doneCount, incomplete, next, total } = getSetupChecklistProgress({
+    roomCount: appData.roomCount,
+    assetCount: appData.assetCount,
+    taskCount: appData.tasks.length,
+    documentCount: appData.documentCount,
+    hasPropertyPhoto: Boolean(appData.property.photoUri),
+    backupCreated: Boolean(backupSummary),
+  });
   if (incomplete.length === 0) return null;
-
-  const next = incomplete[0]!;
-  const total = STEPS.length;
-  const doneCount = done.size;
+  if (!next) return null;
 
   function handleDismiss() {
     setDismissed(true);
-    void writeDismissed();
+    void dismissSetupChecklist();
   }
 
   return (
@@ -130,7 +68,7 @@ export function SetupChecklistCard() {
 
       {expanded ? (
         <View style={styles.stepList}>
-          {STEPS.map((step) => {
+          {SETUP_CHECKLIST_STEPS.map((step) => {
             const isDone = done.has(step.key);
             return (
               <Pressable

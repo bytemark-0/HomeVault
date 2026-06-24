@@ -9,6 +9,7 @@ import type {
   TaskListItem,
 } from '../data/homeVaultSampleData';
 import { colors } from '../theme/colors';
+import { formatCurrency } from '../utils/taskUtils';
 
 type CostSummaryScreenProps = {
   repairEvents: RepairEventListItem[];
@@ -251,14 +252,6 @@ export function CostSummaryScreen({
       )}
     </ScrollView>
   );
-}
-
-function formatCurrency(cents: number) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(cents / 100);
 }
 
 const styles = StyleSheet.create({

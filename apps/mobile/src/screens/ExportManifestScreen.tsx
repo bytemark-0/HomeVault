@@ -3,6 +3,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { shareZipExport } from '../utils/exportZip';
+import { inspectBackupAsset, type ValidatedBackup } from '../utils/backupImport';
 import {
   Alert,
   Platform,
@@ -25,7 +26,6 @@ import {
   type HomeVaultExportPackage,
   type HomeVaultExportValidationErrorKind,
   type HomeVaultImportPreview,
-  parseHomeVaultExportPackage,
   validateHomeVaultExportPackage,
 } from '@homevault/export';
 
@@ -53,7 +53,7 @@ type ExportManifestScreenProps = {
   onBackupCreated: (backupPackage: HomeVaultExportPackage, fileName: string) => void;
   onBack: () => void;
   onFixPress: (fixId: HomeVaultExportPackage['manifest']['checklist'][number]['id']) => void;
-  onRestoreBackup: (backupPackage: HomeVaultExportPackage) => Promise<void>;
+  onRestoreBackup: (backup: ValidatedBackup) => Promise<void>;
 };
 
 type BackupOperationState = 'idle' | 'validating' | 'ready' | 'restoring' | 'error';
@@ -82,7 +82,7 @@ export function ExportManifestScreen({
   const [validationErrorKind, setValidationErrorKind] =
     useState<HomeVaultExportValidationErrorKind | null>(null);
   const [importPreview, setImportPreview] = useState<HomeVaultImportPreview | null>(null);
-  const [validatedPackage, setValidatedPackage] = useState<HomeVaultExportPackage | null>(null);
+  const [validatedBackup, setValidatedBackup] = useState<ValidatedBackup | null>(null);
   const [restoreConfirmText, setRestoreConfirmText] = useState('');
   const [operationState, setOperationState] = useState<BackupOperationState>('idle');
   const exportInput = {
@@ -120,6 +120,7 @@ export function ExportManifestScreen({
   const isBusy = operationState === 'validating' || operationState === 'restoring';
   const restoreReady = restoreConfirmText.trim() === 'RESTORE';
   const canRestore = restoreReady && operationState === 'ready';
+  const validatedPackage = validatedBackup?.package ?? null;
   const restoreConflicts = validatedPackage
     ? buildRestoreConflicts(validatedPackage, manifest, property)
     : [];
@@ -159,6 +160,7 @@ export function ExportManifestScreen({
       await shareZipExport({
         exportPackage,
         exportFileName,
+        property,
         assets,
         documents,
         rooms,
@@ -177,7 +179,7 @@ export function ExportManifestScreen({
       const result = await DocumentPicker.getDocumentAsync({
         copyToCacheDirectory: true,
         multiple: false,
-        type: 'application/json',
+        type: ['application/json', 'application/zip', 'application/x-zip-compressed'],
       });
 
       if (result.canceled || result.assets.length === 0) {
@@ -187,22 +189,32 @@ export function ExportManifestScreen({
 
       const [asset] = result.assets;
       setImportPreview(null);
-      setValidatedPackage(null);
+      setValidatedBackup(null);
       setValidationErrorKind(null);
       setRestoreConfirmText('');
 
-      if (!asset.file) {
+      if (!asset.file && !asset.uri) {
         setOperationState('error');
         setValidationErrorKind('not_homevault');
-        setValidationResult('Backup validation requires a downloaded JSON file. Try the web preview or pick the file from your device.');
+        setValidationResult(
+          'Backup validation requires a readable JSON or zip file. Try the web preview or pick the file from your device.',
+        );
         return;
       }
 
-      const parsed = parseHomeVaultExportPackage(await asset.file.text());
+      const parsed = await inspectBackupAsset({
+        file: asset.file,
+        name: asset.name,
+        uri: asset.uri,
+      });
 
       if (parsed.ok) {
-        setImportPreview(parsed.preview);
-        setValidatedPackage(parsed.package);
+        const backup = 'backup' in parsed ? parsed.backup : null;
+        if (!backup) {
+          throw new Error('Backup inspection returned an unexpected success shape.');
+        }
+        setImportPreview(backup.preview);
+        setValidatedBackup(backup);
         setValidationErrorKind(null);
         setRestoreConfirmText('');
         setOperationState('ready');
@@ -213,12 +225,12 @@ export function ExportManifestScreen({
 
       setValidationResult(
         parsed.ok
-          ? `Valid HomeVault backup: ${parsed.summary}.`
+          ? `Valid HomeVault ${'backup' in parsed && parsed.backup.sourceKind === 'zip' ? 'zip archive' : 'backup'}: ${'backup' in parsed ? parsed.backup.summary : parsed.summary}.`
           : parsed.errors.join(' '),
       );
     } catch (error) {
       setImportPreview(null);
-      setValidatedPackage(null);
+      setValidatedBackup(null);
       setValidationErrorKind(null);
       setRestoreConfirmText('');
       setOperationState('error');
@@ -228,7 +240,7 @@ export function ExportManifestScreen({
 
   function handleLoadSampleBackup() {
     setImportPreview(null);
-    setValidatedPackage(null);
+    setValidatedBackup(null);
     setValidationErrorKind(null);
     setRestoreConfirmText('');
     setOperationState('validating');
@@ -237,7 +249,12 @@ export function ExportManifestScreen({
 
     if (parsed.ok) {
       setImportPreview(parsed.preview);
-      setValidatedPackage(parsed.package);
+      setValidatedBackup({
+        sourceKind: 'json',
+        package: parsed.package,
+        preview: parsed.preview,
+        summary: parsed.summary,
+      });
       setValidationErrorKind(null);
       setOperationState('ready');
     } else {
@@ -253,7 +270,7 @@ export function ExportManifestScreen({
   }
 
   function handleRestoreBackup() {
-    if (!validatedPackage || !canRestore) {
+    if (!validatedBackup || !canRestore) {
       return;
     }
 
@@ -266,19 +283,19 @@ export function ExportManifestScreen({
           text: 'Restore',
           style: 'destructive',
           onPress: () => {
-            void restoreBackup(validatedPackage);
+            void restoreBackup(validatedBackup);
           },
         },
       ],
     );
   }
 
-  async function restoreBackup(backupPackage: HomeVaultExportPackage) {
+  async function restoreBackup(backup: ValidatedBackup) {
     setOperationState('restoring');
     setValidationResult('Restoring validated backup package...');
 
     try {
-      await onRestoreBackup(backupPackage);
+      await onRestoreBackup(backup);
       setOperationState('ready');
     } catch (error) {
       setOperationState('error');
@@ -409,7 +426,7 @@ export function ExportManifestScreen({
         <View style={styles.downloadBody}>
           <Text style={styles.sectionTitle}>Validate backup</Text>
           <Text style={styles.downloadMeta}>
-            {validationResult ?? 'Choose a HomeVault JSON package and check its manifest counts.'}
+            {validationResult ?? 'Choose a HomeVault JSON or zip package and check its manifest counts.'}
           </Text>
           {validationErrorKind ? (
             <Text style={styles.validationErrorKind}>
@@ -434,7 +451,7 @@ export function ExportManifestScreen({
             accessibilityRole="button"
           >
             <Text style={styles.secondaryActionText}>
-              {operationState === 'validating' ? 'Checking...' : 'Choose JSON'}
+              {operationState === 'validating' ? 'Checking...' : 'Choose backup'}
             </Text>
           </Pressable>
           <Pressable
@@ -525,6 +542,38 @@ export function ExportManifestScreen({
               />
             </>
           ) : null}
+          {validatedBackup?.sourceKind === 'zip' ? (
+            <>
+              <Text style={styles.subsectionTitle}>Archive files</Text>
+              <DetailLine
+                label="Document files"
+                value={String(validatedBackup.documentFileCount)}
+              />
+              <DetailLine
+                label="Asset photos"
+                value={String(validatedBackup.assetPhotoCount)}
+              />
+              <DetailLine
+                label="Room photos"
+                value={String(validatedBackup.roomPhotoCount)}
+              />
+              {validatedBackup.warnings.length > 0 ? (
+                <View style={styles.conflictPanel}>
+                  <Text style={styles.conflictTitle}>Archive warnings</Text>
+                  {validatedBackup.warnings.map((warning) => (
+                    <View key={warning} style={styles.conflictRow}>
+                      <Text style={styles.conflictBullet}>!</Text>
+                      <Text style={styles.conflictText}>{warning}</Text>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <Text style={styles.previewSummary}>
+                  Zip restore will rebuild app-owned document files and photos from this archive.
+                </Text>
+              )}
+            </>
+          ) : null}
           {validatedPackage?.records.assets && validatedPackage.records.assets.length > 0 ? (
             <>
               <Text style={styles.subsectionTitle}>Assets in backup</Text>
@@ -556,7 +605,11 @@ export function ExportManifestScreen({
           <View style={styles.restoreChecklist}>
             <RestorePlanRow
               label="Package validated"
-              detail="Manifest counts match the included records."
+              detail={
+                validatedBackup?.sourceKind === 'zip'
+                  ? 'Manifest counts match the included records and archive contents were inspected.'
+                  : 'Manifest counts match the included records.'
+              }
               state="ready"
             />
             <RestorePlanRow
@@ -582,6 +635,17 @@ export function ExportManifestScreen({
               detail="Restore replaces all current local records."
               state="ready"
             />
+            {validatedBackup?.sourceKind === 'zip' ? (
+              <RestorePlanRow
+                label="Attachment files"
+                detail={
+                  validatedBackup.warnings.length > 0
+                    ? 'Some archive files are missing. Review warnings before restoring.'
+                    : 'Attachment files and photos are ready to be rebuilt in app storage.'
+                }
+                state={validatedBackup.warnings.length > 0 ? 'pending' : 'ready'}
+              />
+            ) : null}
             <RestorePlanRow
               label="Typed confirmation"
               detail={canRestore ? 'Restore action is enabled.' : 'Type RESTORE to enable restore.'}
@@ -833,7 +897,7 @@ function formatDateTime(value: string) {
 function formatValidationErrorKind(kind: HomeVaultExportValidationErrorKind) {
   switch (kind) {
     case 'not_json':
-      return 'The selected file is not a JSON file. Choose a .json file exported from HomeVault.';
+      return 'The selected file is not a valid HomeVault JSON package.';
     case 'not_homevault':
       return 'This file does not appear to be a HomeVault backup. Choose a file exported from the HomeVault app.';
     case 'version_unsupported':

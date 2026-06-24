@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useHomeVault } from '../../src/context/HomeVaultContext';
 import { AddTaskScreen } from '../../src/screens/AddTaskScreen';
 import { getHomeVaultRepository } from '../../src/data/localHomeVaultRepository';
+import { navigateBackOrReplace } from '../../src/utils/navigation';
 import type { CreateTaskInput } from '@homevault/database';
 import { colors } from '../../src/theme/colors';
 
@@ -31,7 +32,7 @@ export default function NewTaskRoute() {
         propertyId={appData.property.id}
         assets={appData.assets}
         rooms={appData.rooms}
-        onCancel={() => router.back()}
+        onCancel={() => navigateBackOrReplace('/(tabs)/maintenance')}
         onSave={handleSave}
       />
     </SafeAreaView>

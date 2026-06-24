@@ -171,7 +171,9 @@ export function HomeVaultProvider({ children }: { children: React.ReactNode }) {
 
     // Sample tasks must not trigger permission prompts or real notifications.
     if (property.id !== SAMPLE_PROPERTY_ID) {
-      void syncTaskNotifications(taskList);
+      void syncTaskNotifications(taskList).catch((error) => {
+        logDiagnostic('notification_failure', error);
+      });
     }
   }
 

@@ -3,8 +3,10 @@ import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useHomeVault } from '../../src/context/HomeVaultContext';
+import { MissingRecordView } from '../../src/components/MissingRecordView';
 import { TaskDetailScreen } from '../../src/screens/TaskDetailScreen';
 import { getHomeVaultRepository } from '../../src/data/localHomeVaultRepository';
+import { navigateBackOrReplace } from '../../src/utils/navigation';
 import { colors } from '../../src/theme/colors';
 import { computeNextDueDate, getTaskStateForDate } from '../../src/utils/taskUtils';
 
@@ -14,7 +16,18 @@ export default function TaskDetailRoute() {
 
   if (!appData) return null;
   const task = appData.tasks.find((t) => t.id === id);
-  if (!task) { router.back(); return null; }
+  if (!task) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <MissingRecordView
+          title="Task not found"
+          detail="This task may have been deleted or moved while you were viewing it. Return to Maintenance to keep working with the latest schedule."
+          actionLabel="Back to Maintenance"
+          onActionPress={() => router.replace('/(tabs)/maintenance')}
+        />
+      </SafeAreaView>
+    );
+  }
 
   const completions = appData.taskCompletions.filter((c) => c.taskId === id);
 
@@ -23,7 +36,7 @@ export default function TaskDetailRoute() {
     await repo.deleteTask(id);
     await reload();
     showToast('Task deleted', 'error');
-    router.back();
+    router.replace('/(tabs)/maintenance');
   };
 
   const handleSkip = async () => {
@@ -55,16 +68,30 @@ export default function TaskDetailRoute() {
     }
   };
 
+  const handleResume = async () => {
+    if (task.state !== 'snoozed') return;
+    try {
+      const repo = await getHomeVaultRepository();
+      const today = new Date().toISOString().slice(0, 10);
+      await repo.updateTask({ ...task, dueDate: today, state: 'due_today' });
+      await reload();
+      showToast('Task resumed', 'info');
+    } catch {
+      showToast('Could not resume task. Please try again.', 'error');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
       <TaskDetailScreen
         task={task}
         completions={completions}
-        onBack={() => router.back()}
+        onBack={() => navigateBackOrReplace('/(tabs)/maintenance')}
         onComplete={() => router.push(`/task/${id}/complete`)}
         onDelete={handleDelete}
         onSkip={() => void handleSkip()}
         onSnooze={() => router.push(`/task/${id}/snooze`)}
+        onResume={() => void handleResume()}
         onEdit={() => router.push(`/task/${id}/edit`)}
         onEditCompletion={(completionId) =>
           router.push(`/task/${id}/completion/${completionId}/edit`)

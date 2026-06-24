@@ -11,6 +11,7 @@ type TaskDetailScreenProps = {
   onDelete: () => Promise<void>;
   onSkip: (taskId: string) => void;
   onSnooze: (taskId: string) => void;
+  onResume?: (taskId: string) => void;
   onEdit: () => void;
   onEditCompletion: (completionId: string) => void;
   onDeleteCompletion: (completionId: string) => Promise<void>;
@@ -25,12 +26,14 @@ export function TaskDetailScreen({
   onDelete,
   onSkip,
   onSnooze,
+  onResume,
   onEdit,
   onEditCompletion,
   onDeleteCompletion,
   onViewScope,
 }: TaskDetailScreenProps) {
   const isCompleted = task.state === 'completed';
+  const isSnoozed = task.state === 'snoozed';
 
   return (
     <ScrollView
@@ -66,28 +69,37 @@ export function TaskDetailScreen({
           </Pressable>
           <Pressable
             onPress={() => {
-              if (!isCompleted) {
+              if (!isCompleted && !isSnoozed) {
                 confirmSkipTask(task.title, () => onSkip(task.id));
               }
             }}
-            disabled={isCompleted}
-            style={[styles.secondaryButton, isCompleted && styles.disabledButton]}
+            disabled={isCompleted || isSnoozed}
+            style={[styles.secondaryButton, (isCompleted || isSnoozed) && styles.disabledButton]}
             accessibilityRole="button"
           >
             <Text style={styles.secondaryButtonText}>Skip</Text>
           </Pressable>
           <Pressable
             onPress={() => {
-              if (!isCompleted) {
+              if (!isCompleted && !isSnoozed) {
                 onSnooze(task.id);
               }
             }}
-            disabled={isCompleted}
-            style={[styles.secondaryButton, isCompleted && styles.disabledButton]}
+            disabled={isCompleted || isSnoozed}
+            style={[styles.secondaryButton, (isCompleted || isSnoozed) && styles.disabledButton]}
             accessibilityRole="button"
           >
             <Text style={styles.secondaryButtonText}>Snooze</Text>
           </Pressable>
+          {isSnoozed ? (
+            <Pressable
+              onPress={() => onResume?.(task.id)}
+              style={styles.secondaryButton}
+              accessibilityRole="button"
+            >
+              <Text style={styles.secondaryButtonText}>Resume now</Text>
+            </Pressable>
+          ) : null}
           <Pressable onPress={onEdit} style={styles.primaryButton} accessibilityRole="button">
             <Text style={styles.primaryButtonText}>Edit</Text>
           </Pressable>
@@ -113,6 +125,16 @@ export function TaskDetailScreen({
         <Text style={styles.sectionTitle}>Instructions</Text>
         <Text style={styles.notes}>{task.instructions ?? 'No instructions yet.'}</Text>
       </View>
+
+      {isSnoozed ? (
+        <View style={styles.infoPanel}>
+          <Text style={styles.infoTitle}>Snoozed task</Text>
+          <Text style={styles.infoText}>
+            This task is delayed until its snoozed date. Use Resume now if you want it back on the
+            active list today.
+          </Text>
+        </View>
+      ) : null}
 
       <View style={styles.panel}>
         <Text style={styles.sectionTitle}>Completion history</Text>
@@ -418,6 +440,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     lineHeight: 20,
+  },
+  infoPanel: {
+    borderRadius: 8,
+    borderColor: colors.line,
+    borderWidth: 1,
+    backgroundColor: colors.blueSoft,
+    padding: 14,
+    gap: 4,
+  },
+  infoTitle: {
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  infoText: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 17,
   },
   completionRow: {
     borderTopColor: colors.line,

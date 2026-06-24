@@ -1,4 +1,4 @@
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 
 import { AddTaskScreen } from '../../screens/AddTaskScreen';
 import { sampleTasks } from '../../data/homeVaultSampleData';
@@ -49,6 +49,79 @@ describe('AddTaskScreen — new task', () => {
         expect.objectContaining({ title: 'Inspect fire extinguisher', dueDate: '2026-12-01' }),
       ),
     );
+  });
+
+  it('creates a recurring task with the selected repeat cadence', async () => {
+    const { getAllByPlaceholderText, getByText } = await render(<AddTaskScreen {...defaultProps} />);
+    const [titleInput] = getAllByPlaceholderText(/Replace filter/i);
+    const [dateInput] = getAllByPlaceholderText(/^\d{4}-\d{2}-\d{2}$/);
+
+    await fireEvent.changeText(titleInput, 'Flush water heater');
+    await fireEvent.changeText(dateInput, '2026-12-15');
+    await fireEvent.press(getByText('Yearly'));
+    await fireEvent.press(getByText('Save task'));
+
+    await waitFor(() =>
+      expect(onSave).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Flush water heater',
+          dueDate: '2026-12-15',
+          recurrenceKind: 'interval',
+          recurrenceLabel: 'Yearly',
+        }),
+      ),
+    );
+
+    expect(
+      getByText('Best for annual inspections, flushing, and warranty checkups.'),
+    ).toBeTruthy();
+    expect(
+      getByText(
+        'HomeVault can ask for notification permission after you save a dated task. You can decline and still track the task normally.',
+      ),
+    ).toBeTruthy();
+  });
+
+  it('prevents duplicate submissions while saving', async () => {
+    let resolveSave: (() => void) | null = null;
+    const pendingSave = jest.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const { getAllByPlaceholderText, getByText } = await render(
+      <AddTaskScreen
+        propertyId={propertyId}
+        assets={[]}
+        rooms={[]}
+        onCancel={onCancel}
+        onSave={pendingSave}
+      />,
+    );
+
+    const [titleInput] = getAllByPlaceholderText(/Replace filter/i);
+    const [dateInput] = getAllByPlaceholderText(/^\d{4}-\d{2}-\d{2}$/);
+    await fireEvent.changeText(titleInput, 'Inspect fire extinguisher');
+    await fireEvent.changeText(dateInput, '2026-12-01');
+    const saveButton = getByText('Save task');
+    await act(async () => {
+      fireEvent.press(saveButton);
+      await Promise.resolve();
+    });
+    await waitFor(() => expect(pendingSave).toHaveBeenCalledTimes(1));
+    fireEvent.press(getByText('Saving'));
+
+    await act(async () => {
+      if (!resolveSave) {
+        throw new Error('save promise did not start.');
+      }
+
+      resolveSave();
+      await Promise.resolve();
+    });
+
+    await waitFor(() => expect(pendingSave).toHaveBeenCalledTimes(1));
   });
 });
 

@@ -9,6 +9,7 @@ import type {
   TaskCompletion,
 } from '@homevault/domain';
 import type { HomeVaultSnapshot } from '@homevault/database';
+import { formatCurrency, formatDateLabel, formatTaskDueLabel } from '../utils/taskUtils';
 
 export type AssetListItem = Asset & {
   roomName: string;
@@ -246,7 +247,7 @@ export const sampleTaskCompletions: TaskCompletionListItem[] = [
     costCents: 0,
     notes: 'Drained tank until water ran clear and checked pressure relief valve.',
     completedAtLabel: 'Mar 2, 2026',
-    costLabel: '$0.00',
+    costLabel: '$0',
   },
   {
     id: 'completion-dishwasher-filter-2026',
@@ -255,7 +256,7 @@ export const sampleTaskCompletions: TaskCompletionListItem[] = [
     costCents: 0,
     notes: 'Removed lower filter basket and cleaned spray arm debris.',
     completedAtLabel: 'Jan 9, 2026',
-    costLabel: '$0.00',
+    costLabel: '$0',
   },
 ];
 
@@ -308,8 +309,8 @@ export const sampleRepairEvents: RepairEventListItem[] = [
     date: '2026-04-18',
     documentIds: [],
     dateLabel: 'Apr 18, 2026',
-    costLabel: '$149.00',
-    summaryLabel: 'Northside Heating · $149.00',
+    costLabel: '$149',
+    summaryLabel: 'Northside Heating · $149',
   },
 ];
 
@@ -415,7 +416,7 @@ export function toTaskListItem(
       linkedAsset?.name ??
       linkedRoom?.name ??
       (task.scope === 'property' ? 'Whole home' : 'Exterior'),
-    dueLabel: formatTaskDueLabel(task),
+    dueLabel: formatTaskDueLabel(task.dueDate, task.state),
   };
 }
 
@@ -573,23 +574,6 @@ export function formatCostTotal(values: Array<number | undefined>) {
   return formatCurrency(total);
 }
 
-function formatTaskDueLabel(task: MaintenanceTask) {
-  switch (task.state) {
-    case 'overdue':
-      return 'Yesterday';
-    case 'due_today':
-      return 'Today';
-    case 'upcoming':
-      return 'Jun 24';
-    case 'completed':
-      return 'Completed';
-    case 'snoozed':
-      return `Snoozed to ${formatRecordDate(task.dueDate)}`;
-    default:
-      return formatRecordDate(task.dueDate);
-  }
-}
-
 function formatDocumentType(type: DocumentRecord['type']) {
   return type.slice(0, 1).toUpperCase() + type.slice(1);
 }
@@ -638,17 +622,7 @@ function formatRecordDate(value?: string) {
     return 'No date';
   }
 
-  const [year, month, day] = value.split('-').map(Number);
-
-  if (!year || !month || !day) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  }).format(new Date(year, month - 1, day));
+  return formatDateLabel(value);
 }
 
 function formatIsoDate(value: string) {
@@ -663,15 +637,4 @@ function formatIsoDate(value: string) {
     day: 'numeric',
     year: 'numeric',
   }).format(date);
-}
-
-function formatCurrency(value?: number) {
-  if (value === undefined) {
-    return 'No cost recorded';
-  }
-
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(value / 100);
 }

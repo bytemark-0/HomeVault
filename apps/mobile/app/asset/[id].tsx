@@ -4,12 +4,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useHomeVault } from '../../src/context/HomeVaultContext';
 import { AssetDetailScreen } from '../../src/screens/AssetDetailScreen';
+import { MissingRecordView } from '../../src/components/MissingRecordView';
 import { getHomeVaultRepository } from '../../src/data/localHomeVaultRepository';
 import { colors } from '../../src/theme/colors';
 import {
   toAssetDocumentListItems,
   toAssetTaskCompletionListItems,
 } from '../../src/data/homeVaultSampleData';
+import { navigateBackOrReplace } from '../../src/utils/navigation';
 
 export default function AssetDetailRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -18,7 +20,18 @@ export default function AssetDetailRoute() {
   if (!appData) return null;
 
   const asset = appData.assets.find((a) => a.id === id);
-  if (!asset) { router.back(); return null; }
+  if (!asset) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <MissingRecordView
+          title="Asset not found"
+          detail="This asset may have been deleted or moved while you were viewing it. Return to Inventory to keep working with the latest records."
+          actionLabel="Back to Inventory"
+          onActionPress={() => router.replace('/(tabs)/inventory')}
+        />
+      </SafeAreaView>
+    );
+  }
 
   const assetDocuments = toAssetDocumentListItems(id, appData.documents);
   const assetTaskCompletions = toAssetTaskCompletionListItems(
@@ -35,7 +48,7 @@ export default function AssetDetailRoute() {
       await repo.deleteAsset(id);
       showToast('Asset deleted', 'error');
       await reload();
-      router.back();
+      router.replace('/(tabs)/inventory');
     } catch {
       showToast('Could not delete asset. Please try again.', 'error');
     }
@@ -78,7 +91,7 @@ export default function AssetDetailRoute() {
         parts={assetParts}
         repairEvents={assetRepairEvents}
         taskCompletions={assetTaskCompletions}
-        onBack={() => router.back()}
+        onBack={() => navigateBackOrReplace('/(tabs)/inventory')}
         onEdit={() => router.push(`/asset/${id}/edit`)}
         onAddDocument={() => router.push(`/asset/${id}/add-document`)}
         onAddPart={() => router.push(`/asset/${id}/add-part`)}

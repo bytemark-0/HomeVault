@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useHomeVault } from '../../context/HomeVaultContext';
+import { logUxEvent } from '../../utils/analytics';
 import { colors } from '../../theme/colors';
 
 const VALUE_POINTS = [
@@ -32,11 +33,30 @@ export function WelcomeScreen({ onSetUp, onSupport }: Props) {
   const { enterSampleMode } = useHomeVault();
   const insets = useSafeAreaInsets();
   const [loadingSample, setLoadingSample] = useState(false);
+  const actionTakenRef = useRef(false);
+
+  useEffect(() => {
+    logUxEvent('welcome_viewed');
+
+    return () => {
+      if (!actionTakenRef.current) {
+        logUxEvent('welcome_abandoned');
+      }
+    };
+  }, []);
 
   async function handleExploreSample() {
+    actionTakenRef.current = true;
+    logUxEvent('sample_selected');
     setLoadingSample(true);
     await enterSampleMode();
     setLoadingSample(false);
+  }
+
+  function handleSetUp() {
+    actionTakenRef.current = true;
+    logUxEvent('setup_selected');
+    onSetUp?.();
   }
 
   return (
@@ -84,7 +104,7 @@ export function WelcomeScreen({ onSetUp, onSupport }: Props) {
       <View style={[styles.actions, { paddingBottom: 24 + insets.bottom }]}>
         <Pressable
           style={styles.primaryButton}
-          onPress={onSetUp}
+          onPress={handleSetUp}
           accessibilityRole="button"
           accessibilityLabel="Set up my home"
         >

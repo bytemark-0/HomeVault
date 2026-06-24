@@ -6,6 +6,7 @@ import { SampleModeNotice } from '../../src/components/SampleModeNotice';
 import { HouseholdScreen } from '../../src/screens/HouseholdScreen';
 import { printPropertySummary } from '../../src/utils/printReport';
 import { getHomeVaultRepository } from '../../src/data/localHomeVaultRepository';
+import { getSetupChecklistProgress, restoreSetupChecklist } from '../../src/utils/setupChecklist';
 export default function HouseholdTab() {
   const { appData, backupSummary, restoreSummary, setRestoreSummary, reload, showToast } = useHomeVault();
 
@@ -28,6 +29,16 @@ export default function HouseholdTab() {
     appData?.documents.filter((d) => d.linkedRecordIds.length > 0).length ?? 0;
   const documentedAssetCount =
     appData?.assets.filter((a) => a.documentCount > 0).length ?? 0;
+  const hasIncompleteGettingStarted = appData
+    ? getSetupChecklistProgress({
+        roomCount: appData.roomCount,
+        assetCount: appData.assetCount,
+        taskCount: appData.tasks.length,
+        documentCount: appData.documentCount,
+        hasPropertyPhoto: Boolean(appData.property.photoUri),
+        backupCreated: Boolean(backupSummary),
+      }).incomplete.length > 0
+    : false;
 
   if (!appData) return null;
 
@@ -49,6 +60,10 @@ export default function HouseholdTab() {
         onDismissRestoreNotice={() => setRestoreSummary(null)}
         onEditProperty={() => router.push('/property/edit')}
         onExportManifest={() => router.push('/export')}
+        onShowGettingStarted={async () => {
+          await restoreSetupChecklist();
+          router.push('/(tabs)');
+        }}
         onPrintSummary={() => void handlePrintSummary()}
         onResetDemoData={async () => {
           const repo = await getHomeVaultRepository();
@@ -58,6 +73,7 @@ export default function HouseholdTab() {
           }
         }}
         onRoomPress={(id) => router.push(`/room/${id}`)}
+        showGettingStartedAction={hasIncompleteGettingStarted}
       />
     </ScrollView>
   );

@@ -41,7 +41,16 @@ export function formatDocumentAttachmentDetail(document: AttachmentSource) {
 }
 
 export function formatDocumentAttachmentUri(document: AttachmentSource) {
-  const uri = document.attachment?.storedUri ?? document.filePath;
+  const attachment = document.attachment;
+  const uri = attachment?.storedUri ?? document.filePath;
+
+  if (attachment?.storageKind === 'app_copy') {
+    return 'Stored in HomeVault';
+  }
+
+  if (uri) {
+    return 'External file reference';
+  }
 
   return uri ?? 'Metadata only';
 }

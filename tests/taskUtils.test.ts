@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import {
   addDaysToDateInput,
   computeNextDueDate,
+  formatDateLabel,
   formatCurrency,
+  formatTaskDueLabel,
   getTaskStateForDate,
 } from '../apps/mobile/src/utils/taskUtils';
 
@@ -75,6 +77,24 @@ async function main() {
   await test('formatCurrency handles large amounts', () => {
     assert.equal(formatCurrency(1000000), '$10,000');
     assert.equal(formatCurrency(1000050), '$10,000.50');
+  });
+
+  await test('formatCurrency reports missing values clearly', () => {
+    assert.equal(formatCurrency(undefined), 'No cost recorded');
+  });
+
+  await test('formatTaskDueLabel handles relative and snoozed dates', () => {
+    const now = new Date('2026-06-23T12:00:00Z');
+    assert.equal(formatTaskDueLabel('2026-06-23', 'due_today', now), 'Today');
+    assert.equal(formatTaskDueLabel('2026-06-22', 'overdue', now), 'Yesterday');
+    assert.equal(formatTaskDueLabel('2026-06-20', 'overdue', now), '3 days ago');
+    assert.equal(formatTaskDueLabel('2026-06-24', 'upcoming', now), 'Tomorrow');
+    assert.equal(formatTaskDueLabel('2026-07-04', 'snoozed', now), 'Snoozed to Jul 4, 2026');
+    assert.equal(formatTaskDueLabel('2026-08-15', 'completed', now), 'Completed');
+  });
+
+  await test('formatDateLabel formats ISO dates for UI copy', () => {
+    assert.equal(formatDateLabel('2026-08-15'), 'Aug 15, 2026');
   });
 }
 

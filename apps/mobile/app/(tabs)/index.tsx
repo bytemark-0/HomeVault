@@ -7,9 +7,11 @@ import { SetupChecklistCard } from '../../src/components/SetupChecklistCard';
 import { SampleModeNotice } from '../../src/components/SampleModeNotice';
 import { colors } from '../../src/theme/colors';
 import type { HomeActivityItem } from '../../src/data/homeVaultSampleData';
+import { getSetupChecklistProgress } from '../../src/utils/setupChecklist';
+import { formatDateLabel } from '../../src/utils/taskUtils';
 
 export default function HomeTab() {
-  const { appData, loadError, reload } = useHomeVault();
+  const { appData, backupSummary, loadError, reload } = useHomeVault();
 
   function handleActivityPress(activity: HomeActivityItem) {
     if (activity.kind === 'document') {
@@ -53,6 +55,37 @@ export default function HomeTab() {
             recentAssets={appData.recentAssets}
             roomCount={appData.roomCount}
             savedCostLabel={appData.savedCostLabel}
+            statusCards={buildStatusCards({
+              activeTasks: appData.activeTaskCount,
+              backupUpdatedAt: backupSummary?.updatedAt,
+              documentCount: appData.documentCount,
+              hasPropertyPhoto: Boolean(appData.property.photoUri),
+              recentActivityCount: appData.recentActivity.length,
+              roomCount: appData.roomCount,
+              taskCount: appData.tasks.length,
+              assetCount: appData.assetCount,
+            })}
+            quickActions={[
+              {
+                key: 'add-asset',
+                label: 'Add asset',
+                detail: 'Appliance, system, or tool',
+                onPress: () => router.push('/asset/new'),
+                tone: 'primary',
+              },
+              {
+                key: 'add-task',
+                label: 'Add task',
+                detail: 'Set a reminder',
+                onPress: () => router.push('/task/new'),
+              },
+              {
+                key: 'add-document',
+                label: 'Add document',
+                detail: 'Warranty, receipt, or manual',
+                onPress: () => router.push('/document/new'),
+              },
+            ]}
           />
         </>
       ) : loadError ? (
@@ -76,6 +109,83 @@ export default function HomeTab() {
       )}
     </ScrollView>
   );
+}
+
+function buildStatusCards({
+  activeTasks,
+  assetCount,
+  backupUpdatedAt,
+  documentCount,
+  hasPropertyPhoto,
+  recentActivityCount,
+  roomCount,
+  taskCount,
+}: {
+  activeTasks: number;
+  assetCount: number;
+  backupUpdatedAt?: string;
+  documentCount: number;
+  hasPropertyPhoto: boolean;
+  recentActivityCount: number;
+  roomCount: number;
+  taskCount: number;
+}): Array<{
+  key: string;
+  label: string;
+  value: string;
+  detail: string;
+  tone: 'default' | 'success' | 'warning';
+}> {
+  const checklist = getSetupChecklistProgress({
+    roomCount,
+    assetCount,
+    taskCount,
+    documentCount,
+    hasPropertyPhoto,
+    backupCreated: Boolean(backupUpdatedAt),
+  });
+
+  return [
+    {
+      key: 'setup',
+      label: 'Setup',
+      value: checklist.incomplete.length === 0 ? 'Complete' : 'In progress',
+      detail:
+        checklist.incomplete.length === 0
+          ? 'All starter steps are done.'
+          : `${checklist.doneCount} of ${checklist.total} starter steps done.`,
+      tone: checklist.incomplete.length === 0 ? 'success' : 'default',
+    },
+    {
+      key: 'tasks',
+      label: 'Due now',
+      value: activeTasks > 0 ? `${activeTasks} open` : 'All clear',
+      detail:
+        activeTasks > 0
+          ? `${activeTasks} ${activeTasks === 1 ? 'task needs' : 'tasks need'} attention.`
+          : 'No urgent maintenance reminders.',
+      tone: activeTasks > 0 ? 'warning' : 'success',
+    },
+    {
+      key: 'recent',
+      label: 'Recent records',
+      value: recentActivityCount > 0 ? `${recentActivityCount} updates` : 'Nothing yet',
+      detail:
+        recentActivityCount > 0
+          ? 'Latest documents, repairs, and completions are ready to review.'
+          : 'New records will appear here as you build your vault.',
+      tone: recentActivityCount > 0 ? 'success' : 'default',
+    },
+    {
+      key: 'backup',
+      label: 'Backup',
+      value: backupUpdatedAt ? 'Ready' : 'Not started',
+      detail: backupUpdatedAt
+        ? `Last updated ${formatDateLabel(backupUpdatedAt.slice(0, 10))}.`
+        : 'Create a backup after your first records.',
+      tone: backupUpdatedAt ? 'success' : 'default',
+    },
+  ];
 }
 
 const styles = StyleSheet.create({

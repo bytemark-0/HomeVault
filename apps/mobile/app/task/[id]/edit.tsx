@@ -3,8 +3,10 @@ import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useHomeVault } from '../../../src/context/HomeVaultContext';
+import { MissingRecordView } from '../../../src/components/MissingRecordView';
 import { AddTaskScreen } from '../../../src/screens/AddTaskScreen';
 import { getHomeVaultRepository } from '../../../src/data/localHomeVaultRepository';
+import { navigateBackOrReplace } from '../../../src/utils/navigation';
 import type { CreateTaskInput, UpdateTaskInput } from '@homevault/database';
 import { colors } from '../../../src/theme/colors';
 
@@ -14,7 +16,18 @@ export default function EditTaskRoute() {
 
   if (!appData) return null;
   const task = appData.tasks.find((t) => t.id === id);
-  if (!task) { router.back(); return null; }
+  if (!task) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <MissingRecordView
+          title="Task not found"
+          detail="This task is no longer available to edit. Return to Maintenance to choose another task or create it again."
+          actionLabel="Back to Maintenance"
+          onActionPress={() => router.replace('/(tabs)/maintenance')}
+        />
+      </SafeAreaView>
+    );
+  }
 
   const handleSave = async (input: CreateTaskInput | UpdateTaskInput) => {
     if (!input.id) return;
@@ -22,7 +35,8 @@ export default function EditTaskRoute() {
       const repo = await getHomeVaultRepository();
       await repo.updateTask(input as UpdateTaskInput);
       await reload();
-      router.back();
+      showToast('Task updated');
+      navigateBackOrReplace(`/task/${id}`);
     } catch {
       showToast('Could not save task. Please try again.', 'error');
     }
@@ -35,7 +49,7 @@ export default function EditTaskRoute() {
         assets={appData.assets}
         rooms={appData.rooms}
         task={task}
-        onCancel={() => router.back()}
+        onCancel={() => navigateBackOrReplace(`/task/${id}`)}
         onSave={handleSave}
       />
     </SafeAreaView>

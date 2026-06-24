@@ -7,6 +7,7 @@ import { ExportManifestScreen } from '../src/screens/ExportManifestScreen';
 import { colors } from '../src/theme/colors';
 import type { HomeVaultExportChecklistItem, HomeVaultExportPackage } from '@homevault/export';
 import { getHomeVaultRepository } from '../src/data/localHomeVaultRepository';
+import { buildRestoreSnapshot, type ValidatedBackup } from '../src/utils/backupImport';
 
 export default function ExportRoute() {
   const { appData, reload, setBackupSummary, setRestoreSummary, showToast } = useHomeVault();
@@ -24,32 +25,24 @@ export default function ExportRoute() {
     });
   }
 
-  async function handleRestoreBackup(pkg: HomeVaultExportPackage) {
+  async function handleRestoreBackup(backup: ValidatedBackup) {
     try {
       const repo = await getHomeVaultRepository();
       if (!repo.restoreSnapshot) return;
-      await repo.restoreSnapshot({
-        properties: [pkg.records.property],
-        rooms: pkg.records.rooms,
-        assets: pkg.records.assets,
-        documents: pkg.records.documents,
-        tasks: pkg.records.tasks,
-        taskCompletions: pkg.records.taskCompletions,
-        repairEvents: pkg.records.repairEvents,
-        parts: pkg.records.parts ?? [],
-      });
+      const snapshot = await buildRestoreSnapshot(backup);
+      await repo.restoreSnapshot(snapshot);
       await reload();
       setBackupSummary({
-        generatedAt: pkg.manifest.generatedAt,
+        generatedAt: backup.package.manifest.generatedAt,
         kind: 'restored',
-        propertyLabel: pkg.manifest.property.label,
-        recordCounts: { ...pkg.manifest.recordCounts },
+        propertyLabel: backup.package.manifest.property.label,
+        recordCounts: { ...backup.package.manifest.recordCounts },
         updatedAt: new Date().toISOString(),
       });
       setRestoreSummary({
-        generatedAt: pkg.manifest.generatedAt,
-        propertyLabel: pkg.manifest.property.label,
-        recordCounts: { ...pkg.manifest.recordCounts },
+        generatedAt: backup.package.manifest.generatedAt,
+        propertyLabel: backup.package.manifest.property.label,
+        recordCounts: { ...backup.package.manifest.recordCounts },
         restoredAt: new Date().toISOString(),
       });
       showToast('Backup restored');

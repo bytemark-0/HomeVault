@@ -97,8 +97,7 @@ export function DocumentDetailScreen({
         {getDocumentAttachmentUri(document) ? (
           <Pressable
             onPress={() => {
-              const uri = getDocumentAttachmentUri(document);
-              if (uri) void Linking.openURL(uri);
+              void openAttachment(document);
             }}
             style={styles.openFileButton}
             accessibilityRole="button"
@@ -161,6 +160,23 @@ function confirmDeleteDocument(title: string, onConfirm: () => Promise<void>) {
       },
     ],
   );
+}
+
+async function openAttachment(document: DocumentListItem) {
+  const uri = getDocumentAttachmentUri(document);
+
+  if (!uri) {
+    return;
+  }
+
+  try {
+    await Linking.openURL(uri);
+  } catch {
+    Alert.alert(
+      'Could not open file',
+      'Check that the file is still available on this device, or edit this document and attach it again.',
+    );
+  }
 }
 
 const styles = StyleSheet.create({

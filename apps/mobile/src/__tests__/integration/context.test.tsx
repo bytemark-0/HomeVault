@@ -316,6 +316,128 @@ describe('HomeVaultContext integration', () => {
     await waitFor(() => expect(getByTestId('task-count').props.children).toBe(1));
   });
 
+  it('keeps loading task data even when notification sync fails', async () => {
+    const repo = createMemoryHomeVaultRepository({
+      properties: [
+        {
+          id: 'prop-notify',
+          householdId: 'household-notify',
+          label: 'Notify Home',
+          type: 'single_family',
+        },
+      ],
+      rooms: [],
+      assets: [],
+      documents: [],
+      tasks: [
+        {
+          id: 'task-notify',
+          propertyId: 'prop-notify',
+          scope: 'property',
+          scopeId: 'prop-notify',
+          title: 'Replace filter',
+          dueDate: '2026-12-01',
+          recurrenceKind: 'one_time',
+          recurrenceLabel: 'One time',
+          state: 'upcoming',
+        },
+      ],
+      taskCompletions: [],
+      repairEvents: [],
+      parts: [],
+    });
+    setHomeVaultRepository(repo);
+    (syncTaskNotifications as jest.Mock).mockClear();
+    (syncTaskNotifications as jest.Mock).mockRejectedValueOnce(
+      new Error('Notification permission denied'),
+    );
+
+    const { getByTestId } = await render(
+      <HomeVaultProvider>
+        <DataProbe />
+      </HomeVaultProvider>,
+    );
+
+    await waitFor(() => expect(getByTestId('property-label')).toBeTruthy());
+    expect(getByTestId('property-label').props.children).toBe('Notify Home');
+    expect(syncTaskNotifications as jest.Mock).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps dashboard due-task counts aligned with the due-task list', async () => {
+    const repo = createMemoryHomeVaultRepository({
+      properties: [
+        {
+          id: 'prop-due',
+          householdId: 'household-due',
+          label: 'Due Home',
+          type: 'single_family',
+        },
+      ],
+      rooms: [],
+      assets: [],
+      documents: [],
+      tasks: [
+        {
+          id: 'task-overdue',
+          propertyId: 'prop-due',
+          scope: 'property',
+          scopeId: 'prop-due',
+          title: 'Overdue task',
+          dueDate: '2026-06-20',
+          recurrenceKind: 'one_time',
+          recurrenceLabel: 'One time',
+          state: 'overdue',
+        },
+        {
+          id: 'task-today',
+          propertyId: 'prop-due',
+          scope: 'property',
+          scopeId: 'prop-due',
+          title: 'Due today task',
+          dueDate: '2026-06-23',
+          recurrenceKind: 'one_time',
+          recurrenceLabel: 'One time',
+          state: 'due_today',
+        },
+        {
+          id: 'task-later',
+          propertyId: 'prop-due',
+          scope: 'property',
+          scopeId: 'prop-due',
+          title: 'Upcoming task',
+          dueDate: '2026-07-01',
+          recurrenceKind: 'one_time',
+          recurrenceLabel: 'One time',
+          state: 'upcoming',
+        },
+      ],
+      taskCompletions: [],
+      repairEvents: [],
+      parts: [],
+    });
+    setHomeVaultRepository(repo);
+
+    function DueProbe() {
+      const { appData } = useHomeVault();
+      if (!appData) return <Text testID="loading">loading</Text>;
+
+      return (
+        <Text testID="due-summary">
+          {`${appData.activeTaskCount}:${appData.dueTasks.length}`}
+        </Text>
+      );
+    }
+
+    const { getByTestId } = await render(
+      <HomeVaultProvider>
+        <DueProbe />
+      </HomeVaultProvider>,
+    );
+
+    await waitFor(() => expect(getByTestId('due-summary')).toBeTruthy());
+    expect(getByTestId('due-summary').props.children).toBe('2:2');
+  });
+
   it('does not call syncTaskNotifications when loading sample data', async () => {
     const sampleSnapshot = {
       properties: [

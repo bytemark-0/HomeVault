@@ -7,7 +7,7 @@
 
 ## Current Beta Branch
 
-- Branch: `onboarding-rescue`
+- Branch: `main`
 - Preview app config: `apps/mobile/app.json`
 - EAS build config: `apps/mobile/eas.json`
 - CI workflow: `.github/workflows/ci.yml`
@@ -145,6 +145,11 @@ Minimum before first private beta:
 - [ ] Smaller or older iPhone, or simulator equivalent
 - [ ] Current Android device or emulator
 - [ ] Smaller or older Android device or emulator
+
+Reference:
+
+- Device matrix and run log: `docs/homevault-beta-device-matrix.md`
+- First-user pilot script: `docs/homevault-first-user-pilot-script.md`
 
 Record for each test:
 

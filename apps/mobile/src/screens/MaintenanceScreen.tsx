@@ -29,6 +29,7 @@ export function MaintenanceScreen({
   const [activeState, setActiveState] = useState('All');
   const [activeScope, setActiveScope] = useState<'all' | 'property' | 'room' | 'asset'>('all');
   const focusTask = tasks.find((task) => task.state === 'overdue' || task.state === 'due_today');
+  const snoozedCount = tasks.filter((task) => task.state === 'snoozed').length;
 
   const scopeTypes = useMemo(() => {
     const types = new Set(tasks.map((t) => t.scope));
@@ -72,6 +73,10 @@ export function MaintenanceScreen({
           {focusTask
             ? `${focusTask.scopeLabel} · ${focusTask.recurrenceLabel}`
             : 'Upcoming and completed work stays in the maintenance list.'}
+        </Text>
+        <Text style={styles.permissionHint}>
+          Reminders stay local to this device. HomeVault asks for notification permission only
+          after you save scheduled work, and you can decline.
         </Text>
         <View style={styles.actionRow}>
           <Pressable
@@ -165,6 +170,14 @@ export function MaintenanceScreen({
       )}
 
       <SectionTitle title="Maintenance" action="New task" onActionPress={onAddTask} />
+      {snoozedCount > 0 ? (
+        <View style={styles.infoPanel}>
+          <Text style={styles.infoTitle}>Snoozed tasks are still visible</Text>
+          <Text style={styles.infoText}>
+            Use the Snoozed filter to review delayed work, or open a snoozed task to resume it now.
+          </Text>
+        </View>
+      ) : null}
       {tasks.length === 0 ? (
         <View style={styles.emptyPanel}>
           <Text style={styles.emptyTitle}>Create the first maintenance task</Text>
@@ -220,6 +233,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     lineHeight: 19,
+  },
+  permissionHint: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 17,
   },
   actionRow: {
     flexDirection: 'row',
@@ -300,6 +319,25 @@ const styles = StyleSheet.create({
     color: colors.blue,
     fontSize: 14,
     fontWeight: '900',
+  },
+  infoPanel: {
+    backgroundColor: colors.blueSoft,
+    borderColor: colors.line,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    gap: 4,
+  },
+  infoTitle: {
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  infoText: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 17,
   },
   repairAction: {
     minHeight: 44,

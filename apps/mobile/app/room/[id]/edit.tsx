@@ -6,6 +6,7 @@ import { useHomeVault } from '../../../src/context/HomeVaultContext';
 import { MissingRecordView } from '../../../src/components/MissingRecordView';
 import { AddRoomScreen } from '../../../src/screens/AddRoomScreen';
 import { getHomeVaultRepository } from '../../../src/data/localHomeVaultRepository';
+import { navigateBackOrReplace } from '../../../src/utils/navigation';
 import type { CreateRoomInput, UpdateRoomInput } from '@homevault/database';
 import { colors } from '../../../src/theme/colors';
 
@@ -34,7 +35,7 @@ export default function EditRoomRoute() {
       await repo.updateRoom({ ...input, id } as UpdateRoomInput);
       await reload();
       showToast('Room updated');
-      router.back();
+      navigateBackOrReplace(`/room/${id}`);
     } catch (error) {
       showToast('Could not save room. Please try again.', 'error');
       throw error;
@@ -46,7 +47,7 @@ export default function EditRoomRoute() {
       <AddRoomScreen
         propertyId={appData.property.id}
         room={room}
-        onCancel={() => router.back()}
+        onCancel={() => navigateBackOrReplace(`/room/${id}`)}
         onSave={handleSave}
       />
     </SafeAreaView>

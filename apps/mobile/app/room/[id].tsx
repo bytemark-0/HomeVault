@@ -8,6 +8,7 @@ import { RoomDetailScreen } from '../../src/screens/RoomDetailScreen';
 import { getHomeVaultRepository } from '../../src/data/localHomeVaultRepository';
 import { colors } from '../../src/theme/colors';
 import { type RoomServiceCompletionListItem } from '../../src/data/homeVaultSampleData';
+import { navigateBackOrReplace } from '../../src/utils/navigation';
 
 export default function RoomDetailRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -83,7 +84,7 @@ export default function RoomDetailRoute() {
         onAddDocument={() => router.push(`/room/${id}/add-document`)}
         onAddTask={() => router.push(`/room/${id}/add-task`)}
         onAssetPress={(assetId) => router.push(`/asset/${assetId}`)}
-        onBack={() => router.back()}
+        onBack={() => navigateBackOrReplace('/(tabs)/household')}
         onDocumentPress={(docId) => router.push(`/document/${docId}`)}
         onDelete={() => void handleDelete()}
         onEdit={() => router.push(`/room/${id}/edit`)}

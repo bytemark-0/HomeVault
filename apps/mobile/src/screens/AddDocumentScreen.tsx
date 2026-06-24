@@ -39,6 +39,8 @@ type FormState = {
   ocrText: string;
 };
 
+type PickerStep = 'education' | 'picking' | null;
+
 const documentTypes: Array<{ label: string; value: DocumentRecord['type'] }> = [
   { label: 'Receipt', value: 'receipt' },
   { label: 'Manual', value: 'manual' },
@@ -72,6 +74,8 @@ export function AddDocumentScreen({
     ocrText: document?.ocrText ?? '',
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [attachmentError, setAttachmentError] = useState<string | undefined>();
+  const [pickerStep, setPickerStep] = useState<PickerStep>(null);
   const errors = useMemo(
     () => ({
       title: form.title.trim().length === 0 ? 'Title is required.' : undefined,
@@ -93,34 +97,45 @@ export function AddDocumentScreen({
   );
 
   async function handleChooseFile() {
-    const result = await DocumentPicker.getDocumentAsync({
-      copyToCacheDirectory: true,
-      multiple: false,
-      type: [
-        'application/pdf',
-        'image/*',
-        'text/*',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      ],
-    });
+    setPickerStep('picking');
 
-    if (result.canceled || result.assets.length === 0) {
-      return;
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        copyToCacheDirectory: true,
+        multiple: false,
+        type: [
+          'application/pdf',
+          'image/*',
+          'text/*',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ],
+      });
+
+      if (result.canceled || result.assets.length === 0) {
+        return;
+      }
+
+      const [asset] = result.assets;
+      const attachment = await createAttachmentFromPickedAsset(asset);
+
+      setAttachmentError(undefined);
+      setForm((current) => ({
+        ...current,
+        attachment,
+        title: current.title.trim().length > 0 ? current.title : formatPickedFileTitle(asset.name),
+        filePath: attachment.storedUri,
+        ocrText: current.ocrText.trim().length > 0
+          ? current.ocrText
+          : formatPickedFileMetadata(asset),
+      }));
+    } catch {
+      setAttachmentError(
+        'Could not import this file. Keep it available on this device and try again, or save the document without an attachment.',
+      );
+    } finally {
+      setPickerStep(null);
     }
-
-    const [asset] = result.assets;
-    const attachment = await createAttachmentFromPickedAsset(asset);
-
-    setForm((current) => ({
-      ...current,
-      attachment,
-      title: current.title.trim().length > 0 ? current.title : formatPickedFileTitle(asset.name),
-      filePath: attachment.storedUri,
-      ocrText: current.ocrText.trim().length > 0
-        ? current.ocrText
-        : formatPickedFileMetadata(asset),
-    }));
   }
 
   async function handleSave() {
@@ -250,9 +265,12 @@ export function AddDocumentScreen({
           label="File reference"
           value={form.filePath}
           placeholder="homevault://documents/hvac-manual.pdf"
-          onChangeText={(filePath) =>
-            setForm((current) => ({ ...current, attachment: undefined, filePath }))
-          }
+          onChangeText={(filePath) => {
+            if (attachmentError) {
+              setAttachmentError(undefined);
+            }
+            setForm((current) => ({ ...current, attachment: undefined, filePath }));
+          }}
         />
         <View style={styles.attachmentPanel}>
           <View style={styles.attachmentBody}>
@@ -264,13 +282,44 @@ export function AddDocumentScreen({
             </Text>
           </View>
           <Pressable
-            onPress={handleChooseFile}
+            onPress={() => {
+              setAttachmentError(undefined);
+              setPickerStep('education');
+            }}
             style={styles.attachmentButton}
             accessibilityRole="button"
           >
             <Text style={styles.attachmentButtonText}>Choose file</Text>
           </Pressable>
         </View>
+        {pickerStep === 'education' ? (
+          <View style={styles.attachmentEducationCard}>
+            <Text style={styles.attachmentEducationText}>
+              HomeVault will open your device&apos;s file picker so you can choose a PDF, photo, or
+              document copy. The selected file stays local to this device, and you can still save
+              this record without an attachment.
+            </Text>
+            <View style={styles.attachmentEducationActions}>
+              <Pressable
+                onPress={() => void handleChooseFile()}
+                style={styles.attachmentEducationPrimary}
+                accessibilityRole="button"
+                accessibilityLabel="Continue"
+              >
+                <Text style={styles.attachmentEducationPrimaryText}>Continue</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setPickerStep(null)}
+                style={styles.attachmentEducationSecondary}
+                accessibilityRole="button"
+                accessibilityLabel="Cancel"
+              >
+                <Text style={styles.attachmentEducationSecondaryText}>Cancel</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
+        {attachmentError ? <Text style={styles.errorText}>{attachmentError}</Text> : null}
         <Field
           label="Captured text"
           value={form.ocrText}
@@ -682,6 +731,52 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '900',
+  },
+  attachmentEducationCard: {
+    backgroundColor: colors.blueSoft,
+    borderColor: colors.line,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    gap: 12,
+  },
+  attachmentEducationText: {
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 19,
+  },
+  attachmentEducationActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  attachmentEducationPrimary: {
+    flex: 1,
+    minHeight: 38,
+    borderRadius: 8,
+    backgroundColor: colors.blue,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  attachmentEducationPrimaryText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  attachmentEducationSecondary: {
+    minHeight: 38,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    borderColor: colors.line,
+    borderWidth: 1,
+    backgroundColor: colors.panel,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  attachmentEducationSecondaryText: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: '800',
   },
   optionGrid: {
     flexDirection: 'row',

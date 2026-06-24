@@ -2,6 +2,7 @@ import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
 import { WelcomeScreen } from '../../screens/onboarding/WelcomeScreen';
 import { useHomeVault } from '../../context/HomeVaultContext';
+import { logUxEvent } from '../../utils/analytics';
 
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
@@ -11,7 +12,12 @@ jest.mock('../../context/HomeVaultContext', () => ({
   useHomeVault: jest.fn(),
 }));
 
+jest.mock('../../utils/analytics', () => ({
+  logUxEvent: jest.fn(),
+}));
+
 const mockUseHomeVault = useHomeVault as jest.MockedFunction<typeof useHomeVault>;
+const mockLogUxEvent = logUxEvent as jest.MockedFunction<typeof logUxEvent>;
 
 describe('WelcomeScreen', () => {
   const enterSampleMode = jest.fn().mockResolvedValue(undefined);
@@ -41,9 +47,11 @@ describe('WelcomeScreen', () => {
     const onSetUp = jest.fn();
     const { getByText } = await render(<WelcomeScreen onSetUp={onSetUp} />);
 
+    expect(mockLogUxEvent).toHaveBeenCalledWith('welcome_viewed');
     await fireEvent.press(getByText('Set up my home'));
 
     expect(onSetUp).toHaveBeenCalledTimes(1);
+    expect(mockLogUxEvent).toHaveBeenCalledWith('setup_selected');
   });
 
   it('enters sample mode from the secondary action', async () => {
@@ -52,6 +60,7 @@ describe('WelcomeScreen', () => {
     await fireEvent.press(getByText('Explore a sample home'));
 
     await waitFor(() => expect(enterSampleMode).toHaveBeenCalledTimes(1));
+    expect(mockLogUxEvent).toHaveBeenCalledWith('sample_selected');
   });
 
   it('calls support callback from the tertiary action', async () => {
@@ -63,5 +72,13 @@ describe('WelcomeScreen', () => {
     await fireEvent.press(getByText('Privacy & beta support'));
 
     expect(onSupport).toHaveBeenCalledTimes(1);
+  });
+
+  it('logs abandonment when the welcome screen unmounts without a path selection', async () => {
+    const view = await render(<WelcomeScreen onSetUp={jest.fn()} />);
+
+    view.unmount();
+
+    await waitFor(() => expect(mockLogUxEvent).toHaveBeenCalledWith('welcome_abandoned'));
   });
 });

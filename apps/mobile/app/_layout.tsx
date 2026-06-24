@@ -15,6 +15,7 @@ import { BetaSupportScreen } from '../src/screens/BetaSupportScreen';
 import {
   type OnboardingStep,
   clearOnboardingState,
+  readCreatePropertyDraft,
   readOnboardingState,
   writeOnboardingState,
 } from '../src/utils/onboardingStorage';
@@ -62,10 +63,17 @@ function AppContent() {
     reconciledRef.current = true;
 
     async function reconcile() {
-      const state = await readOnboardingState();
+      const [state, propertyDraft] = await Promise.all([
+        readOnboardingState(),
+        readCreatePropertyDraft(),
+      ]);
 
       if (isNewUser) {
-        if (state.step === 'create-property') setOnboardingStep('create-property');
+        // If onboarding was interrupted before a property existed, always
+        // return to the first incomplete step instead of bouncing back to welcome.
+        if (state.step !== 'welcome' || propertyDraft) {
+          setOnboardingStep('create-property');
+        }
       } else if (
         appData &&
         (state.step === 'property-photo' || state.step === 'quick-start') &&
@@ -86,6 +94,13 @@ function AppContent() {
     void writeOnboardingState({ step });
   }
 
+  async function handleQuickStartDone() {
+    await clearOnboardingState();
+    setOnboardingProperty(null);
+    setPostCreateStep(null);
+    await finishOnboarding();
+  }
+
   if (loadError) return <LoadErrorView />;
   if (initializing) return null;
   if (isNewUser || postCreateStep !== null) {
@@ -93,6 +108,8 @@ function AppContent() {
       return <BetaSupportScreen onBack={() => setShowOnboardingSupport(false)} />;
     }
     if (postCreateStep === 'add-photo' && onboardingProperty) {
+      const propertyId = onboardingProperty.id;
+
       return (
         <PropertyPhotoScreen
           property={onboardingProperty}
@@ -102,7 +119,7 @@ function AppContent() {
             setPostCreateStep('quick-start');
           }}
           onSkip={() => {
-            void writeOnboardingState({ step: 'quick-start', propertyId: onboardingProperty!.id });
+            void writeOnboardingState({ step: 'quick-start', propertyId });
             setPostCreateStep('quick-start');
           }}
         />
@@ -112,7 +129,7 @@ function AppContent() {
       return (
         <QuickStartScreen
           property={onboardingProperty}
-          onDone={async () => { await clearOnboardingState(); await finishOnboarding(); }}
+          onDone={handleQuickStartDone}
         />
       );
     }

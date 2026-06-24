@@ -12,6 +12,22 @@ import type {
 } from '../data/homeVaultSampleData';
 import { colors } from '../theme/colors';
 
+type HomeStatusCard = {
+  key: string;
+  label: string;
+  value: string;
+  detail: string;
+  tone?: 'default' | 'success' | 'warning';
+};
+
+type HomeQuickAction = {
+  key: string;
+  label: string;
+  detail: string;
+  onPress: () => void;
+  tone?: 'primary' | 'secondary';
+};
+
 type HomeScreenProps = {
   propertyLabel: string;
   propertyPhotoUri?: string;
@@ -32,6 +48,8 @@ type HomeScreenProps = {
   onViewMaintenance: () => void;
   onViewServiceHistory: () => void;
   recentAssets: AssetListItem[];
+  quickActions: HomeQuickAction[];
+  statusCards: HomeStatusCard[];
 };
 
 export function HomeScreen({
@@ -54,6 +72,8 @@ export function HomeScreen({
   onViewMaintenance,
   onViewServiceHistory,
   recentAssets,
+  quickActions,
+  statusCards,
 }: HomeScreenProps) {
   const [photoError, setPhotoError] = useState(false);
 
@@ -107,6 +127,23 @@ export function HomeScreen({
         </View>
       </View>
 
+      <View style={styles.statusGrid}>
+        {statusCards.map((card) => (
+          <View
+            key={card.key}
+            style={[
+              styles.statusCard,
+              card.tone === 'success' ? styles.statusCardSuccess : null,
+              card.tone === 'warning' ? styles.statusCardWarning : null,
+            ]}
+          >
+            <Text style={styles.statusLabel}>{card.label}</Text>
+            <Text style={styles.statusValue}>{card.value}</Text>
+            <Text style={styles.statusDetail}>{card.detail}</Text>
+          </View>
+        ))}
+      </View>
+
       {/* Metric grid — only shown once there's data worth summarising */}
       {!isEmpty ? (
         <View style={styles.metricGrid}>
@@ -116,6 +153,41 @@ export function HomeScreen({
           <MetricCard label="Tracked costs" value={savedCostLabel} detail="Repairs, service" onPress={onViewCostSummary} accessibilityLabel="View cost summary" />
         </View>
       ) : null}
+
+      <View style={styles.quickActionsSection}>
+        <Text style={styles.quickActionsHeading}>Quick actions</Text>
+        <View style={styles.quickActionGrid}>
+          {quickActions.map((action) => (
+            <Pressable
+              key={action.key}
+              onPress={action.onPress}
+              style={[
+                styles.quickActionCard,
+                action.tone === 'primary' ? styles.quickActionCardPrimary : null,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={action.label}
+            >
+              <Text
+                style={[
+                  styles.quickActionTitle,
+                  action.tone === 'primary' ? styles.quickActionTitlePrimary : null,
+                ]}
+              >
+                {action.label}
+              </Text>
+              <Text
+                style={[
+                  styles.quickActionDetail,
+                  action.tone === 'primary' ? styles.quickActionDetailPrimary : null,
+                ]}
+              >
+                {action.detail}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
 
       <SectionTitle title="Due now" action="View all" onActionPress={onViewMaintenance} />
       {dueTasks.length > 0 ? (
@@ -261,6 +333,95 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
+  },
+  statusGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  statusCard: {
+    width: '48.6%',
+    minHeight: 92,
+    borderRadius: 8,
+    borderColor: colors.line,
+    borderWidth: 1,
+    backgroundColor: colors.panel,
+    padding: 12,
+    gap: 4,
+  },
+  statusCardSuccess: {
+    backgroundColor: colors.greenSoft,
+    borderColor: colors.green,
+  },
+  statusCardWarning: {
+    backgroundColor: colors.amberSoft,
+    borderColor: colors.amber,
+  },
+  statusLabel: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.2,
+  },
+  statusValue: {
+    color: colors.ink,
+    fontSize: 17,
+    fontWeight: '900',
+    lineHeight: 22,
+  },
+  statusDetail: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 17,
+  },
+  quickActionsSection: {
+    gap: 10,
+  },
+  quickActionsHeading: {
+    color: colors.ink,
+    fontSize: 18,
+    fontWeight: '900',
+    marginTop: 4,
+  },
+  quickActionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  quickActionCard: {
+    width: '31.7%',
+    minHeight: 94,
+    borderRadius: 8,
+    borderColor: colors.line,
+    borderWidth: 1,
+    backgroundColor: colors.panel,
+    padding: 12,
+    gap: 6,
+    justifyContent: 'space-between',
+  },
+  quickActionCardPrimary: {
+    backgroundColor: colors.green,
+    borderColor: colors.green,
+  },
+  quickActionTitle: {
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: '900',
+    lineHeight: 18,
+  },
+  quickActionTitlePrimary: {
+    color: '#FFFFFF',
+  },
+  quickActionDetail: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 16,
+  },
+  quickActionDetailPrimary: {
+    color: 'rgba(255,255,255,0.86)',
   },
   warrantyRow: {
     backgroundColor: colors.panel,

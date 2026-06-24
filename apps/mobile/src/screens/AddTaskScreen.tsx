@@ -33,6 +33,13 @@ type FormState = {
 };
 
 const recurrenceOptions = ['One time', 'Monthly', 'Every 90 days', 'Twice a year', 'Yearly'];
+const recurrenceHelpText: Record<(typeof recurrenceOptions)[number], string> = {
+  'One time': 'No follow-up reminder is created after you complete it.',
+  'Monthly': 'Schedules the next reminder about 30 days after completion.',
+  'Every 90 days': 'Good for seasonal filters, batteries, and quarterly checks.',
+  'Twice a year': 'Useful for spring/fall walkthroughs and semiannual service.',
+  'Yearly': 'Best for annual inspections, flushing, and warranty checkups.',
+};
 
 export function AddTaskScreen({
   propertyId,
@@ -170,6 +177,15 @@ export function AddTaskScreen({
               />
             ))}
           </View>
+          <Text style={styles.helperText}>{recurrenceHelpText[form.recurrenceLabel]}</Text>
+        </View>
+
+        <View style={styles.infoPanel}>
+          <Text style={styles.infoTitle}>Optional local reminder</Text>
+          <Text style={styles.infoText}>
+            HomeVault can ask for notification permission after you save a dated task. You can
+            decline and still track the task normally.
+          </Text>
         </View>
 
         <FormField
@@ -317,10 +333,35 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '900',
   },
+  helperText: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 17,
+  },
   optionGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+  },
+  infoPanel: {
+    borderRadius: 8,
+    borderColor: colors.line,
+    borderWidth: 1,
+    backgroundColor: colors.blueSoft,
+    padding: 12,
+    gap: 4,
+  },
+  infoTitle: {
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  infoText: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 17,
   },
   optionPill: {
     minHeight: 36,
