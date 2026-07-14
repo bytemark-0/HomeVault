@@ -9,18 +9,18 @@ import { colors } from '../../theme/colors';
 const VALUE_POINTS = [
   {
     icon: '🏠',
-    heading: 'Keep home records together',
-    body: 'Appliances, systems, rooms, and warranties — all in one place.',
-  },
-  {
-    icon: '🔔',
-    heading: 'Stay ahead of maintenance',
-    body: 'Set reminders and track what needs attention before it becomes a problem.',
+    heading: 'Hand off the essentials',
+    body: 'Save Wi-Fi, entry notes, shutoffs, and who to call so someone you trust can step in.',
   },
   {
     icon: '📄',
-    heading: 'Preserve documents and service history',
-    body: 'Store manuals, receipts, and repair records so you never lose them again.',
+    heading: 'Keep the right records ready',
+    body: 'Policies, warranties, router details, manuals, and service history stay in one household guide.',
+  },
+  {
+    icon: '🚨',
+    heading: 'Recover faster when something goes wrong',
+    body: 'Use local-first checklists and exports to guide repairs, travel handoffs, and emergency moments.',
   },
 ];
 
@@ -71,9 +71,10 @@ export function WelcomeScreen({ onSetUp, onSupport }: Props) {
       >
         <View style={styles.hero}>
           <Text style={styles.wordmark}>HomeVault</Text>
-          <Text style={styles.tagline}>Your home, documented.</Text>
+          <Text style={styles.tagline}>The operating manual for your home.</Text>
           <Text style={styles.subTagline}>
-            A private record of everything that makes up your home — built to last.
+            Keep the access, documents, devices, contacts, and recovery steps someone you trust
+            would need if you were away.
           </Text>
         </View>
 
@@ -90,9 +91,9 @@ export function WelcomeScreen({ onSetUp, onSupport }: Props) {
         </View>
 
         <View style={styles.privacy}>
-          <Text style={styles.privacyHeading}>Private by default</Text>
+          <Text style={styles.privacyHeading}>Private and local first</Text>
           <Text style={styles.privacyText}>
-            All your data stays on this device. HomeVault never uploads your home records to any server.
+            All your data stays on this device. HomeVault never uploads your household records to any server.
           </Text>
           <Text style={styles.privacyText}>
             You choose when to create backup or export files. Beta feedback never includes your
@@ -106,22 +107,22 @@ export function WelcomeScreen({ onSetUp, onSupport }: Props) {
           style={styles.primaryButton}
           onPress={handleSetUp}
           accessibilityRole="button"
-          accessibilityLabel="Set up my home"
+          accessibilityLabel="Start my household guide"
         >
-          <Text style={styles.primaryButtonText}>Set up my home</Text>
+          <Text style={styles.primaryButtonText}>Start my household guide</Text>
         </Pressable>
 
         <Pressable
           style={[styles.secondaryButton, loadingSample && styles.buttonDisabled]}
           onPress={loadingSample ? undefined : handleExploreSample}
           accessibilityRole="button"
-          accessibilityLabel="Explore a sample home"
+          accessibilityLabel="Explore a sample household guide"
           accessibilityState={{ busy: loadingSample }}
         >
           {loadingSample ? (
             <ActivityIndicator color={colors.muted} />
           ) : (
-            <Text style={styles.secondaryButtonText}>Explore a sample home</Text>
+            <Text style={styles.secondaryButtonText}>Explore a sample household guide</Text>
           )}
         </Pressable>
 

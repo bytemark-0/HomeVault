@@ -54,12 +54,61 @@ const baseDocument = {
   linkedRecordIds: ['asset-1'],
 };
 
+const baseAccessItem = {
+  id: 'access-1',
+  propertyId: 'prop-1',
+  category: 'wifi' as const,
+  label: 'Main Wi-Fi',
+  accessCode: '9274',
+  linkedDocumentIds: ['doc-1'],
+};
+
+const baseEmergencyContact = {
+  id: 'contact-1',
+  propertyId: 'prop-1',
+  name: 'Jamie Lee',
+  role: 'Neighbor',
+  priority: 'primary' as const,
+  phone: '555-0101',
+};
+
+const baseImportantAccount = {
+  id: 'account-1',
+  propertyId: 'prop-1',
+  kind: 'insurance' as const,
+  providerName: 'Prairie Mutual',
+  label: 'Home policy',
+  accountNumber: 'POL-1234',
+  linkedDocumentIds: ['doc-1'],
+};
+
+const basePlaybook = {
+  id: 'playbook-1',
+  propertyId: 'prop-1',
+  category: 'emergency' as const,
+  title: 'Water leak',
+  state: 'ready' as const,
+  steps: [
+    {
+      id: 'step-1',
+      label: 'Shut off the main valve',
+      isRequired: true,
+      isComplete: false,
+    },
+  ],
+  linkedRecordIds: ['doc-1'],
+};
+
 function makeSnapshot(overrides?: Partial<HomeVaultSnapshot>): HomeVaultSnapshot {
   return {
     properties: [baseProperty],
     rooms: [baseRoom],
     assets: [baseAsset],
     documents: [baseDocument],
+    accessItems: [baseAccessItem],
+    emergencyContacts: [baseEmergencyContact],
+    importantAccounts: [baseImportantAccount],
+    continuityPlaybooks: [basePlaybook],
     tasks: [baseTask],
     taskCompletions: [],
     repairEvents: [baseRepairEvent],
@@ -141,6 +190,64 @@ async function main() {
       () => repo.deleteDocument('doc-does-not-exist'),
       /not found/i,
     );
+  });
+
+  await test('creates and reads back continuity records', async () => {
+    const repo = createMemoryHomeVaultRepository(
+      makeSnapshot({
+        accessItems: [],
+        emergencyContacts: [],
+        importantAccounts: [],
+        continuityPlaybooks: [],
+      }),
+    );
+
+    const accessItem = await repo.createAccessItem({
+      propertyId: 'prop-1',
+      category: 'garage',
+      label: 'Garage keypad',
+      accessCode: '1942',
+      linkedDocumentIds: [],
+      lastReviewedAt: '2026-07-01',
+    });
+    const contact = await repo.createEmergencyContact({
+      propertyId: 'prop-1',
+      name: 'River City Plumbing',
+      role: 'Emergency plumber',
+      priority: 'service_provider',
+      phone: '555-0140',
+      lastReviewedAt: '2026-06-15',
+    });
+    const account = await repo.createImportantAccount({
+      propertyId: 'prop-1',
+      kind: 'platform',
+      providerName: 'Apple ID',
+      label: 'Family Apple account',
+      email: 'family-apple@example.test',
+      managerRole: 'shared_household',
+      isSharedHouseholdAccount: true,
+      recoveryNotes: 'Claim photos are in the shared drive.',
+      linkedDocumentIds: [],
+      lastReviewedAt: '2026-06-20',
+    });
+    const playbook = await repo.createContinuityPlaybook({
+      propertyId: 'prop-1',
+      category: 'storm',
+      title: 'Storm restart',
+      state: 'in_progress',
+      steps: [{ id: 'step-storm', label: 'Check the breaker panel', isRequired: true, isComplete: false }],
+      linkedRecordIds: [],
+    });
+
+    assert.equal((await repo.getAccessItems('prop-1'))[0]?.id, accessItem.id);
+    assert.equal((await repo.getAccessItems('prop-1'))[0]?.lastReviewedAt, '2026-07-01');
+    assert.equal((await repo.getEmergencyContacts('prop-1'))[0]?.id, contact.id);
+    assert.equal((await repo.getEmergencyContacts('prop-1'))[0]?.lastReviewedAt, '2026-06-15');
+    assert.equal((await repo.getImportantAccounts('prop-1'))[0]?.id, account.id);
+    assert.equal((await repo.getImportantAccounts('prop-1'))[0]?.lastReviewedAt, '2026-06-20');
+    assert.equal((await repo.getImportantAccounts('prop-1'))[0]?.managerRole, 'shared_household');
+    assert.equal((await repo.getImportantAccounts('prop-1'))[0]?.isSharedHouseholdAccount, true);
+    assert.equal((await repo.getContinuityPlaybooks('prop-1'))[0]?.id, playbook.id);
   });
 
   await test('creates a task and completes it', async () => {
@@ -269,6 +376,10 @@ async function main() {
       rooms: [],
       assets: [],
       documents: [],
+      accessItems: [],
+      emergencyContacts: [],
+      importantAccounts: [],
+      continuityPlaybooks: [],
       tasks: [],
       taskCompletions: [],
       repairEvents: [],

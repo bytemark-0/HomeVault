@@ -10,6 +10,7 @@ import { createMemoryHomeVaultRepository } from '@homevault/database';
 import { setHomeVaultRepository } from '../../data/localHomeVaultRepository';
 import { HomeVaultProvider, useHomeVault } from '../../context/HomeVaultContext';
 import { SAMPLE_PROPERTY_ID } from '../../data/homeVaultSampleData';
+import { EmergencyScreen } from '../../screens/EmergencyScreen';
 import { clearAllNotifications, syncTaskNotifications } from '../../utils/notificationUtils';
 
 // Mock expo modules that HomeVaultContext uses at module load time.
@@ -55,6 +56,10 @@ const testSnapshot = {
   rooms: [],
   assets: [],
   documents: [],
+  accessItems: [],
+  emergencyContacts: [],
+  importantAccounts: [],
+  continuityPlaybooks: [],
   tasks: [],
   taskCompletions: [],
   repairEvents: [],
@@ -108,6 +113,10 @@ describe('HomeVaultContext integration', () => {
       rooms: [],
       assets: [],
       documents: [],
+      accessItems: [],
+      emergencyContacts: [],
+      importantAccounts: [],
+      continuityPlaybooks: [],
       tasks: [],
       taskCompletions: [],
       repairEvents: [],
@@ -130,6 +139,10 @@ describe('HomeVaultContext integration', () => {
       rooms: [],
       assets: [],
       documents: [],
+      accessItems: [],
+      emergencyContacts: [],
+      importantAccounts: [],
+      continuityPlaybooks: [],
       tasks: [],
       taskCompletions: [],
       repairEvents: [],
@@ -170,12 +183,265 @@ describe('HomeVaultContext integration', () => {
     expect(getByTestId('property-label').props.children).toBe('Oak Street home');
   });
 
+  it('takes a clean-install household from onboarding into a usable empty Emergency view', async () => {
+    const emptyRepo = createMemoryHomeVaultRepository({
+      properties: [],
+      rooms: [],
+      assets: [],
+      documents: [],
+      accessItems: [],
+      emergencyContacts: [],
+      importantAccounts: [],
+      continuityPlaybooks: [],
+      tasks: [],
+      taskCompletions: [],
+      repairEvents: [],
+      parts: [],
+    });
+    setHomeVaultRepository(emptyRepo);
+
+    let finishOnboarding: (() => Promise<void>) | null = null;
+
+    function EmergencyProbe() {
+      const context = useHomeVault();
+      finishOnboarding = context.finishOnboarding;
+
+      if (context.isNewUser) return <Text testID="new-user">new user</Text>;
+      if (!context.appData) return <Text testID="loading">loading</Text>;
+
+      return (
+        <EmergencyScreen
+          accessItems={context.appData.accessItems}
+          assets={context.appData.assets}
+          documents={context.appData.documents}
+          emergencyContacts={context.appData.emergencyContacts}
+          importantAccounts={context.appData.importantAccounts}
+          continuityPlaybooks={context.appData.continuityPlaybooks}
+          propertyId={context.appData.property.id}
+          propertyLabel={context.appData.property.label}
+          onAddEmergencyContact={jest.fn()}
+          onAddImportantAccount={jest.fn()}
+          onOpenAccessArea={jest.fn()}
+          onOpenAccessItem={jest.fn()}
+          onOpenAsset={jest.fn()}
+          onOpenDevices={jest.fn()}
+          onOpenDocumentArea={jest.fn()}
+          onOpenDocument={jest.fn()}
+          onOpenEmergencyContact={jest.fn()}
+          onOpenEmergencyContacts={jest.fn()}
+          onOpenExport={jest.fn()}
+          onOpenHousehold={jest.fn()}
+          onOpenImportantAccount={jest.fn()}
+          onOpenPlaybook={jest.fn()}
+          onOpenShareHub={jest.fn()}
+          onOpenTrustedHandoff={jest.fn()}
+          onShareImportantAccount={jest.fn()}
+        />
+      );
+    }
+
+    const view = await render(
+      <HomeVaultProvider>
+        <EmergencyProbe />
+      </HomeVaultProvider>,
+    );
+
+    await waitFor(() => expect(view.getByTestId('new-user')).toBeTruthy());
+
+    await emptyRepo.createProperty({ label: 'Oak Street home', type: 'single_family' });
+
+    await act(async () => {
+      if (!finishOnboarding) {
+        throw new Error('finishOnboarding was not provided by HomeVaultContext.');
+      }
+
+      await finishOnboarding();
+    });
+
+    await waitFor(() => expect(view.getByText('Who to call and what to hand off')).toBeTruthy());
+    expect(view.getByText('0 of 6 emergency essentials ready')).toBeTruthy();
+    expect(view.getByText('Add the first trusted contact')).toBeTruthy();
+    expect(view.getByText('Open full emergency packet')).toBeTruthy();
+  });
+
+  it('loads upgraded-install emergency-plan records into a mature Emergency view', async () => {
+    const upgradedRepo = createMemoryHomeVaultRepository({
+      properties: [
+        {
+          id: 'prop-upgrade',
+          householdId: 'household-upgrade',
+          label: 'Oak Street home',
+          type: 'single_family',
+        },
+      ],
+      rooms: [],
+      assets: [
+        {
+          id: 'asset-router',
+          propertyId: 'prop-upgrade',
+          name: 'Main router',
+          category: 'Networking',
+          status: 'ready',
+          networkName: 'OakStreet-5G',
+          internetProvider: 'FiberFast',
+          backupEnabled: true,
+          screenLockEnabled: true,
+          findMyDeviceEnabled: true,
+          lastReviewedAt: '2026-07-01',
+        },
+      ],
+      documents: [
+        {
+          id: 'document-policy',
+          propertyId: 'prop-upgrade',
+          title: 'Prairie Mutual home policy',
+          type: 'insurance',
+          linkedRecordIds: ['prop-upgrade'],
+          date: '2026-07-01',
+        },
+        {
+          id: 'document-router',
+          propertyId: 'prop-upgrade',
+          title: 'Router quick start',
+          type: 'manual',
+          linkedRecordIds: ['asset-router'],
+          date: '2026-07-01',
+        },
+      ],
+      accessItems: [
+        {
+          id: 'access-wifi',
+          propertyId: 'prop-upgrade',
+          category: 'wifi',
+          label: 'Main Wi-Fi',
+          username: 'OakStreet-5G',
+          accessCode: '9274',
+          linkedAssetId: 'asset-router',
+          linkedDocumentIds: ['document-router'],
+          lastReviewedAt: '2026-07-01',
+        },
+      ],
+      emergencyContacts: [
+        {
+          id: 'contact-1',
+          propertyId: 'prop-upgrade',
+          name: 'Jamie Lee',
+          role: 'Neighbor with spare key',
+          priority: 'primary',
+          phone: '555-0101',
+          lastReviewedAt: '2026-07-01',
+        },
+      ],
+      importantAccounts: [
+        {
+          id: 'account-insurance',
+          propertyId: 'prop-upgrade',
+          kind: 'insurance',
+          providerName: 'Prairie Mutual',
+          label: 'Home policy',
+          phone: '555-0119',
+          managerRole: 'self',
+          linkedDocumentIds: ['document-policy'],
+          lastReviewedAt: '2026-07-01',
+        },
+        {
+          id: 'account-email',
+          propertyId: 'prop-upgrade',
+          kind: 'email',
+          providerName: 'Google',
+          label: 'Primary email',
+          mfaEnabled: true,
+          recoveryCodesStored: true,
+          managedInPasswordManager: true,
+          recoveryNotes: 'Backup codes are stored in the fire safe.',
+          linkedDocumentIds: [],
+          lastReviewedAt: '2026-07-01',
+        },
+      ],
+      continuityPlaybooks: [
+        {
+          id: 'playbook-1',
+          propertyId: 'prop-upgrade',
+          category: 'storm',
+          title: 'Storm outage restart',
+          state: 'ready',
+          steps: [{ id: 'step-1', label: 'Check router lights', isRequired: true, isComplete: true }],
+          linkedRecordIds: ['asset-router', 'account-insurance'],
+        },
+      ],
+      tasks: [],
+      taskCompletions: [],
+      repairEvents: [],
+      parts: [],
+    });
+    setHomeVaultRepository(upgradedRepo);
+
+    function UpgradedEmergencyProbe() {
+      const context = useHomeVault();
+      if (context.isNewUser) return <Text testID="new-user">new user</Text>;
+      if (!context.appData) return <Text testID="loading">loading</Text>;
+
+      return (
+        <EmergencyScreen
+          accessItems={context.appData.accessItems}
+          assets={context.appData.assets}
+          documents={context.appData.documents}
+          emergencyContacts={context.appData.emergencyContacts}
+          importantAccounts={context.appData.importantAccounts}
+          continuityPlaybooks={context.appData.continuityPlaybooks}
+          propertyId={context.appData.property.id}
+          propertyLabel={context.appData.property.label}
+          onAddEmergencyContact={jest.fn()}
+          onAddImportantAccount={jest.fn()}
+          onOpenAccessArea={jest.fn()}
+          onOpenAccessItem={jest.fn()}
+          onOpenAsset={jest.fn()}
+          onOpenDevices={jest.fn()}
+          onOpenDocumentArea={jest.fn()}
+          onOpenDocument={jest.fn()}
+          onOpenEmergencyContact={jest.fn()}
+          onOpenEmergencyContacts={jest.fn()}
+          onOpenExport={jest.fn()}
+          onOpenHousehold={jest.fn()}
+          onOpenImportantAccount={jest.fn()}
+          onOpenPlaybook={jest.fn()}
+          onOpenShareHub={jest.fn()}
+          onOpenTrustedHandoff={jest.fn()}
+          onShareImportantAccount={jest.fn()}
+        />
+      );
+    }
+
+    const view = await render(
+      <HomeVaultProvider>
+        <UpgradedEmergencyProbe />
+      </HomeVaultProvider>,
+    );
+
+    await waitFor(() => expect(view.getByText('Who to call and what to hand off')).toBeTruthy());
+    expect(view.getByText('5 of 6 emergency essentials ready')).toBeTruthy();
+    expect(view.getByText('Prepare a trusted handoff')).toBeTruthy();
+    expect(
+      view.getByText(
+        'Finish the missing basics and role gaps so someone else can step in without guessing who owns the next move.',
+      ),
+    ).toBeTruthy();
+    expect(view.getByText('Jamie Lee')).toBeTruthy();
+    expect(view.getByText('Home policy')).toBeTruthy();
+    expect(view.getAllByText('Primary email').length).toBeGreaterThan(0);
+    expect(view.getByText('Storm outage restart')).toBeTruthy();
+  });
+
   it('loads sample data when entering sample mode from an empty repository', async () => {
     const emptyRepo = createMemoryHomeVaultRepository({
       properties: [],
       rooms: [],
       assets: [],
       documents: [],
+      accessItems: [],
+      emergencyContacts: [],
+      importantAccounts: [],
+      continuityPlaybooks: [],
       tasks: [],
       taskCompletions: [],
       repairEvents: [],
@@ -219,6 +485,10 @@ describe('HomeVaultContext integration', () => {
       rooms: [],
       assets: [],
       documents: [],
+      accessItems: [],
+      emergencyContacts: [],
+      importantAccounts: [],
+      continuityPlaybooks: [],
       tasks: [],
       taskCompletions: [],
       repairEvents: [],
@@ -329,6 +599,10 @@ describe('HomeVaultContext integration', () => {
       rooms: [],
       assets: [],
       documents: [],
+      accessItems: [],
+      emergencyContacts: [],
+      importantAccounts: [],
+      continuityPlaybooks: [],
       tasks: [
         {
           id: 'task-notify',
@@ -376,6 +650,10 @@ describe('HomeVaultContext integration', () => {
       rooms: [],
       assets: [],
       documents: [],
+      accessItems: [],
+      emergencyContacts: [],
+      importantAccounts: [],
+      continuityPlaybooks: [],
       tasks: [
         {
           id: 'task-overdue',
@@ -443,16 +721,19 @@ describe('HomeVaultContext integration', () => {
       properties: [
         {
           id: SAMPLE_PROPERTY_ID,
+          householdId: 'sample-household',
           label: 'Sample Home',
-          address: '123 Sample St',
+          type: 'single_family' as const,
           purchaseDate: '2020-01-01',
-          purchasePriceCents: 0,
-          squareFeet: 0,
         },
       ],
       rooms: [],
       assets: [],
       documents: [],
+      accessItems: [],
+      emergencyContacts: [],
+      importantAccounts: [],
+      continuityPlaybooks: [],
       tasks: [],
       taskCompletions: [],
       repairEvents: [],

@@ -3,6 +3,7 @@ import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { FirstAssetScreen } from '../../screens/onboarding/FirstAssetScreen';
 import { getHomeVaultRepository } from '../../data/localHomeVaultRepository';
 import { deleteAppOwnedPhoto } from '../../utils/photoStorage';
+import { maybeAddRecommendedMaintenanceTasks } from '../../utils/recommendedMaintenance';
 
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
@@ -28,12 +29,20 @@ jest.mock('../../utils/photoStorage', () => ({
   deleteAppOwnedPhoto: jest.fn(),
 }));
 
+jest.mock('../../utils/recommendedMaintenance', () => ({
+  maybeAddRecommendedMaintenanceTasks: jest.fn(),
+}));
+
 const mockGetHomeVaultRepository = getHomeVaultRepository as jest.MockedFunction<
   typeof getHomeVaultRepository
 >;
 const mockDeleteAppOwnedPhoto = deleteAppOwnedPhoto as jest.MockedFunction<
   typeof deleteAppOwnedPhoto
 >;
+const mockMaybeAddRecommendedMaintenanceTasks =
+  maybeAddRecommendedMaintenanceTasks as jest.MockedFunction<
+    typeof maybeAddRecommendedMaintenanceTasks
+  >;
 
 describe('FirstAssetScreen', () => {
   const property = {
@@ -53,6 +62,7 @@ describe('FirstAssetScreen', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockMaybeAddRecommendedMaintenanceTasks.mockResolvedValue(0);
     mockGetHomeVaultRepository.mockResolvedValue({
       getRooms: jest.fn().mockResolvedValue([]),
       createAsset: jest.fn().mockResolvedValue({
@@ -112,6 +122,7 @@ describe('FirstAssetScreen', () => {
         status: 'ready',
       }),
     );
+    expect(mockMaybeAddRecommendedMaintenanceTasks).toHaveBeenCalledTimes(1);
 
     await waitFor(() => expect(getByText('Your first item is saved')).toBeTruthy());
     await fireEvent.press(getByText('Finish to dashboard'));
@@ -261,6 +272,21 @@ describe('FirstAssetScreen', () => {
       }),
     );
     expect(onSaved).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows confirmation when recommended reminders were added', async () => {
+    mockMaybeAddRecommendedMaintenanceTasks.mockResolvedValue(2);
+
+    const { getByPlaceholderText, getByText } = await render(
+      <FirstAssetScreen property={property} onSaved={jest.fn()} onBack={jest.fn()} />,
+    );
+
+    await fireEvent.changeText(getByPlaceholderText('e.g. Dishwasher, Furnace, Roof'), 'Dishwasher');
+    await fireEvent.press(getByText('Save and continue'));
+
+    await waitFor(() =>
+      expect(getByText(/Added 2 recommended reminders for it\./)).toBeTruthy(),
+    );
   });
 
   it('cleans up a selected onboarding photo when skipping it', async () => {

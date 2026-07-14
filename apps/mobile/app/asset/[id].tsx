@@ -12,22 +12,31 @@ import {
   toAssetTaskCompletionListItems,
 } from '../../src/data/homeVaultSampleData';
 import { navigateBackOrReplace } from '../../src/utils/navigation';
+import { getAssetMode } from '../../src/utils/deviceMetadata';
+import {
+  createReviewedOnDate,
+  getCriticalDeviceReviewSummary,
+} from '../../src/utils/reviewFreshness';
 
 export default function AssetDetailRoute() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, source } = useLocalSearchParams<{ id: string; source?: string }>();
   const { appData, reload, showToast } = useHomeVault();
 
   if (!appData) return null;
 
   const asset = appData.assets.find((a) => a.id === id);
+  const fallbackRoute =
+    source === 'devices' || getAssetMode(asset) === 'device'
+      ? '/(tabs)/devices'
+      : '/(tabs)/inventory';
   if (!asset) {
     return (
       <SafeAreaView style={styles.safe}>
         <MissingRecordView
           title="Asset not found"
           detail="This asset may have been deleted or moved while you were viewing it. Return to Inventory to keep working with the latest records."
-          actionLabel="Back to Inventory"
-          onActionPress={() => router.replace('/(tabs)/inventory')}
+          actionLabel={fallbackRoute === '/(tabs)/devices' ? 'Back to Devices' : 'Back to Inventory'}
+          onActionPress={() => router.replace(fallbackRoute)}
         />
       </SafeAreaView>
     );
@@ -41,6 +50,8 @@ export default function AssetDetailRoute() {
   );
   const assetRepairEvents = appData.repairEvents.filter((r) => r.assetId === id);
   const assetParts = appData.parts.filter((p) => p.assetId === id);
+  const isShareableDevice = source === 'devices' || getAssetMode(asset) === 'device';
+  const reviewSummary = isShareableDevice ? getCriticalDeviceReviewSummary(asset) : null;
 
   async function handleDelete() {
     try {
@@ -48,7 +59,7 @@ export default function AssetDetailRoute() {
       await repo.deleteAsset(id);
       showToast('Asset deleted', 'error');
       await reload();
-      router.replace('/(tabs)/inventory');
+      router.replace(fallbackRoute);
     } catch {
       showToast('Could not delete asset. Please try again.', 'error');
     }
@@ -91,14 +102,55 @@ export default function AssetDetailRoute() {
         parts={assetParts}
         repairEvents={assetRepairEvents}
         taskCompletions={assetTaskCompletions}
-        onBack={() => navigateBackOrReplace('/(tabs)/inventory')}
-        onEdit={() => router.push(`/asset/${id}/edit`)}
+        onBack={() => navigateBackOrReplace(fallbackRoute)}
+        onEdit={() =>
+          router.push(
+            source === 'devices' || getAssetMode(asset) === 'device'
+              ? `/asset/${id}/edit?source=devices`
+              : `/asset/${id}/edit`,
+          )
+        }
         onAddDocument={() => router.push(`/asset/${id}/add-document`)}
         onAddPart={() => router.push(`/asset/${id}/add-part`)}
         onAddTask={() => router.push(`/asset/${id}/add-task`)}
         onDocumentPress={(docId) => router.push(`/document/${docId}`)}
         onDelete={() => void handleDelete()}
-        onDuplicate={() => router.push({ pathname: '/asset/new', params: { copyFromId: id } })}
+        onDuplicate={() =>
+          router.push({
+            pathname: '/asset/new',
+            params:
+              isShareableDevice
+                ? { copyFromId: id, mode: 'device', source: 'devices' }
+                : { copyFromId: id },
+          })
+        }
+        onMarkReviewed={
+          isShareableDevice
+            ? async () => {
+                try {
+                  const repo = await getHomeVaultRepository();
+                  await repo.updateAsset({
+                    ...asset,
+                    lastReviewedAt: createReviewedOnDate(),
+                  });
+                  await reload();
+                  showToast('Device review updated');
+                } catch {
+                  showToast('Could not save the review date. Please try again.', 'error');
+                }
+              }
+            : undefined
+        }
+        onShare={
+          isShareableDevice
+            ? () =>
+                router.push({
+                  pathname: '/share/item',
+                  params: { id, recordType: 'asset' },
+                })
+            : undefined
+        }
+        reviewStatusLabel={reviewSummary?.detail}
         onDeleteRepair={handleDeleteRepair}
         onEditRepair={(repairId) => router.push(`/asset/${id}/repair/${repairId}/edit`)}
         onEditCompletion={(completionId) => {

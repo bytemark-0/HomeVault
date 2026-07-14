@@ -18,6 +18,16 @@ import type { CreateAssetInput, UpdateAssetInput } from '@homevault/database';
 import { FormField } from '../components/FormField';
 import { PhotoPickerField } from '../components/PhotoPickerField';
 import { deleteAppOwnedPhoto } from '../utils/photoStorage';
+import {
+  fromDeviceBooleanChoice,
+  getDeviceNamePlaceholder,
+  getDeviceNotesPlaceholder,
+  getDeviceTemplate,
+  isRouterLikeAsset,
+  toDeviceBooleanChoice,
+  type DeviceBooleanChoice,
+  type DeviceTemplateKey,
+} from '../utils/deviceMetadata';
 import { colors } from '../theme/colors';
 
 type AddAssetScreenProps = {
@@ -26,6 +36,8 @@ type AddAssetScreenProps = {
   asset?: Asset;
   copyFrom?: Asset;
   initialRoomId?: string;
+  mode?: 'asset' | 'device';
+  deviceTemplate?: DeviceTemplateKey;
   onCancel: () => void;
   onSave: (input: CreateAssetInput | UpdateAssetInput) => Promise<void>;
 };
@@ -34,6 +46,8 @@ type FormState = {
   name: string;
   category: string;
   roomId?: string;
+  ownerName: string;
+  backupHelperName: string;
   brand: string;
   model: string;
   serial: string;
@@ -42,11 +56,17 @@ type FormState = {
   cost: string;
   status: Asset['status'];
   warrantyExpiry: string;
+  backupEnabled: DeviceBooleanChoice;
+  screenLockEnabled: DeviceBooleanChoice;
+  findMyDeviceEnabled: DeviceBooleanChoice;
+  networkName: string;
+  internetProvider: string;
+  networkAdminUrl: string;
   photoUri: string;
   notes: string;
 };
 
-const categoryPresets = [
+const assetCategoryPresets = [
   'Appliance',
   'Heating & cooling',
   'Plumbing',
@@ -60,10 +80,27 @@ const categoryPresets = [
   'Structure',
 ];
 
+const deviceCategoryPresets = [
+  'Router',
+  'Phone',
+  'Laptop',
+  'Tablet',
+  'Smart home',
+  'Camera',
+  'Computer',
+  'Other device',
+];
+
 const statusOptions: Array<{ label: string; value: Asset['status'] }> = [
   { label: 'Ready', value: 'ready' },
   { label: 'Needs attention', value: 'needs_attention' },
   { label: 'Warranty soon', value: 'warranty_soon' },
+];
+
+const deviceSettingOptions: Array<{ label: string; value: DeviceBooleanChoice }> = [
+  { label: 'Yes', value: 'enabled' },
+  { label: 'No', value: 'disabled' },
+  { label: 'Not sure', value: 'unknown' },
 ];
 
 export function AddAssetScreen({
@@ -72,29 +109,43 @@ export function AddAssetScreen({
   asset,
   copyFrom,
   initialRoomId,
+  mode = 'asset',
+  deviceTemplate,
   onCancel,
   onSave,
 }: AddAssetScreenProps) {
   const originalPhotoUri = useRef(copyFrom ? '' : (asset?.photoUri ?? ''));
   const template = asset ?? copyFrom;
+  const selectedDeviceTemplate = mode === 'device' ? getDeviceTemplate(deviceTemplate) : undefined;
+  const categoryPresets = mode === 'device' ? deviceCategoryPresets : assetCategoryPresets;
   const hasAdvancedData =
     asset != null &&
     Boolean(
+      asset.ownerName ||
+      asset.backupHelperName ||
       asset.brand ||
-        asset.model ||
-        asset.serial ||
-        asset.installDate ||
-        asset.purchaseDate ||
-        asset.costCents ||
-        asset.warrantyExpiry ||
-        asset.photoUri ||
-        asset.notes,
+      asset.model ||
+      asset.serial ||
+      asset.installDate ||
+      asset.purchaseDate ||
+      asset.costCents ||
+      asset.warrantyExpiry ||
+      asset.backupEnabled != null ||
+      asset.screenLockEnabled != null ||
+      asset.findMyDeviceEnabled != null ||
+      asset.networkName ||
+      asset.internetProvider ||
+      asset.networkAdminUrl ||
+      asset.photoUri ||
+      asset.notes,
     );
   const [showAdvanced, setShowAdvanced] = useState(hasAdvancedData);
   const [form, setForm] = useState<FormState>({
     name: copyFrom ? `${copyFrom.name} (copy)` : (asset?.name ?? ''),
-    category: template?.category ?? 'Appliance',
+    category: template?.category ?? selectedDeviceTemplate?.category ?? (mode === 'device' ? 'Router' : 'Appliance'),
     roomId: template?.roomId ?? initialRoomId ?? rooms[0]?.id,
+    ownerName: copyFrom ? (copyFrom.ownerName ?? '') : (asset?.ownerName ?? ''),
+    backupHelperName: copyFrom ? (copyFrom.backupHelperName ?? '') : (asset?.backupHelperName ?? ''),
     brand: template?.brand ?? '',
     model: template?.model ?? '',
     serial: copyFrom ? '' : (asset?.serial ?? ''),
@@ -103,6 +154,18 @@ export function AddAssetScreen({
     cost: copyFrom ? '' : (asset?.costCents != null ? String(asset.costCents / 100) : ''),
     status: template?.status ?? 'ready',
     warrantyExpiry: copyFrom ? '' : (asset?.warrantyExpiry ?? ''),
+    backupEnabled: copyFrom
+      ? toDeviceBooleanChoice(copyFrom.backupEnabled)
+      : toDeviceBooleanChoice(asset?.backupEnabled),
+    screenLockEnabled: copyFrom
+      ? toDeviceBooleanChoice(copyFrom.screenLockEnabled)
+      : toDeviceBooleanChoice(asset?.screenLockEnabled),
+    findMyDeviceEnabled: copyFrom
+      ? toDeviceBooleanChoice(copyFrom.findMyDeviceEnabled)
+      : toDeviceBooleanChoice(asset?.findMyDeviceEnabled),
+    networkName: copyFrom ? (copyFrom.networkName ?? '') : (asset?.networkName ?? ''),
+    internetProvider: copyFrom ? (copyFrom.internetProvider ?? '') : (asset?.internetProvider ?? ''),
+    networkAdminUrl: copyFrom ? (copyFrom.networkAdminUrl ?? '') : (asset?.networkAdminUrl ?? ''),
     photoUri: copyFrom ? '' : (asset?.photoUri ?? ''),
     notes: copyFrom ? '' : (asset?.notes ?? ''),
   });
@@ -176,6 +239,8 @@ export function AddAssetScreen({
         roomId: form.roomId,
         name: form.name.trim(),
         category: form.category.trim(),
+        ownerName: cleanOptional(form.ownerName),
+        backupHelperName: cleanOptional(form.backupHelperName),
         brand: cleanOptional(form.brand),
         model: cleanOptional(form.model),
         serial: cleanOptional(form.serial),
@@ -184,6 +249,12 @@ export function AddAssetScreen({
         costCents: form.cost.trim().length > 0 ? Math.round(parseFloat(form.cost.trim()) * 100) : undefined,
         status: form.status,
         warrantyExpiry: cleanOptional(form.warrantyExpiry),
+        backupEnabled: fromDeviceBooleanChoice(form.backupEnabled),
+        screenLockEnabled: fromDeviceBooleanChoice(form.screenLockEnabled),
+        findMyDeviceEnabled: fromDeviceBooleanChoice(form.findMyDeviceEnabled),
+        networkName: cleanOptional(form.networkName),
+        internetProvider: cleanOptional(form.internetProvider),
+        networkAdminUrl: cleanOptional(form.networkAdminUrl),
         photoUri: form.photoUri || undefined,
         notes: cleanOptional(form.notes),
       });
@@ -233,6 +304,29 @@ export function AddAssetScreen({
     setShowScanner(false);
   }
 
+  const isRouterDevice = mode === 'device' && isRouterLikeAsset({ category: form.category, name: form.name });
+  const namePlaceholder =
+    mode === 'device'
+      ? getDeviceNamePlaceholder(selectedDeviceTemplate?.key)
+      : 'Dishwasher, roof, breaker panel';
+  const notesPlaceholder =
+    mode === 'device'
+      ? getDeviceNotesPlaceholder(selectedDeviceTemplate?.key)
+      : 'Filter size, location, access notes';
+  const roomLabel = mode === 'device' ? 'Room, shelf, or area (optional)' : 'Room or area (optional)';
+  const screenTitle =
+    mode === 'device'
+      ? asset
+        ? 'Edit device'
+        : copyFrom
+          ? 'Copy device'
+          : 'Add device'
+      : asset
+        ? 'Edit asset'
+        : copyFrom
+          ? 'Copy asset'
+          : 'Add asset';
+
   return (
     <ScrollView
       style={styles.screen}
@@ -242,8 +336,8 @@ export function AddAssetScreen({
     >
       <View style={styles.header}>
         <View>
-          <Text style={styles.kicker}>Inventory</Text>
-          <Text style={styles.title}>{asset ? 'Edit asset' : copyFrom ? 'Copy asset' : 'Add asset'}</Text>
+          <Text style={styles.kicker}>{mode === 'device' ? 'Devices' : 'Inventory'}</Text>
+          <Text style={styles.title}>{screenTitle}</Text>
         </View>
         <Pressable onPress={handleCancel} style={styles.cancelButton} accessibilityRole="button">
           <Text style={styles.cancelText}>Cancel</Text>
@@ -254,12 +348,12 @@ export function AddAssetScreen({
         <FormField
           label="Name"
           value={form.name}
-          placeholder="Dishwasher, roof, breaker panel"
+          placeholder={namePlaceholder}
           error={errors.name}
           onChangeText={(name) => setForm((current) => ({ ...current, name }))}
         />
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Category</Text>
+          <Text style={styles.label}>{mode === 'device' ? 'Device type' : 'Category'}</Text>
           <View style={styles.optionGrid}>
             {categoryPresets.map((preset) => {
               const isSelected = form.category === preset;
@@ -291,7 +385,7 @@ export function AddAssetScreen({
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Room or area (optional)</Text>
+          <Text style={styles.label}>{roomLabel}</Text>
           {rooms.length > 0 ? (
             <View style={styles.optionGrid}>
               {rooms.map((room) => {
@@ -318,6 +412,79 @@ export function AddAssetScreen({
           )}
         </View>
 
+        {mode === 'device' ? (
+          <View style={styles.devicePanel}>
+            <Text style={styles.label}>Recovery details</Text>
+            <FormField
+              label="Owner (optional)"
+              value={form.ownerName}
+              placeholder="Jamie, household, guest room"
+              onChangeText={(ownerName) => setForm((current) => ({ ...current, ownerName }))}
+            />
+            <FormField
+              label="Backup helper (optional)"
+              value={form.backupHelperName}
+              placeholder="Taylor, spouse, or trusted helper fallback"
+              onChangeText={(backupHelperName) =>
+                setForm((current) => ({ ...current, backupHelperName }))
+              }
+            />
+            <ChoiceField
+              label="Backup enabled"
+              value={form.backupEnabled}
+              options={deviceSettingOptions}
+              onChange={(backupEnabled) => setForm((current) => ({ ...current, backupEnabled }))}
+            />
+            <ChoiceField
+              label="Screen lock enabled"
+              value={form.screenLockEnabled}
+              options={deviceSettingOptions}
+              onChange={(screenLockEnabled) =>
+                setForm((current) => ({ ...current, screenLockEnabled }))
+              }
+            />
+            <ChoiceField
+              label="Find-my-device enabled"
+              value={form.findMyDeviceEnabled}
+              options={deviceSettingOptions}
+              onChange={(findMyDeviceEnabled) =>
+                setForm((current) => ({ ...current, findMyDeviceEnabled }))
+              }
+            />
+            {isRouterDevice ? (
+              <View style={styles.routerPanel}>
+                <Text style={styles.routerTitle}>Router details</Text>
+                <Text style={styles.fieldHint}>
+                  Keep the network name, provider, and local admin address handy so someone can
+                  recover the home connection faster.
+                </Text>
+                <FormField
+                  label="Network name (optional)"
+                  value={form.networkName}
+                  placeholder="OakStreet-5G"
+                  onChangeText={(networkName) => setForm((current) => ({ ...current, networkName }))}
+                />
+                <FormField
+                  label="Internet provider (optional)"
+                  value={form.internetProvider}
+                  placeholder="FiberCo"
+                  onChangeText={(internetProvider) =>
+                    setForm((current) => ({ ...current, internetProvider }))
+                  }
+                />
+                <FormField
+                  label="Admin address (optional)"
+                  value={form.networkAdminUrl}
+                  placeholder="http://192.168.1.1"
+                  onChangeText={(networkAdminUrl) =>
+                    setForm((current) => ({ ...current, networkAdminUrl }))
+                  }
+                />
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
         <Pressable
           onPress={() => setShowAdvanced((v) => !v)}
           style={styles.advancedToggle}
@@ -331,7 +498,7 @@ export function AddAssetScreen({
         {showAdvanced && (
           <>
             <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Identification</Text>
+              <Text style={styles.label}>{mode === 'device' ? 'Hardware details' : 'Identification'}</Text>
               <Pressable
                 onPress={() => void handleOpenScanner()}
                 style={styles.scanButton}
@@ -430,7 +597,7 @@ export function AddAssetScreen({
             <FormField
               label="Notes (optional)"
               value={form.notes}
-              placeholder="Filter size, location, access notes"
+              placeholder={mode === 'device' ? notesPlaceholder : 'Filter size, location, access notes'}
               multiline
               onChangeText={(notes) => setForm((current) => ({ ...current, notes }))}
             />
@@ -444,7 +611,9 @@ export function AddAssetScreen({
         style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
         accessibilityRole="button"
       >
-        <Text style={styles.saveText}>{isSaving ? 'Saving' : asset ? 'Save changes' : 'Save asset'}</Text>
+        <Text style={styles.saveText}>
+          {isSaving ? 'Saving' : asset ? 'Save changes' : mode === 'device' ? 'Save device' : 'Save asset'}
+        </Text>
       </Pressable>
 
       <Modal
@@ -504,6 +673,42 @@ function cleanOptional(value: string) {
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
+function ChoiceField({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: DeviceBooleanChoice;
+  options: Array<{ label: string; value: DeviceBooleanChoice }>;
+  onChange: (value: DeviceBooleanChoice) => void;
+}) {
+  return (
+    <View style={styles.fieldGroup}>
+      <Text style={styles.label}>{label}</Text>
+      <View style={styles.optionGrid}>
+        {options.map((option) => {
+          const isSelected = option.value === value;
+
+          return (
+            <Pressable
+              key={option.value}
+              onPress={() => onChange(option.value)}
+              style={[styles.optionPill, isSelected && styles.optionPillActive]}
+              accessibilityRole="button"
+            >
+              <Text style={[styles.optionText, isSelected && styles.optionTextActive]}>
+                {option.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
@@ -560,6 +765,9 @@ const styles = StyleSheet.create({
   },
   fieldGroup: {
     gap: 7,
+  },
+  devicePanel: {
+    gap: 12,
   },
   label: {
     color: colors.ink,
@@ -623,6 +831,19 @@ const styles = StyleSheet.create({
   },
   optionTextActive: {
     color: '#FFFFFF',
+  },
+  routerPanel: {
+    borderRadius: 8,
+    borderColor: colors.line,
+    borderWidth: 1,
+    backgroundColor: colors.page,
+    padding: 12,
+    gap: 10,
+  },
+  routerTitle: {
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: '900',
   },
   advancedToggle: {
     minHeight: 38,

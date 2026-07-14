@@ -8,6 +8,7 @@ import { DocumentDetailScreen } from '../../src/screens/DocumentDetailScreen';
 import { getHomeVaultRepository } from '../../src/data/localHomeVaultRepository';
 import { navigateBackOrReplace } from '../../src/utils/navigation';
 import { colors } from '../../src/theme/colors';
+import { isCriticalDocument } from '../../src/utils/documentTaxonomy';
 
 export default function DocumentDetailRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -27,6 +28,7 @@ export default function DocumentDetailRoute() {
       </SafeAreaView>
     );
   }
+  const canShareDocument = isCriticalDocument(document);
 
   async function handleDelete() {
     const repo = await getHomeVaultRepository();
@@ -43,6 +45,15 @@ export default function DocumentDetailRoute() {
         onBack={() => navigateBackOrReplace('/(tabs)/documents')}
         onDelete={handleDelete}
         onEdit={() => router.push(`/document/${id}/edit`)}
+        onShare={
+          canShareDocument
+            ? () =>
+                router.push({
+                  pathname: '/share/item',
+                  params: { id, recordType: 'document' },
+                })
+            : undefined
+        }
         onLinkedRecordPress={(recordId) => {
           if (appData.assets.some((a) => a.id === recordId)) {
             router.push(`/asset/${recordId}`);

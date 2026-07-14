@@ -170,4 +170,68 @@ describe('AssetDetailScreen', () => {
     repairDeleteAction?.onPress?.();
     expect(onDeleteRepair).toHaveBeenCalledWith('repair-1');
   });
+
+  it('surfaces device readiness and router details', async () => {
+    const onShare = jest.fn();
+    const onMarkReviewed = jest.fn();
+    const deviceAsset: AssetListItem = {
+      ...asset,
+      id: 'asset-router',
+      name: 'Main Wi-Fi router',
+      category: 'Router',
+      ownerName: 'Household',
+      backupEnabled: true,
+      screenLockEnabled: false,
+      findMyDeviceEnabled: undefined,
+      networkName: 'OakStreet-5G',
+      internetProvider: 'FiberCo',
+      networkAdminUrl: 'http://192.168.1.1',
+      documentCount: 0,
+    };
+
+    const { getByText } = await render(
+      <AssetDetailScreen
+        asset={deviceAsset}
+        documents={[]}
+        parts={[]}
+        repairEvents={[]}
+        taskCompletions={[]}
+        onBack={jest.fn()}
+        onAddDocument={jest.fn()}
+        onAddPart={jest.fn()}
+        onAddTask={jest.fn()}
+        onDelete={jest.fn()}
+        onDocumentPress={jest.fn()}
+        onDuplicate={jest.fn()}
+        onEdit={jest.fn()}
+        onDeleteRepair={jest.fn()}
+        onEditRepair={jest.fn()}
+        onEditCompletion={jest.fn()}
+        onDeleteCompletion={jest.fn()}
+        onEditPart={jest.fn()}
+        onDeletePart={jest.fn()}
+        onRecordRepair={jest.fn()}
+        onMarkReviewed={onMarkReviewed}
+        onShare={onShare}
+        reviewStatusLabel="Reviewed 2 days ago."
+      />,
+    );
+
+    expect(getByText('Recovery readiness')).toBeTruthy();
+    expect(getByText('Enabled')).toBeTruthy();
+    expect(getByText('Off')).toBeTruthy();
+    expect(getByText('Not reviewed')).toBeTruthy();
+    expect(getByText('Router details')).toBeTruthy();
+    expect(getByText('OakStreet-5G')).toBeTruthy();
+    expect(getByText('FiberCo')).toBeTruthy();
+    expect(getByText('http://192.168.1.1')).toBeTruthy();
+    expect(getByText('Delete device')).toBeTruthy();
+    expect(getByText('Reviewed 2 days ago.')).toBeTruthy();
+
+    fireEvent.press(getByText('Review'));
+    expect(onMarkReviewed).toHaveBeenCalledTimes(1);
+
+    fireEvent.press(getByText('Share'));
+    expect(onShare).toHaveBeenCalledTimes(1);
+  });
 });

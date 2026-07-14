@@ -51,12 +51,12 @@ export default function TabLayout() {
           style={styles.sampleBanner}
           onPress={() =>
             Alert.alert(
-              'Leave sample home?',
-              'Your vault will be cleared so you can start your own. Any records you added while exploring will be deleted.',
+              'Leave sample household guide?',
+              'Your guide will be cleared so you can start your own. Any records you added while exploring will be deleted.',
               [
                 { text: 'Cancel', style: 'cancel' },
                 {
-                  text: 'Create my own vault',
+                  text: 'Create my own guide',
                   style: 'destructive',
                   onPress: () => void exitSampleMode(),
                 },
@@ -64,9 +64,9 @@ export default function TabLayout() {
             )
           }
           accessibilityRole="button"
-          accessibilityLabel="Sample data only. Create your own vault"
+          accessibilityLabel="Sample continuity guide. Create your own guide"
         >
-          <Text style={styles.sampleBannerText}>Sample data only · Create your own vault</Text>
+          <Text style={styles.sampleBannerText}>Sample guide only · Create your own guide</Text>
         </Pressable>
       )}
 
@@ -75,10 +75,13 @@ export default function TabLayout() {
         tabBar={(props) => <HomeVaultTabBar {...props} />}
       >
         <Tabs.Screen name="index" options={{ title: 'Home' }} />
-        <Tabs.Screen name="inventory" options={{ title: 'Inventory' }} />
-        <Tabs.Screen name="maintenance" options={{ title: 'Tasks' }} />
-        <Tabs.Screen name="documents" options={{ title: 'Docs' }} />
-        <Tabs.Screen name="household" options={{ title: 'Household' }} />
+        <Tabs.Screen name="access" options={{ title: 'Access' }} />
+        <Tabs.Screen name="documents" options={{ title: 'Documents' }} />
+        <Tabs.Screen name="devices" options={{ title: 'Devices' }} />
+        <Tabs.Screen name="emergency" options={{ title: 'Emergency' }} />
+        <Tabs.Screen name="inventory" options={{ href: null }} />
+        <Tabs.Screen name="maintenance" options={{ href: null }} />
+        <Tabs.Screen name="household" options={{ href: null }} />
       </Tabs>
     </View>
   );
@@ -86,19 +89,20 @@ export default function TabLayout() {
 
 function HomeVaultTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const tabKeys: Array<{ name: string; label: string; key: 'home' | 'inventory' | 'maintenance' | 'documents' | 'household' }> = [
+  const tabKeys: Array<{ name: string; label: string; key: 'home' | 'access' | 'documents' | 'devices' | 'emergency' }> = [
     { name: 'index', label: 'Home', key: 'home' },
-    { name: 'inventory', label: 'Inventory', key: 'inventory' },
-    { name: 'maintenance', label: 'Tasks', key: 'maintenance' },
-    { name: 'documents', label: 'Docs', key: 'documents' },
-    { name: 'household', label: 'Household', key: 'household' },
+    { name: 'access', label: 'Access', key: 'access' },
+    { name: 'documents', label: 'Documents', key: 'documents' },
+    { name: 'devices', label: 'Devices', key: 'devices' },
+    { name: 'emergency', label: 'Emergency', key: 'emergency' },
   ];
+  const activeRouteName = state.routes[state.index]?.name;
 
   return (
     <View style={[styles.tabBar, { paddingBottom: 10 + insets.bottom }]}>
-      {tabKeys.map((tab, index) => {
-        const isActive = state.index === index;
-        const route = state.routes[index];
+      {tabKeys.map((tab) => {
+        const route = state.routes.find((candidate) => candidate.name === tab.name);
+        const isActive = activeRouteName === tab.name;
 
         return (
           <Pressable

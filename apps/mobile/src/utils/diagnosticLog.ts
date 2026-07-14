@@ -1,6 +1,8 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
+import { sanitizeTelemetryContext } from './sensitiveData';
+
 export type DiagnosticCategory =
   | 'render_crash'
   | 'init_failure'
@@ -14,9 +16,13 @@ export type DiagnosticCategory =
   | 'camera_failure';
 
 const APP_VERSION = Constants.expoConfig?.version ?? 'unknown';
-const SCHEMA_VERSION = '1';
+const SCHEMA_VERSION = '2';
 
-export function logDiagnostic(category: DiagnosticCategory, error?: unknown): void {
+export function logDiagnostic(
+  category: DiagnosticCategory,
+  error?: unknown,
+  context?: unknown,
+): void {
   const errorName = error instanceof Error ? error.constructor.name : String(typeof error);
   // Log structured event with no user-owned content (names, addresses, notes, paths).
   // Only error class name is included — not message or stack, which could theoretically
@@ -29,6 +35,7 @@ export function logDiagnostic(category: DiagnosticCategory, error?: unknown): vo
       appVersion: APP_VERSION,
       schemaVersion: SCHEMA_VERSION,
       platform: Platform.OS,
+      context: context ? sanitizeTelemetryContext(context) : undefined,
       timestamp: new Date().toISOString(),
     }),
   );

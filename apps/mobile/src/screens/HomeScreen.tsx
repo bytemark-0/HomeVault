@@ -28,13 +28,28 @@ type HomeQuickAction = {
   tone?: 'primary' | 'secondary';
 };
 
+type HomeNextOpportunity = {
+  label: string;
+  detail: string;
+  impactLabel: string;
+  onPress: () => void;
+};
+
+type HomePayoffCard = {
+  key: string;
+  label: string;
+  value: string;
+  detail: string;
+  tone?: 'default' | 'success';
+};
+
 type HomeScreenProps = {
   propertyLabel: string;
   propertyPhotoUri?: string;
   activeTasks: number;
   assetCount: number;
   documentCount: number;
-  healthScore: number | null;
+  readinessScore: number | null;
   recentActivity: HomeActivityItem[];
   roomCount: number;
   savedCostLabel: string;
@@ -44,9 +59,11 @@ type HomeScreenProps = {
   onAssetPress: (assetId: string) => void;
   onTaskPress: (taskId: string) => void;
   onViewCostSummary: () => void;
-  onViewInventory: () => void;
+  onViewDevices: () => void;
   onViewMaintenance: () => void;
   onViewServiceHistory: () => void;
+  nextOpportunity?: HomeNextOpportunity | null;
+  payoffCards?: HomePayoffCard[];
   recentAssets: AssetListItem[];
   quickActions: HomeQuickAction[];
   statusCards: HomeStatusCard[];
@@ -58,7 +75,7 @@ export function HomeScreen({
   activeTasks,
   assetCount,
   documentCount,
-  healthScore,
+  readinessScore,
   recentActivity,
   roomCount,
   savedCostLabel,
@@ -68,9 +85,11 @@ export function HomeScreen({
   onAssetPress,
   onTaskPress,
   onViewCostSummary,
-  onViewInventory,
+  onViewDevices,
   onViewMaintenance,
   onViewServiceHistory,
+  nextOpportunity = null,
+  payoffCards = [],
   recentAssets,
   quickActions,
   statusCards,
@@ -85,10 +104,10 @@ export function HomeScreen({
 
   const subtitle =
     isEmpty
-      ? 'Start building your home record'
+      ? 'Start building the household guide'
       : activeTasks > 0
-        ? `${activeTasks} ${activeTasks === 1 ? 'task needs' : 'tasks need'} attention`
-        : 'Your home is caught up';
+        ? `${activeTasks} ${activeTasks === 1 ? 'readiness step needs' : 'readiness steps need'} attention`
+        : 'Your household guide is ready for now';
 
   return (
     <View style={styles.screen}>
@@ -112,10 +131,10 @@ export function HomeScreen({
             <Text style={styles.propertySubtitle}>{subtitle}</Text>
           </View>
           <View style={styles.scoreBadge}>
-            {healthScore !== null ? (
+            {readinessScore !== null ? (
               <>
-                <Text style={styles.scoreValue}>{healthScore}</Text>
-                <Text style={styles.scoreLabel}>Score</Text>
+                <Text style={styles.scoreValue}>{readinessScore}</Text>
+                <Text style={styles.scoreLabel}>Ready</Text>
               </>
             ) : (
               <>
@@ -144,18 +163,55 @@ export function HomeScreen({
         ))}
       </View>
 
+      {nextOpportunity ? (
+        <Pressable
+          onPress={nextOpportunity.onPress}
+          style={styles.nextOpportunityCard}
+          accessibilityRole="button"
+          accessibilityLabel={nextOpportunity.label}
+        >
+          <View style={styles.nextOpportunityBody}>
+            <Text style={styles.nextOpportunityKicker}>Next best step</Text>
+            <Text style={styles.nextOpportunityTitle}>{nextOpportunity.label}</Text>
+            <Text style={styles.nextOpportunityDetail}>{nextOpportunity.detail}</Text>
+          </View>
+          <Text style={styles.nextOpportunityImpact}>{nextOpportunity.impactLabel}</Text>
+        </Pressable>
+      ) : null}
+
+      {payoffCards.length > 0 ? (
+        <View style={styles.payoffSection}>
+          <Text style={styles.payoffHeading}>What this already protects</Text>
+          <View style={styles.payoffList}>
+            {payoffCards.map((card) => (
+              <View
+                key={card.key}
+                style={[
+                  styles.payoffCard,
+                  card.tone === 'success' ? styles.payoffCardSuccess : null,
+                ]}
+              >
+                <Text style={styles.payoffLabel}>{card.label}</Text>
+                <Text style={styles.payoffValue}>{card.value}</Text>
+                <Text style={styles.payoffDetail}>{card.detail}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      ) : null}
+
       {/* Metric grid — only shown once there's data worth summarising */}
       {!isEmpty ? (
         <View style={styles.metricGrid}>
-          <MetricCard label="Assets" value={String(assetCount)} detail={`${roomCount} rooms`} />
-          <MetricCard label="Documents" value={String(documentCount)} detail="Receipts, manuals" />
-          <MetricCard label="Open tasks" value={String(activeTasks)} detail="Local reminders" />
+          <MetricCard label="Devices" value={String(assetCount)} detail={`${roomCount} areas mapped`} />
+          <MetricCard label="Records" value={String(documentCount)} detail="Policies, manuals" />
+          <MetricCard label="Open steps" value={String(activeTasks)} detail="Local reminders" />
           <MetricCard label="Tracked costs" value={savedCostLabel} detail="Repairs, service" onPress={onViewCostSummary} accessibilityLabel="View cost summary" />
         </View>
       ) : null}
 
       <View style={styles.quickActionsSection}>
-        <Text style={styles.quickActionsHeading}>Quick actions</Text>
+        <Text style={styles.quickActionsHeading}>Build readiness</Text>
         <View style={styles.quickActionGrid}>
           {quickActions.map((action) => (
             <Pressable
@@ -194,14 +250,14 @@ export function HomeScreen({
         dueTasks.map((task) => <TaskRow key={task.id} task={task} onPress={onTaskPress} />)
       ) : (
         <View style={styles.emptyPanel}>
-          <Text style={styles.emptyTitle}>No urgent tasks</Text>
+          <Text style={styles.emptyTitle}>No urgent readiness steps</Text>
           <Text style={styles.emptyText}>Upcoming work stays in the maintenance list.</Text>
         </View>
       )}
 
       {warrantyAlerts.length > 0 && (
         <>
-          <SectionTitle title="Warranties expiring" action="View all" onActionPress={onViewInventory} />
+          <SectionTitle title="Warranties expiring" action="View all" onActionPress={onViewDevices} />
           {warrantyAlerts.map((asset) => (
             <Pressable
               key={asset.id}
@@ -244,20 +300,22 @@ export function HomeScreen({
       ) : (
         <View style={styles.emptyPanel}>
           <Text style={styles.emptyTitle}>No activity yet</Text>
-          <Text style={styles.emptyText}>Documents, repairs, and completed tasks will appear here.</Text>
+          <Text style={styles.emptyText}>
+            Saved records, repairs, and completed reminders will appear here.
+          </Text>
         </View>
       )}
 
-      <SectionTitle title="Recent records" action="Search" onActionPress={onViewInventory} />
+      <SectionTitle title="Recent records" action="Search" onActionPress={onViewDevices} />
       {recentAssets.length > 0 ? (
         recentAssets.map((asset) => (
           <AssetRow key={asset.id} asset={asset} onPress={() => onAssetPress(asset.id)} />
         ))
       ) : (
         <View style={styles.emptyPanel}>
-          <Text style={styles.emptyTitle}>No asset records yet</Text>
+          <Text style={styles.emptyTitle}>No critical equipment saved yet</Text>
           <Text style={styles.emptyText}>
-            Add an asset from Inventory to start building the household record.
+            Add a device or system from Devices to start building the household guide.
           </Text>
         </View>
       )}
@@ -339,6 +397,43 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 10,
   },
+  nextOpportunityCard: {
+    borderRadius: 10,
+    borderColor: colors.blue,
+    borderWidth: 1,
+    backgroundColor: colors.panel,
+    padding: 14,
+    gap: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  nextOpportunityBody: {
+    flex: 1,
+    gap: 4,
+  },
+  nextOpportunityKicker: {
+    color: colors.blue,
+    fontSize: 11,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
+  nextOpportunityTitle: {
+    color: colors.ink,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  nextOpportunityDetail: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+  nextOpportunityImpact: {
+    color: colors.blue,
+    fontSize: 13,
+    fontWeight: '900',
+  },
   statusCard: {
     width: '48.6%',
     minHeight: 92,
@@ -375,6 +470,49 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     lineHeight: 17,
+  },
+  payoffSection: {
+    gap: 10,
+  },
+  payoffHeading: {
+    color: colors.ink,
+    fontSize: 18,
+    fontWeight: '900',
+    marginTop: 4,
+  },
+  payoffList: {
+    gap: 10,
+  },
+  payoffCard: {
+    borderRadius: 10,
+    borderColor: colors.line,
+    borderWidth: 1,
+    backgroundColor: colors.panel,
+    padding: 14,
+    gap: 5,
+  },
+  payoffCardSuccess: {
+    backgroundColor: colors.blueSoft,
+    borderColor: '#B9D2E7',
+  },
+  payoffLabel: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.2,
+  },
+  payoffValue: {
+    color: colors.ink,
+    fontSize: 18,
+    fontWeight: '900',
+    lineHeight: 23,
+  },
+  payoffDetail: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
   },
   quickActionsSection: {
     gap: 10,

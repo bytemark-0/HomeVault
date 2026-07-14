@@ -1,6 +1,6 @@
 import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import type { PartSupply } from '@homevault/domain';
+import { isDeviceAsset, type PartSupply } from '@homevault/domain';
 import {
   getAssetStatusLabel,
   type AssetDocumentListItem,
@@ -10,6 +10,7 @@ import {
 } from '../data/homeVaultSampleData';
 import { formatDocumentAttachmentStatus } from '../data/documentAttachmentLabels';
 import { colors } from '../theme/colors';
+import { formatDeviceStatus, isRouterLikeAsset } from '../utils/deviceMetadata';
 
 type ServiceItem =
   | {
@@ -55,6 +56,9 @@ type AssetDetailScreenProps = {
   onEditPart: (partId: string) => void;
   onDeletePart: (partId: string) => Promise<void>;
   onRecordRepair: () => void;
+  onMarkReviewed?: () => void;
+  onShare?: () => void;
+  reviewStatusLabel?: string;
 };
 
 export function AssetDetailScreen({
@@ -78,7 +82,13 @@ export function AssetDetailScreen({
   onEditPart,
   onDeletePart,
   onRecordRepair,
+  onMarkReviewed,
+  onShare,
+  reviewStatusLabel,
 }: AssetDetailScreenProps) {
+  const isDevice = isDeviceAsset(asset);
+  const isRouter = isRouterLikeAsset(asset);
+  const recordLabel = isDevice ? 'device' : 'asset';
   const serviceItems: ServiceItem[] = [
     ...taskCompletions.map((c) => ({
       kind: 'maintenance' as const,
@@ -102,6 +112,38 @@ export function AssetDetailScreen({
       resolution: r.resolution,
     })),
   ].sort((a, b) => b.dateSort.localeCompare(a.dateSort));
+  const detailItems = [
+    { label: 'Room', value: asset.roomName },
+    ...(isDevice && asset.ownerName ? [{ label: 'Owner', value: asset.ownerName }] : []),
+    ...(isDevice && asset.backupHelperName
+      ? [{ label: 'Backup helper', value: asset.backupHelperName }]
+      : []),
+    { label: 'Brand', value: asset.brand ?? 'Not recorded' },
+    { label: 'Serial', value: asset.serial ?? 'Not recorded' },
+    ...(asset.installDate
+      ? [{ label: 'Installed', value: formatDateWithAge(asset.installDate) }]
+      : []),
+    ...(asset.purchaseDate
+      ? [{ label: 'Purchased', value: formatDateLabel(asset.purchaseDate) }]
+      : []),
+    ...(asset.costCents != null
+      ? [{ label: 'Purchase cost', value: formatCents(asset.costCents) }]
+      : []),
+    ...(asset.warrantyExpiryLabel
+      ? [{
+          label: 'Warranty expiry',
+          value: asset.warrantyExpiringSoon
+            ? `${asset.warrantyExpiryLabel} · Expiring soon`
+            : asset.warrantyExpiryLabel,
+        }]
+      : []),
+    ...(onMarkReviewed
+      ? [{
+          label: 'Last reviewed',
+          value: asset.lastReviewedAt ? formatDateLabel(asset.lastReviewedAt) : 'Not recorded',
+        }]
+      : []),
+  ];
 
   return (
     <ScrollView
@@ -120,6 +162,16 @@ export function AssetDetailScreen({
           <Pressable onPress={onRecordRepair} style={styles.secondaryButton} accessibilityRole="button" accessibilityLabel="Record repair">
             <Text style={styles.secondaryButtonText}>Repair</Text>
           </Pressable>
+          {onMarkReviewed ? (
+            <Pressable onPress={onMarkReviewed} style={styles.secondaryButton} accessibilityRole="button">
+              <Text style={styles.secondaryButtonText}>Review</Text>
+            </Pressable>
+          ) : null}
+          {onShare ? (
+            <Pressable onPress={onShare} style={styles.secondaryButton} accessibilityRole="button">
+              <Text style={styles.secondaryButtonText}>Share</Text>
+            </Pressable>
+          ) : null}
           <Pressable onPress={onEdit} style={styles.primaryButton} accessibilityRole="button">
             <Text style={styles.primaryButtonText}>Edit</Text>
           </Pressable>
@@ -144,30 +196,40 @@ export function AssetDetailScreen({
       ) : null}
 
       <View style={styles.detailGrid}>
-        <DetailItem label="Room" value={asset.roomName} />
-        <DetailItem label="Brand" value={asset.brand ?? 'Not recorded'} />
+        {detailItems.map((item) => (
+          <DetailItem key={`${item.label}-${item.value}`} label={item.label} value={item.value} />
+        ))}
         <ModelDetailItem label="Model" model={asset.model} brand={asset.brand} />
-        <DetailItem label="Serial" value={asset.serial ?? 'Not recorded'} />
-        {asset.installDate ? (
-          <DetailItem label="Installed" value={formatDateWithAge(asset.installDate)} />
-        ) : null}
-        {asset.purchaseDate ? (
-          <DetailItem label="Purchased" value={formatDateLabel(asset.purchaseDate)} />
-        ) : null}
-        {asset.costCents != null ? (
-          <DetailItem label="Purchase cost" value={formatCents(asset.costCents)} />
-        ) : null}
-        {asset.warrantyExpiryLabel ? (
-          <DetailItem
-            label="Warranty expiry"
-            value={asset.warrantyExpiringSoon ? `${asset.warrantyExpiryLabel} · Expiring soon` : asset.warrantyExpiryLabel}
-          />
-        ) : null}
       </View>
+
+      {isDevice ? (
+        <View style={styles.panel}>
+          <Text style={styles.sectionTitle}>Recovery readiness</Text>
+          {reviewStatusLabel ? <Text style={styles.notes}>{reviewStatusLabel}</Text> : null}
+          <DetailLine label="Backup" value={formatDeviceStatus(asset.backupEnabled, 'Enabled', 'Off')} />
+          <DetailLine
+            label="Screen lock"
+            value={formatDeviceStatus(asset.screenLockEnabled, 'Enabled', 'Off')}
+          />
+          <DetailLine
+            label="Find my device"
+            value={formatDeviceStatus(asset.findMyDeviceEnabled, 'Enabled', 'Off')}
+          />
+        </View>
+      ) : null}
+
+      {isRouter ? (
+        <View style={styles.panel}>
+          <Text style={styles.sectionTitle}>Router details</Text>
+          <DetailLine label="Network name" value={asset.networkName ?? 'Not recorded'} />
+          <DetailLine label="Internet provider" value={asset.internetProvider ?? 'Not recorded'} />
+          <DetailLine label="Admin address" value={asset.networkAdminUrl ?? 'Not recorded'} />
+        </View>
+      ) : null}
 
       <View style={styles.panel}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Maintenance context</Text>
+          <Text style={styles.sectionTitle}>{isDevice ? 'Recovery context' : 'Maintenance context'}</Text>
           <Pressable
             onPress={onAddTask}
             style={styles.linkButton}
@@ -406,15 +468,15 @@ export function AssetDetailScreen({
 
       <View style={styles.dangerPanel}>
         <Pressable
-          onPress={() => confirmDeleteAsset(asset.name, onDelete)}
+          onPress={() => confirmDeleteAsset(asset.name, recordLabel, onDelete)}
           style={styles.deleteButton}
           accessibilityRole="button"
-          accessibilityLabel="Delete asset"
+          accessibilityLabel={`Delete ${recordLabel}`}
         >
-          <Text style={styles.deleteButtonText}>Delete asset</Text>
+          <Text style={styles.deleteButtonText}>{`Delete ${recordLabel}`}</Text>
         </Pressable>
         <Text style={styles.deleteHint}>
-          Deletes this asset along with its tasks and repair history. Documents stay in your library.
+          {`Deletes this ${recordLabel} along with its tasks and repair history. Documents stay in your library.`}
         </Text>
       </View>
     </ScrollView>
@@ -488,10 +550,10 @@ function EmptyAssetSection({
   );
 }
 
-function confirmDeleteAsset(name: string, onConfirm: () => void) {
+function confirmDeleteAsset(name: string, recordLabel: 'device' | 'asset', onConfirm: () => void) {
   Alert.alert(
-    'Delete asset?',
-    `"${name}" and its tasks and repair history will be permanently removed. Documents linked to this asset will remain in your library.`,
+    `Delete ${recordLabel}?`,
+    `"${name}" and its tasks and repair history will be permanently removed. Documents linked to this ${recordLabel} will remain in your library.`,
     [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: onConfirm },

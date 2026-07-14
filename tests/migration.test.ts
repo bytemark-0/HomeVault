@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { migrate, CURRENT_SCHEMA_VERSION, type MigrationDatabase } from '../apps/mobile/src/data/sqliteMigrations';
@@ -45,7 +46,7 @@ function makeSqlJsAdapter(db: SqlJsDatabase): MigrationDatabase {
 async function main() {
   const SQL = await initSqlJs();
 
-  await test('migrates a fresh (v0) database to v1', async () => {
+  await test('migrates a fresh (v0) database to v6', async () => {
     const raw = new SQL.Database();
     const db = makeSqlJsAdapter(raw);
 
@@ -74,6 +75,10 @@ async function main() {
     assert.ok(tableNames.includes('task_completions'), 'task_completions table exists');
     assert.ok(tableNames.includes('repair_events'), 'repair_events table exists');
     assert.ok(tableNames.includes('parts'), 'parts table exists');
+    assert.ok(tableNames.includes('access_items'), 'access_items table exists');
+    assert.ok(tableNames.includes('emergency_contacts'), 'emergency_contacts table exists');
+    assert.ok(tableNames.includes('important_accounts'), 'important_accounts table exists');
+    assert.ok(tableNames.includes('continuity_playbooks'), 'continuity_playbooks table exists');
   });
 
   await test('pre-migration data survives the migration', async () => {
@@ -113,7 +118,7 @@ async function main() {
 
     // Schema version bumped
     const version = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
-    assert.equal(version?.user_version, 1);
+    assert.equal(version?.user_version, 6);
 
     // Pre-migration records preserved
     const prop = await db.getFirstAsync<{ label: string }>('SELECT label FROM properties');
@@ -133,9 +138,57 @@ async function main() {
     assert.ok(assetColNames.includes('install_date'), 'install_date added to assets');
     assert.ok(assetColNames.includes('cost_cents'), 'cost_cents added to assets');
     assert.ok(assetColNames.includes('warranty_expiry'), 'warranty_expiry added to assets');
+    assert.ok(assetColNames.includes('owner_name'), 'owner_name added to assets');
+    assert.ok(assetColNames.includes('backup_enabled'), 'backup_enabled added to assets');
+    assert.ok(assetColNames.includes('screen_lock_enabled'), 'screen_lock_enabled added to assets');
+    assert.ok(assetColNames.includes('find_my_device_enabled'), 'find_my_device_enabled added to assets');
+    assert.ok(assetColNames.includes('network_name'), 'network_name added to assets');
+    assert.ok(assetColNames.includes('internet_provider'), 'internet_provider added to assets');
+    assert.ok(assetColNames.includes('network_admin_url'), 'network_admin_url added to assets');
+    assert.ok(assetColNames.includes('last_reviewed_at'), 'last_reviewed_at added to assets');
+
+    const accessCols = await db.getAllAsync<{ name: string }>('PRAGMA table_info(access_items)');
+    const accessColNames = accessCols.map((c) => c.name);
+    assert.ok(
+      accessColNames.includes('last_reviewed_at'),
+      'last_reviewed_at added to access_items',
+    );
+
+    const contactCols = await db.getAllAsync<{ name: string }>(
+      'PRAGMA table_info(emergency_contacts)',
+    );
+    const contactColNames = contactCols.map((c) => c.name);
+    assert.ok(
+      contactColNames.includes('last_reviewed_at'),
+      'last_reviewed_at added to emergency_contacts',
+    );
+
+    const accountCols = await db.getAllAsync<{ name: string }>('PRAGMA table_info(important_accounts)');
+    const accountColNames = accountCols.map((c) => c.name);
+    assert.ok(accountColNames.includes('mfa_enabled'), 'mfa_enabled added to important_accounts');
+    assert.ok(
+      accountColNames.includes('recovery_codes_stored'),
+      'recovery_codes_stored added to important_accounts',
+    );
+    assert.ok(
+      accountColNames.includes('managed_in_password_manager'),
+      'managed_in_password_manager added to important_accounts',
+    );
+    assert.ok(
+      accountColNames.includes('last_reviewed_at'),
+      'last_reviewed_at added to important_accounts',
+    );
+    assert.ok(
+      accountColNames.includes('manager_role'),
+      'manager_role added to important_accounts',
+    );
+    assert.ok(
+      accountColNames.includes('is_shared_household_account'),
+      'is_shared_household_account added to important_accounts',
+    );
   });
 
-  await test('migration is idempotent — running twice stays at v1', async () => {
+  await test('migration is idempotent — running twice stays at v6', async () => {
     const raw = new SQL.Database();
     const db = makeSqlJsAdapter(raw);
 
@@ -143,7 +196,7 @@ async function main() {
     await migrate(db); // second run should no-op
 
     const version = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
-    assert.equal(version?.user_version, 1);
+    assert.equal(version?.user_version, 6);
 
     // Data written between the two migrate calls is preserved
     raw.run(
@@ -163,6 +216,75 @@ async function main() {
       (err: Error) =>
         err.message.includes('version 99') && err.message.includes(`${CURRENT_SCHEMA_VERSION}`),
     );
+  });
+
+  await test('migrates v4 review metadata and backfills access reviews from last verified dates', async () => {
+    const raw = new SQL.Database();
+    raw.run(`
+      CREATE TABLE properties (
+        id TEXT PRIMARY KEY NOT NULL,
+        household_id TEXT NOT NULL,
+        label TEXT NOT NULL,
+        type TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE assets (
+        id TEXT PRIMARY KEY NOT NULL,
+        property_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE access_items (
+        id TEXT PRIMARY KEY NOT NULL,
+        property_id TEXT NOT NULL,
+        category TEXT NOT NULL,
+        label TEXT NOT NULL,
+        linked_document_ids_json TEXT NOT NULL,
+        last_verified_at TEXT,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE emergency_contacts (
+        id TEXT PRIMARY KEY NOT NULL,
+        property_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        role TEXT NOT NULL,
+        priority TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE important_accounts (
+        id TEXT PRIMARY KEY NOT NULL,
+        property_id TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        provider_name TEXT NOT NULL,
+        label TEXT NOT NULL,
+        linked_document_ids_json TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+      PRAGMA user_version = 4;
+    `);
+    raw.run(
+      "INSERT INTO properties (id, household_id, label, type) VALUES ('prop-1', 'hh-1', 'Oak Street', 'single_family')",
+    );
+    raw.run(
+      "INSERT INTO access_items (id, property_id, category, label, linked_document_ids_json, last_verified_at) VALUES ('access-1', 'prop-1', 'wifi', 'Main Wi-Fi', '[]', '2026-06-01')",
+    );
+
+    const db = makeSqlJsAdapter(raw);
+    await migrate(db);
+
+    const version = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
+    assert.equal(version?.user_version, 6);
+    const access = await db.getFirstAsync<{ last_reviewed_at: string }>(
+      "SELECT last_reviewed_at FROM access_items WHERE id = 'access-1'",
+    );
+    assert.equal(access?.last_reviewed_at, '2026-06-01');
   });
 
   await test('mid-migration failure rolls back — user_version stays at 0', async () => {
@@ -197,6 +319,42 @@ async function main() {
       0,
       'No tables should exist after a rolled-back migration',
     );
+  });
+
+  await test('migrates the latest retained v1 schema to v6 without losing data', async () => {
+    const raw = new SQL.Database();
+    raw.run(readFileSync(resolve(process.cwd(), 'tests/fixtures/schema-v1.sql'), 'utf8'));
+    raw.run(
+      "INSERT INTO properties (id, household_id, label, type, created_at, updated_at) VALUES ('prop-v1', 'hh-v1', 'Legacy Home', 'single_family', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+    );
+    raw.run(
+      "INSERT INTO assets (id, property_id, name, category, status, created_at, updated_at) VALUES ('asset-v1', 'prop-v1', 'Legacy Router', 'Network', 'ready', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+    );
+
+    const db = makeSqlJsAdapter(raw);
+    await migrate(db);
+
+    const version = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
+    assert.equal(version?.user_version, 6);
+
+    const property = await db.getFirstAsync<{ label: string }>(
+      "SELECT label FROM properties WHERE id = 'prop-v1'",
+    );
+    const asset = await db.getFirstAsync<{ name: string }>(
+      "SELECT name FROM assets WHERE id = 'asset-v1'",
+    );
+    const continuityTables = await db.getAllAsync<{ name: string }>(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('access_items', 'emergency_contacts', 'important_accounts', 'continuity_playbooks') ORDER BY name",
+    );
+
+    assert.equal(property?.label, 'Legacy Home');
+    assert.equal(asset?.name, 'Legacy Router');
+    assert.deepEqual(continuityTables.map((table) => table.name), [
+      'access_items',
+      'continuity_playbooks',
+      'emergency_contacts',
+      'important_accounts',
+    ]);
   });
 }
 

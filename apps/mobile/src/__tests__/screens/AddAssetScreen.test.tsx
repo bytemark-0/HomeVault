@@ -97,6 +97,8 @@ describe('AddAssetScreen', () => {
         roomId: 'room-garage',
         name: 'Utility sink',
         category: 'Appliance',
+        ownerName: undefined,
+        backupHelperName: undefined,
         brand: 'Elkay',
         model: undefined,
         serial: undefined,
@@ -105,6 +107,12 @@ describe('AddAssetScreen', () => {
         costCents: 19995,
         status: 'ready',
         warrantyExpiry: undefined,
+        backupEnabled: undefined,
+        screenLockEnabled: undefined,
+        findMyDeviceEnabled: undefined,
+        networkName: undefined,
+        internetProvider: undefined,
+        networkAdminUrl: undefined,
         photoUri: 'file:///selected-asset-photo.jpg',
         notes: undefined,
       }),
@@ -136,6 +144,8 @@ describe('AddAssetScreen', () => {
         roomId: 'room-garage',
         name: 'Dishwasher upstairs',
         category: 'Appliance',
+        ownerName: undefined,
+        backupHelperName: undefined,
         brand: 'Bosch Premium',
         model: 'SHX',
         serial: 'SER-1',
@@ -144,8 +154,67 @@ describe('AddAssetScreen', () => {
         costCents: 99900,
         status: 'warranty_soon',
         warrantyExpiry: '2026-08-01',
+        backupEnabled: undefined,
+        screenLockEnabled: undefined,
+        findMyDeviceEnabled: undefined,
+        networkName: undefined,
+        internetProvider: undefined,
+        networkAdminUrl: undefined,
         photoUri: 'file:///dishwasher.jpg',
         notes: 'Existing note',
+      }),
+    );
+  });
+
+  it('saves a device with recovery metadata and router details', async () => {
+    const onSave = jest.fn().mockResolvedValue(undefined);
+    const { getAllByText, getByLabelText, getByText } = await render(
+      <AddAssetScreen
+        propertyId="property-1"
+        rooms={rooms}
+        mode="device"
+        deviceTemplate="router"
+        onCancel={jest.fn()}
+        onSave={onSave}
+      />,
+    );
+
+    await fireEvent.changeText(getByLabelText('Name'), ' Main Wi-Fi router ');
+    await fireEvent.changeText(getByLabelText('Owner (optional)'), ' Household ');
+    await fireEvent.changeText(getByLabelText('Backup helper (optional)'), ' Taylor ');
+    await fireEvent.press(getAllByText('Yes')[0]!);
+    await fireEvent.press(getAllByText('No')[1]!);
+    await fireEvent.press(getAllByText('Not sure')[2]!);
+    await fireEvent.changeText(getByLabelText('Network name (optional)'), 'OakStreet-5G');
+    await fireEvent.changeText(getByLabelText('Internet provider (optional)'), 'FiberCo');
+    await fireEvent.changeText(getByLabelText('Admin address (optional)'), 'http://192.168.1.1');
+    await fireEvent.press(getByText('Save device'));
+
+    await waitFor(() =>
+      expect(onSave).toHaveBeenCalledWith({
+        id: undefined,
+        propertyId: 'property-1',
+        roomId: 'room-kitchen',
+        name: 'Main Wi-Fi router',
+        category: 'Router',
+        ownerName: 'Household',
+        backupHelperName: 'Taylor',
+        brand: undefined,
+        model: undefined,
+        serial: undefined,
+        installDate: undefined,
+        purchaseDate: undefined,
+        costCents: undefined,
+        status: 'ready',
+        warrantyExpiry: undefined,
+        backupEnabled: true,
+        screenLockEnabled: false,
+        findMyDeviceEnabled: undefined,
+        networkName: 'OakStreet-5G',
+        internetProvider: 'FiberCo',
+        networkAdminUrl: 'http://192.168.1.1',
+        photoUri: undefined,
+        notes: undefined,
       }),
     );
   });

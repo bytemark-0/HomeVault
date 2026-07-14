@@ -15,6 +15,7 @@ import type { CreateAssetInput } from '@homevault/database';
 import { getHomeVaultRepository } from '../../data/localHomeVaultRepository';
 import { PhotoPickerField } from '../../components/PhotoPickerField';
 import { deleteAppOwnedPhoto } from '../../utils/photoStorage';
+import { maybeAddRecommendedMaintenanceTasks } from '../../utils/recommendedMaintenance';
 import { colors } from '../../theme/colors';
 
 const CATEGORIES = [
@@ -70,6 +71,7 @@ export function FirstAssetScreen({
   const [saveError, setSaveError] = useState<string | undefined>();
   const [isSaving, setIsSaving] = useState(false);
   const [createdAsset, setCreatedAsset] = useState<Asset | null>(null);
+  const [recommendedTaskCount, setRecommendedTaskCount] = useState(0);
   const [photoUri, setPhotoUri] = useState('');
 
   useEffect(() => {
@@ -143,7 +145,18 @@ export function FirstAssetScreen({
         status: 'ready',
       };
       const asset = await repo.createAsset(input);
+      let reminderCount = 0;
+
+      try {
+        reminderCount = await maybeAddRecommendedMaintenanceTasks(repo, asset);
+      } catch {
+        setSaveError(
+          'Your item is saved, but we could not add the recommended reminders this time.',
+        );
+      }
+
       setCreatedAsset(asset);
+      setRecommendedTaskCount(reminderCount);
       setStep('photo');
     } catch {
       setSaveError(
@@ -217,8 +230,12 @@ export function FirstAssetScreen({
           <View style={styles.successCard}>
             <Text style={styles.successTitle}>{createdAsset.name}</Text>
             <Text style={styles.successBody}>
-              Saved as {createdAsset.category}. You can still edit brand, model, notes, and other
-              details after onboarding.
+              Saved as {createdAsset.category}.{' '}
+              {recommendedTaskCount > 0
+                ? `Added ${recommendedTaskCount} recommended reminder${
+                    recommendedTaskCount === 1 ? '' : 's'
+                  } for it.`
+                : 'You can still edit brand, model, notes, and other details after onboarding.'}
             </Text>
           </View>
 

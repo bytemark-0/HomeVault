@@ -28,6 +28,10 @@ describe('backupImport', () => {
           rooms: 1,
           assets: 1,
           documents: 1,
+          accessItems: 1,
+          emergencyContacts: 1,
+          importantAccounts: 1,
+          continuityPlaybooks: 1,
           tasks: 0,
           taskCompletions: 0,
           repairEvents: 0,
@@ -97,6 +101,58 @@ describe('backupImport', () => {
             },
           },
         ],
+        accessItems: [
+          {
+            id: 'access-1',
+            propertyId: 'property-1',
+            category: 'utility_shutoff',
+            label: 'Main water shutoff',
+            location: 'Basement utility wall',
+            instructions: 'Turn clockwise until water stops.',
+            linkedAssetId: 'asset-1',
+            linkedDocumentIds: ['document-1'],
+          },
+        ],
+        emergencyContacts: [
+          {
+            id: 'contact-1',
+            propertyId: 'property-1',
+            name: 'Jamie Lee',
+            role: 'Neighbor',
+            priority: 'primary',
+            phone: '555-0101',
+          },
+        ],
+        importantAccounts: [
+          {
+            id: 'account-1',
+            propertyId: 'property-1',
+            kind: 'insurance',
+            providerName: 'Prairie Mutual',
+            label: 'Home policy',
+            accountNumber: 'POL-1234',
+            recoveryNotes: 'Claim packet lives in the fire safe.',
+            linkedDocumentIds: ['document-1'],
+          },
+        ],
+        continuityPlaybooks: [
+          {
+            id: 'playbook-1',
+            propertyId: 'property-1',
+            category: 'emergency',
+            title: 'Water leak response',
+            state: 'ready',
+            steps: [
+              {
+                id: 'playbook-step-1',
+                label: 'Shut off the main water valve',
+                isRequired: true,
+                isComplete: false,
+              },
+            ],
+            linkedRecordIds: ['document-1'],
+          },
+        ],
         tasks: [],
         taskCompletions: [],
         repairEvents: [],
@@ -160,5 +216,15 @@ describe('backupImport', () => {
     );
     expect(snapshot.assets[0]?.photoUri).toContain('homevault-assets/asset-1-water-heater');
     expect(snapshot.rooms[0]?.photoUri).toContain('homevault-assets/room-1-basement');
+    expect(snapshot.accessItems[0]?.linkedAssetId).toBe('asset-1');
+    expect(snapshot.accessItems[0]?.linkedDocumentIds).toEqual(['document-1']);
+    expect(snapshot.emergencyContacts[0]?.name).toBe('Jamie Lee');
+    expect(snapshot.importantAccounts[0]?.recoveryNotes).toBe(
+      'Claim packet lives in the fire safe.',
+    );
+    expect(snapshot.continuityPlaybooks[0]?.steps[0]?.label).toBe(
+      'Shut off the main water valve',
+    );
+    expect(snapshot.continuityPlaybooks[0]?.linkedRecordIds).toEqual(['document-1']);
   });
 });

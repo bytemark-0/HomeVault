@@ -1,6 +1,10 @@
 # HomeVault
 
-A local-first Expo/React Native app for household inventory, documents, and maintenance tracking.
+A local-first Expo/React Native app for household continuity: the shared operating manual for your
+home.
+
+HomeVault helps a household keep the access details, key documents, devices, maintenance history,
+and recovery steps someone trusted would need if the primary homeowner were away or unavailable.
 
 ## Requirements
 

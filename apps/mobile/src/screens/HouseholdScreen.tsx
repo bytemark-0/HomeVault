@@ -5,6 +5,12 @@ import type { Property, RoomArea } from '@homevault/domain';
 import { SectionTitle } from '../components/SectionTitle';
 import type { RoomListItem } from '../data/homeVaultSampleData';
 import { colors } from '../theme/colors';
+import {
+  formatSeasonalTrackMode,
+  formatSeasonalTrackTiming,
+  type SeasonalReadinessTrack,
+  type SeasonalReadinessTrackKey,
+} from '../utils/seasonalReadiness';
 
 type HouseholdScreenProps = {
   activeTaskCount: number;
@@ -15,12 +21,17 @@ type HouseholdScreenProps = {
   isDemo: boolean;
   linkedDocumentCount: number;
   property: Property;
+  readinessDoneCount: number;
+  readinessNextLabel?: string;
+  readinessTotal: number;
   restoreSummary?: RestoreSummary;
   rooms: RoomListItem[];
+  seasonalTracks?: SeasonalReadinessTrack[];
   onAddRoom: () => void;
   onDismissRestoreNotice: () => void;
   onEditProperty: () => void;
   onExportManifest: () => void;
+  onOpenSeasonalTrack?: (key: SeasonalReadinessTrackKey) => void;
   onShowGettingStarted?: () => void;
   onPrintSummary: () => void;
   onResetDemoData: () => void;
@@ -67,12 +78,17 @@ export function HouseholdScreen({
   isDemo,
   linkedDocumentCount,
   property,
+  readinessDoneCount,
+  readinessNextLabel,
+  readinessTotal,
   restoreSummary,
   rooms,
+  seasonalTracks = [],
   onAddRoom,
   onDismissRestoreNotice,
   onEditProperty,
   onExportManifest,
+  onOpenSeasonalTrack,
   onShowGettingStarted,
   onPrintSummary,
   onResetDemoData,
@@ -103,10 +119,11 @@ export function HouseholdScreen({
       {isDemo ? (
         <View style={styles.demoPanel}>
           <View style={styles.demoBody}>
-            <Text style={styles.demoTitle}>Demo workspace</Text>
+            <Text style={styles.demoTitle}>Sample household guide</Text>
             <Text style={styles.demoText}>
-              These seeded records stay local to this preview. Rename the home and replace sample areas,
-              assets, documents, and tasks with your own household records.
+              These sample records stay local to this preview. Replace the demo access details,
+              devices, documents, and reminders with the real information someone you trust would
+              need to run this home.
             </Text>
           </View>
           <View style={styles.demoActions}>
@@ -222,9 +239,10 @@ export function HouseholdScreen({
         </View>
       ) : (
         <View style={styles.emptyPanel}>
-          <Text style={styles.emptyTitle}>Map the first area</Text>
+          <Text style={styles.emptyTitle}>Map the first part of the home</Text>
           <Text style={styles.emptyText}>
-            Add rooms, exterior spaces, or storage areas so assets and tasks can be grouped.
+            Add rooms, exterior spaces, or utility areas so the household guide can explain where
+            things are and what belongs there.
           </Text>
           <Pressable onPress={onAddRoom} style={styles.emptyAction} accessibilityRole="button">
             <Text style={styles.emptyActionText}>Add area</Text>
@@ -232,8 +250,87 @@ export function HouseholdScreen({
         </View>
       )}
 
+      {seasonalTracks.length > 0 ? (
+        <>
+          <SectionTitle title="Seasonal readiness" action="By season" />
+          <View style={styles.seasonalList}>
+            {seasonalTracks.map((track) => {
+              const requiredReadyCount = track.checklist.filter(
+                (item) => item.priority === 'required' && item.status === 'ready',
+              ).length;
+              const requiredTotal = track.checklist.filter((item) => item.priority === 'required').length;
+              const recommendedMissingCount = track.checklist.filter(
+                (item) => item.priority === 'recommended' && item.status === 'missing',
+              ).length;
+
+              return (
+                <Pressable
+                  key={track.key}
+                  onPress={() => onOpenSeasonalTrack?.(track.key)}
+                  style={styles.seasonalCard}
+                  accessibilityRole="button"
+                >
+                  <View style={styles.seasonalCardHeader}>
+                    <View style={styles.seasonalCardTitleWrap}>
+                      <Text style={styles.seasonalCardTitle}>{track.label}</Text>
+                      <Text style={styles.roomMeta}>{track.seasonLabel}</Text>
+                    </View>
+                    <View style={styles.seasonalBadgeColumn}>
+                      <Text
+                        style={[
+                          styles.seasonalBadge,
+                          track.mode === 'incident_active'
+                            ? styles.seasonalBadgeMissing
+                            : styles.seasonalBadgeOff,
+                        ]}
+                      >
+                        {formatSeasonalTrackMode(track.mode)}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.seasonalBadge,
+                          track.timing === 'active_now'
+                            ? styles.seasonalBadgeActive
+                            : track.timing === 'coming_soon'
+                              ? styles.seasonalBadgeSoon
+                              : styles.seasonalBadgeOff,
+                        ]}
+                      >
+                        {formatSeasonalTrackTiming(track.timing)}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={styles.seasonalSummary}>{track.summary}</Text>
+                  <Text style={styles.seasonalMeta}>
+                    {track.readinessLabel} ·{' '}
+                    {requiredReadyCount}/{requiredTotal} key checks ready
+                    {recommendedMissingCount > 0
+                      ? ` · ${recommendedMissingCount} optional follow-up${recommendedMissingCount === 1 ? '' : 's'}`
+                      : ''}
+                  </Text>
+                  <Text style={styles.seasonalActionText}>{track.actionLabel}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </>
+      ) : null}
+
       <SectionTitle title="Readiness" action="Backup" />
       <View style={styles.readinessList}>
+        <View style={styles.readinessRow}>
+          <View>
+            <Text style={styles.readinessLabel}>Household essentials</Text>
+            <Text style={styles.roomMeta}>
+              {readinessNextLabel
+                ? `Next up: ${readinessNextLabel}`
+                : 'Wi-Fi, access, insurance, contacts, and a key device are covered'}
+            </Text>
+          </View>
+          <Text style={styles.readinessValue}>
+            {readinessDoneCount}/{readinessTotal}
+          </Text>
+        </View>
         <View style={styles.readinessRow}>
           <View>
             <Text style={styles.readinessLabel}>Offline records</Text>
@@ -341,7 +438,7 @@ export function HouseholdScreen({
         <View style={styles.readinessRow}>
           <View>
             <Text style={styles.readinessLabel}>Demo data</Text>
-            <Text style={styles.roomMeta}>Restore seeded home records</Text>
+            <Text style={styles.roomMeta}>Restore the sample household guide</Text>
           </View>
           <Pressable
             onPress={() => confirmResetDemoData(onResetDemoData)}
@@ -691,6 +788,88 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '900',
+  },
+  seasonalList: {
+    gap: 10,
+  },
+  seasonalCard: {
+    borderRadius: 8,
+    borderColor: colors.line,
+    borderWidth: 1,
+    backgroundColor: colors.panel,
+    padding: 14,
+    gap: 8,
+  },
+  seasonalCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  seasonalCardTitleWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  seasonalCardTitle: {
+    color: colors.ink,
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  seasonalBadgeColumn: {
+    alignItems: 'flex-end',
+    gap: 6,
+  },
+  seasonalBadge: {
+    borderRadius: 999,
+    borderWidth: 1,
+    overflow: 'hidden',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    fontSize: 11,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
+  seasonalBadgeActive: {
+    backgroundColor: colors.redSoft,
+    borderColor: colors.red,
+    color: colors.red,
+  },
+  seasonalBadgeSoon: {
+    backgroundColor: colors.blueSoft,
+    borderColor: colors.blue,
+    color: colors.blue,
+  },
+  seasonalBadgeOff: {
+    backgroundColor: colors.panel,
+    borderColor: colors.line,
+    color: colors.muted,
+  },
+  seasonalBadgeReady: {
+    backgroundColor: colors.greenSoft,
+    borderColor: colors.green,
+    color: colors.green,
+  },
+  seasonalBadgeMissing: {
+    backgroundColor: colors.redSoft,
+    borderColor: colors.red,
+    color: colors.red,
+  },
+  seasonalSummary: {
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+  seasonalMeta: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 17,
+  },
+  seasonalActionText: {
+    color: colors.blue,
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
   },
 });
 

@@ -180,12 +180,13 @@ export function MaintenanceScreen({
       ) : null}
       {tasks.length === 0 ? (
         <View style={styles.emptyPanel}>
-          <Text style={styles.emptyTitle}>Create the first maintenance task</Text>
+          <Text style={styles.emptyTitle}>Save the first readiness reminder</Text>
           <Text style={styles.emptyText}>
-            Track filter changes, seasonal checks, warranty deadlines, and recurring service.
+            Track filter changes, seasonal checks, shutoff checks, warranty deadlines, and other
+            work a household should not have to remember alone.
           </Text>
           <Pressable onPress={onAddTask} style={styles.emptyAction} accessibilityRole="button">
-            <Text style={styles.emptyActionText}>New task</Text>
+            <Text style={styles.emptyActionText}>Add reminder</Text>
           </Pressable>
         </View>
       ) : filteredTasks.length > 0 ? (
@@ -194,7 +195,7 @@ export function MaintenanceScreen({
         ))
       ) : (
         <View style={styles.emptyPanel}>
-          <Text style={styles.emptyTitle}>No tasks found</Text>
+          <Text style={styles.emptyTitle}>No reminders found</Text>
           <Text style={styles.emptyText}>Try another search, state filter, or scope.</Text>
         </View>
       )}

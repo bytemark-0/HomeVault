@@ -23,6 +23,7 @@ type AddDocumentScreenProps = {
   rooms?: RoomArea[];
   document?: DocumentRecord;
   initialLinkedRecordId?: string;
+  initialType?: DocumentRecord['type'];
   onCancel: () => void;
   onSave: (input: CreateDocumentInput | UpdateDocumentInput) => Promise<void>;
 };
@@ -42,6 +43,10 @@ type FormState = {
 type PickerStep = 'education' | 'picking' | null;
 
 const documentTypes: Array<{ label: string; value: DocumentRecord['type'] }> = [
+  { label: 'Insurance', value: 'insurance' },
+  { label: 'Policy', value: 'policy' },
+  { label: 'Emergency', value: 'emergency' },
+  { label: 'Home file', value: 'home_file' },
   { label: 'Receipt', value: 'receipt' },
   { label: 'Manual', value: 'manual' },
   { label: 'Warranty', value: 'warranty' },
@@ -55,12 +60,13 @@ export function AddDocumentScreen({
   rooms = [],
   document,
   initialLinkedRecordId,
+  initialType,
   onCancel,
   onSave,
 }: AddDocumentScreenProps) {
   const [form, setForm] = useState<FormState>({
     title: document?.title ?? '',
-    type: document?.type ?? 'receipt',
+    type: document?.type ?? initialType ?? 'receipt',
     linkedRecordIds: getInitialLinkedRecordIds(
       document?.linkedRecordIds,
       initialLinkedRecordId,
@@ -185,7 +191,7 @@ export function AddDocumentScreen({
         <Field
           label="Title"
           value={form.title}
-          placeholder="Receipt, manual, inspection report"
+          placeholder="Policy, warranty, emergency plan, or manual"
           error={errors.title}
           onChangeText={(title) => setForm((current) => ({ ...current, title }))}
         />

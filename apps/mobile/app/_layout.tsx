@@ -158,8 +158,11 @@ function AppContent() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="search" options={{ presentation: 'fullScreenModal' }} />
       <Stack.Screen name="quick-add" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="readiness-setup" />
       <Stack.Screen name="support" />
       <Stack.Screen name="export" />
+      <Stack.Screen name="annual-review" />
+      <Stack.Screen name="drill/[id]" />
       <Stack.Screen name="service-history" />
       <Stack.Screen name="cost-summary" />
       <Stack.Screen name="property/edit" />
@@ -169,6 +172,13 @@ function AppContent() {
       <Stack.Screen name="room/[id]/add-asset" />
       <Stack.Screen name="room/[id]/add-document" />
       <Stack.Screen name="room/[id]/add-task" />
+      <Stack.Screen name="access/new" />
+      <Stack.Screen name="access/[id]" />
+      <Stack.Screen name="access/[id]/edit" />
+      <Stack.Screen name="contact/index" />
+      <Stack.Screen name="contact/new" />
+      <Stack.Screen name="contact/[id]" />
+      <Stack.Screen name="contact/[id]/edit" />
       <Stack.Screen name="asset/new" />
       <Stack.Screen name="asset/[id]" />
       <Stack.Screen name="asset/[id]/edit" />

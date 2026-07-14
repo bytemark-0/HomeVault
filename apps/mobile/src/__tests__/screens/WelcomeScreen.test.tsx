@@ -48,7 +48,7 @@ describe('WelcomeScreen', () => {
     const { getByText } = await render(<WelcomeScreen onSetUp={onSetUp} />);
 
     expect(mockLogUxEvent).toHaveBeenCalledWith('welcome_viewed');
-    await fireEvent.press(getByText('Set up my home'));
+    await fireEvent.press(getByText('Start my household guide'));
 
     expect(onSetUp).toHaveBeenCalledTimes(1);
     expect(mockLogUxEvent).toHaveBeenCalledWith('setup_selected');
@@ -57,7 +57,7 @@ describe('WelcomeScreen', () => {
   it('enters sample mode from the secondary action', async () => {
     const { getByText } = await render(<WelcomeScreen onSetUp={jest.fn()} />);
 
-    await fireEvent.press(getByText('Explore a sample home'));
+    await fireEvent.press(getByText('Explore a sample household guide'));
 
     await waitFor(() => expect(enterSampleMode).toHaveBeenCalledTimes(1));
     expect(mockLogUxEvent).toHaveBeenCalledWith('sample_selected');

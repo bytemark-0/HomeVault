@@ -2,7 +2,14 @@ import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 
-import type { PartSupply, Property } from '@homevault/domain';
+import type {
+  AccessItem,
+  ContinuityPlaybook,
+  EmergencyContact,
+  ImportantAccount,
+  PartSupply,
+  Property,
+} from '@homevault/domain';
 import type { HomeVaultExportPackage } from '@homevault/export';
 import { getHomeVaultRepository } from '../data/localHomeVaultRepository';
 import { clearOnboardingState } from '../utils/onboardingStorage';
@@ -27,6 +34,7 @@ import {
 import { formatCurrency } from '../utils/taskUtils';
 import { clearAllNotifications, syncTaskNotifications } from '../utils/notificationUtils';
 import { logDiagnostic } from '../utils/diagnosticLog';
+import { getAnnualReviewTaskRoute } from '../utils/annualReview';
 
 export type AppData = {
   property: Property;
@@ -42,6 +50,10 @@ export type AppData = {
   recentActivity: HomeActivityItem[];
   savedCostLabel: string;
   documents: DocumentListItem[];
+  accessItems: AccessItem[];
+  emergencyContacts: EmergencyContact[];
+  importantAccounts: ImportantAccount[];
+  continuityPlaybooks: ContinuityPlaybook[];
   tasks: TaskListItem[];
   taskCompletions: TaskCompletionListItem[];
   repairEvents: RepairEventListItem[];
@@ -108,12 +120,29 @@ export function HomeVaultProvider({ children }: { children: React.ReactNode }) {
 
     setIsNewUser(false);
 
-    const [dashboard, rooms, assets, documents, tasks, taskCompletions, repairEvents, parts] =
+    const [
+      dashboard,
+      rooms,
+      assets,
+      documents,
+      accessItems,
+      emergencyContacts,
+      importantAccounts,
+      continuityPlaybooks,
+      tasks,
+      taskCompletions,
+      repairEvents,
+      parts,
+    ] =
       await Promise.all([
         repo.getDashboard(property.id),
         repo.getRooms(property.id),
         repo.getAssets(property.id),
         repo.getDocuments(property.id),
+        repo.getAccessItems(property.id),
+        repo.getEmergencyContacts(property.id),
+        repo.getImportantAccounts(property.id),
+        repo.getContinuityPlaybooks(property.id),
         repo.getTasks(property.id),
         repo.getTaskCompletions(property.id),
         repo.getRepairEvents(property.id),
@@ -163,6 +192,10 @@ export function HomeVaultProvider({ children }: { children: React.ReactNode }) {
       recentActivity,
       savedCostLabel: formatCurrency(trackedCostCents),
       documents: documentList,
+      accessItems,
+      emergencyContacts,
+      importantAccounts,
+      continuityPlaybooks,
       tasks: taskList,
       taskCompletions: taskCompletionList,
       repairEvents: repairEventList,
@@ -186,7 +219,7 @@ export function HomeVaultProvider({ children }: { children: React.ReactNode }) {
       (response) => {
         const taskId = response.notification.request.content.data?.taskId as string | undefined;
         if (taskId) {
-          router.push(`/task/${taskId}`);
+          router.push(getAnnualReviewTaskRoute(taskId));
         }
       },
     );

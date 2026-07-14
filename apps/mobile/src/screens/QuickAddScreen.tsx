@@ -4,18 +4,20 @@ import { colors } from '../theme/colors';
 
 type QuickAddScreenProps = {
   repairAssetName?: string;
-  onAddAsset: () => void;
-  onAddDocument: () => void;
-  onAddTask: () => void;
+  onOpenAccess: () => void;
+  onOpenDevices: () => void;
+  onOpenDocuments: () => void;
+  onOpenEmergency: () => void;
   onCancel: () => void;
   onRecordRepair: () => void;
 };
 
 export function QuickAddScreen({
   repairAssetName,
-  onAddAsset,
-  onAddDocument,
-  onAddTask,
+  onOpenAccess,
+  onOpenDevices,
+  onOpenDocuments,
+  onOpenEmergency,
   onCancel,
   onRecordRepair,
 }: QuickAddScreenProps) {
@@ -28,7 +30,7 @@ export function QuickAddScreen({
       <View style={styles.header}>
         <View>
           <Text style={styles.kicker}>Quick add</Text>
-          <Text style={styles.title}>What are you adding?</Text>
+          <Text style={styles.title}>Start with the essentials</Text>
         </View>
         <Pressable onPress={onCancel} style={styles.cancelButton} accessibilityRole="button">
           <Text style={styles.cancelText}>Cancel</Text>
@@ -37,22 +39,28 @@ export function QuickAddScreen({
 
       <View style={styles.optionGrid}>
         <QuickAddOption
-          title="Asset"
-          detail="Appliance, system, fixture, or exterior item"
+          title="Access"
+          detail="Wi-Fi details, garage codes, and shutoff notes"
           marker="A"
-          onPress={onAddAsset}
+          onPress={onOpenAccess}
+        />
+        <QuickAddOption
+          title="Emergency"
+          detail="Contacts, accounts, and your export packet"
+          marker="E"
+          onPress={onOpenEmergency}
+        />
+        <QuickAddOption
+          title="Device"
+          detail="Router, phone, laptop, tablet, or essential equipment"
+          marker="D"
+          onPress={onOpenDevices}
         />
         <QuickAddOption
           title="Document"
-          detail="Receipt, warranty, manual, invoice, or report"
-          marker="D"
-          onPress={onAddDocument}
-        />
-        <QuickAddOption
-          title="Task"
-          detail="Reminder, recurring maintenance, or seasonal work"
-          marker="T"
-          onPress={onAddTask}
+          detail="Policy, warranty, receipt, manual, or report"
+          marker="R"
+          onPress={onOpenDocuments}
         />
         <QuickAddOption
           title="Repair"

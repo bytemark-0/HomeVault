@@ -1,4 +1,4 @@
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 7;
 
 export interface MigrationDatabase {
   execAsync(source: string): Promise<void>;
@@ -60,16 +60,25 @@ export async function migrate(db: MigrationDatabase): Promise<void> {
         room_id TEXT REFERENCES rooms(id) ON DELETE SET NULL,
         name TEXT NOT NULL,
         category TEXT NOT NULL,
+        owner_name TEXT,
+        backup_helper_name TEXT,
         brand TEXT,
         model TEXT,
         serial TEXT,
         install_date TEXT,
         purchase_date TEXT,
         warranty_expiry TEXT,
+        backup_enabled INTEGER,
+        screen_lock_enabled INTEGER,
+        find_my_device_enabled INTEGER,
+        network_name TEXT,
+        internet_provider TEXT,
+        network_admin_url TEXT,
         photo_uri TEXT,
         cost_cents INTEGER,
         status TEXT NOT NULL,
         notes TEXT,
+        last_reviewed_at TEXT,
         created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
         deleted_at TEXT
@@ -167,12 +176,207 @@ export async function migrate(db: MigrationDatabase): Promise<void> {
     await ensureColumn(db, 'assets', 'purchase_date', 'TEXT');
     await ensureColumn(db, 'assets', 'cost_cents', 'INTEGER');
     await ensureColumn(db, 'assets', 'warranty_expiry', 'TEXT');
+    await ensureColumn(db, 'assets', 'owner_name', 'TEXT');
+    await ensureColumn(db, 'assets', 'backup_helper_name', 'TEXT');
+    await ensureColumn(db, 'assets', 'backup_enabled', 'INTEGER');
+    await ensureColumn(db, 'assets', 'screen_lock_enabled', 'INTEGER');
+    await ensureColumn(db, 'assets', 'find_my_device_enabled', 'INTEGER');
+    await ensureColumn(db, 'assets', 'network_name', 'TEXT');
+    await ensureColumn(db, 'assets', 'internet_provider', 'TEXT');
+    await ensureColumn(db, 'assets', 'network_admin_url', 'TEXT');
     await ensureColumn(db, 'assets', 'photo_uri', 'TEXT');
     await ensureColumn(db, 'task_completions', 'photo_uri', 'TEXT');
     await ensureColumn(db, 'task_completions', 'kind', 'TEXT');
 
     await db.execAsync(`PRAGMA user_version = 1;`);
     await db.execAsync('COMMIT;');
+    } catch (err) {
+      try { await db.execAsync('ROLLBACK;'); } catch { /* ignore rollback failure */ }
+      throw err;
+    }
+  }
+
+  // v1 → v2: household continuity foundation tables
+  if (fromVersion < 2) {
+    await db.execAsync('BEGIN;');
+    try {
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS access_items (
+          id TEXT PRIMARY KEY NOT NULL,
+          property_id TEXT NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+          category TEXT NOT NULL,
+          label TEXT NOT NULL,
+          username TEXT,
+          access_code TEXT,
+          location TEXT,
+          instructions TEXT,
+          notes TEXT,
+          linked_asset_id TEXT REFERENCES assets(id) ON DELETE SET NULL,
+          linked_document_ids_json TEXT NOT NULL,
+          last_verified_at TEXT,
+          last_reviewed_at TEXT,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          deleted_at TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS emergency_contacts (
+          id TEXT PRIMARY KEY NOT NULL,
+          property_id TEXT NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+          name TEXT NOT NULL,
+          role TEXT NOT NULL,
+          priority TEXT NOT NULL,
+          responsibility_category TEXT,
+          owner_role TEXT,
+          backup_helper_name TEXT,
+          phone TEXT,
+          email TEXT,
+          address TEXT,
+          notes TEXT,
+          last_reviewed_at TEXT,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          deleted_at TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS important_accounts (
+          id TEXT PRIMARY KEY NOT NULL,
+          property_id TEXT NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+          kind TEXT NOT NULL,
+          provider_name TEXT NOT NULL,
+          label TEXT NOT NULL,
+          account_number TEXT,
+          website TEXT,
+          phone TEXT,
+          email TEXT,
+          manager_role TEXT,
+          backup_helper_name TEXT,
+          is_shared_household_account INTEGER,
+          mfa_enabled INTEGER,
+          recovery_codes_stored INTEGER,
+          managed_in_password_manager INTEGER,
+          recovery_notes TEXT,
+          notes TEXT,
+          linked_document_ids_json TEXT NOT NULL,
+          last_reviewed_at TEXT,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          deleted_at TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS continuity_playbooks (
+          id TEXT PRIMARY KEY NOT NULL,
+          property_id TEXT NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+          category TEXT NOT NULL,
+          title TEXT NOT NULL,
+          state TEXT NOT NULL,
+          notes TEXT,
+          steps_json TEXT NOT NULL,
+          linked_record_ids_json TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          deleted_at TEXT
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_access_items_property ON access_items(property_id, category);
+        CREATE INDEX IF NOT EXISTS idx_emergency_contacts_property ON emergency_contacts(property_id, priority);
+        CREATE INDEX IF NOT EXISTS idx_important_accounts_property ON important_accounts(property_id, kind);
+        CREATE INDEX IF NOT EXISTS idx_continuity_playbooks_property ON continuity_playbooks(property_id, category);
+      `);
+
+      await db.execAsync(`PRAGMA user_version = 2;`);
+      await db.execAsync('COMMIT;');
+    } catch (err) {
+      try { await db.execAsync('ROLLBACK;'); } catch { /* ignore rollback failure */ }
+      throw err;
+    }
+  }
+
+  // v2 → v3: device metadata fields on assets
+  if (fromVersion < 3) {
+    await db.execAsync('BEGIN;');
+    try {
+      await ensureColumn(db, 'assets', 'owner_name', 'TEXT');
+      await ensureColumn(db, 'assets', 'backup_enabled', 'INTEGER');
+      await ensureColumn(db, 'assets', 'screen_lock_enabled', 'INTEGER');
+      await ensureColumn(db, 'assets', 'find_my_device_enabled', 'INTEGER');
+      await ensureColumn(db, 'assets', 'network_name', 'TEXT');
+      await ensureColumn(db, 'assets', 'internet_provider', 'TEXT');
+      await ensureColumn(db, 'assets', 'network_admin_url', 'TEXT');
+
+      await db.execAsync('PRAGMA user_version = 3;');
+      await db.execAsync('COMMIT;');
+    } catch (err) {
+      try { await db.execAsync('ROLLBACK;'); } catch { /* ignore rollback failure */ }
+      throw err;
+    }
+  }
+
+  // v3 → v4: important account recovery metadata
+  if (fromVersion < 4) {
+    await db.execAsync('BEGIN;');
+    try {
+      await ensureColumn(db, 'important_accounts', 'mfa_enabled', 'INTEGER');
+      await ensureColumn(db, 'important_accounts', 'recovery_codes_stored', 'INTEGER');
+      await ensureColumn(db, 'important_accounts', 'managed_in_password_manager', 'INTEGER');
+
+      await db.execAsync('PRAGMA user_version = 4;');
+      await db.execAsync('COMMIT;');
+    } catch (err) {
+      try { await db.execAsync('ROLLBACK;'); } catch { /* ignore rollback failure */ }
+      throw err;
+    }
+  }
+
+  // v4 → v5: review freshness metadata for emergency-critical records
+  if (fromVersion < 5) {
+    await db.execAsync('BEGIN;');
+    try {
+      await ensureColumn(db, 'assets', 'last_reviewed_at', 'TEXT');
+      await ensureColumn(db, 'access_items', 'last_reviewed_at', 'TEXT');
+      await ensureColumn(db, 'emergency_contacts', 'last_reviewed_at', 'TEXT');
+      await ensureColumn(db, 'important_accounts', 'last_reviewed_at', 'TEXT');
+      await db.execAsync(
+        `UPDATE access_items
+         SET last_reviewed_at = COALESCE(last_reviewed_at, last_verified_at)
+         WHERE last_reviewed_at IS NULL AND last_verified_at IS NOT NULL`,
+      );
+
+      await db.execAsync('PRAGMA user_version = 5;');
+      await db.execAsync('COMMIT;');
+    } catch (err) {
+      try { await db.execAsync('ROLLBACK;'); } catch { /* ignore rollback failure */ }
+      throw err;
+    }
+  }
+
+  // v5 → v6: digital recovery ownership metadata on important accounts
+  if (fromVersion < 6) {
+    await db.execAsync('BEGIN;');
+    try {
+      await ensureColumn(db, 'important_accounts', 'manager_role', 'TEXT');
+      await ensureColumn(db, 'important_accounts', 'is_shared_household_account', 'INTEGER');
+
+      await db.execAsync('PRAGMA user_version = 6;');
+      await db.execAsync('COMMIT;');
+    } catch (err) {
+      try { await db.execAsync('ROLLBACK;'); } catch { /* ignore rollback failure */ }
+      throw err;
+    }
+  }
+
+  // v6 → v7: explicit ownership and backup-helper fields across emergency records
+  if (fromVersion < 7) {
+    await db.execAsync('BEGIN;');
+    try {
+      await ensureColumn(db, 'assets', 'backup_helper_name', 'TEXT');
+      await ensureColumn(db, 'important_accounts', 'backup_helper_name', 'TEXT');
+      await ensureColumn(db, 'emergency_contacts', 'responsibility_category', 'TEXT');
+      await ensureColumn(db, 'emergency_contacts', 'owner_role', 'TEXT');
+      await ensureColumn(db, 'emergency_contacts', 'backup_helper_name', 'TEXT');
+
+      await db.execAsync('PRAGMA user_version = 7;');
+      await db.execAsync('COMMIT;');
     } catch (err) {
       try { await db.execAsync('ROLLBACK;'); } catch { /* ignore rollback failure */ }
       throw err;

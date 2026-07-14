@@ -7,8 +7,12 @@ import { getTaskStateForDate } from '../utils/taskUtils';
 
 import type {
   Asset,
+  AccessItem,
+  ContinuityPlaybook,
   DocumentRecord,
+  EmergencyContact,
   EntityId,
+  ImportantAccount,
   MaintenanceTask,
   PartSupply,
   Property,
@@ -18,8 +22,12 @@ import type {
 } from '@homevault/domain';
 import type {
   CompleteTaskInput,
+  CreateAccessItemInput,
   CreateAssetInput,
+  CreateContinuityPlaybookInput,
   CreateDocumentInput,
+  CreateEmergencyContactInput,
+  CreateImportantAccountInput,
   CreatePartInput,
   CreatePropertyInput,
   CreateRepairEventInput,
@@ -29,7 +37,11 @@ import type {
   HomeVaultRepository,
   HomeVaultSnapshot,
   UpdateAssetInput,
+  UpdateAccessItemInput,
+  UpdateContinuityPlaybookInput,
   UpdateDocumentInput,
+  UpdateEmergencyContactInput,
+  UpdateImportantAccountInput,
   UpdatePartInput,
   UpdatePropertyInput,
   UpdateRepairEventInput,
@@ -68,16 +80,25 @@ type AssetRow = {
   room_id: string | null;
   name: string;
   category: string;
+  owner_name: string | null;
+  backup_helper_name: string | null;
   brand: string | null;
   model: string | null;
   serial: string | null;
   install_date: string | null;
   purchase_date: string | null;
   warranty_expiry: string | null;
+  backup_enabled: number | null;
+  screen_lock_enabled: number | null;
+  find_my_device_enabled: number | null;
+  network_name: string | null;
+  internet_provider: string | null;
+  network_admin_url: string | null;
   photo_uri: string | null;
   cost_cents: number | null;
   status: Asset['status'];
   notes: string | null;
+  last_reviewed_at: string | null;
 };
 
 type DocumentRow = {
@@ -91,6 +112,71 @@ type DocumentRow = {
   vendor: string | null;
   amount_cents: number | null;
   ocr_text: string | null;
+  linked_record_ids_json: string;
+};
+
+type AccessItemRow = {
+  id: string;
+  property_id: string;
+  category: AccessItem['category'];
+  label: string;
+  username: string | null;
+  access_code: string | null;
+  location: string | null;
+  instructions: string | null;
+  notes: string | null;
+  linked_asset_id: string | null;
+  linked_document_ids_json: string;
+  last_verified_at: string | null;
+  last_reviewed_at: string | null;
+};
+
+type EmergencyContactRow = {
+  id: string;
+  property_id: string;
+  name: string;
+  role: string;
+  priority: EmergencyContact['priority'];
+  responsibility_category: EmergencyContact['responsibilityCategory'] | null;
+  owner_role: EmergencyContact['ownerRole'] | null;
+  backup_helper_name: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  notes: string | null;
+  last_reviewed_at: string | null;
+};
+
+type ImportantAccountRow = {
+  id: string;
+  property_id: string;
+  kind: ImportantAccount['kind'];
+  provider_name: string;
+  label: string;
+  account_number: string | null;
+  website: string | null;
+  phone: string | null;
+  email: string | null;
+  manager_role: ImportantAccount['managerRole'] | null;
+  backup_helper_name: string | null;
+  is_shared_household_account: number | null;
+  mfa_enabled: number | null;
+  recovery_codes_stored: number | null;
+  managed_in_password_manager: number | null;
+  recovery_notes: string | null;
+  notes: string | null;
+  linked_document_ids_json: string;
+  last_reviewed_at: string | null;
+};
+
+type ContinuityPlaybookRow = {
+  id: string;
+  property_id: string;
+  category: ContinuityPlaybook['category'];
+  title: string;
+  state: ContinuityPlaybook['state'];
+  notes: string | null;
+  steps_json: string;
   linked_record_ids_json: string;
 };
 
@@ -168,6 +254,38 @@ export async function createSQLiteHomeVaultRepository(): Promise<HomeVaultReposi
 
       return rows.map(toDocument);
     },
+    async getAccessItems(propertyId) {
+      const rows = await db.getAllAsync<AccessItemRow>(
+        'SELECT * FROM access_items WHERE property_id = ? ORDER BY category ASC, label ASC',
+        [propertyId],
+      );
+
+      return rows.map(toAccessItem);
+    },
+    async getEmergencyContacts(propertyId) {
+      const rows = await db.getAllAsync<EmergencyContactRow>(
+        'SELECT * FROM emergency_contacts WHERE property_id = ? ORDER BY priority ASC, name ASC',
+        [propertyId],
+      );
+
+      return rows.map(toEmergencyContact);
+    },
+    async getImportantAccounts(propertyId) {
+      const rows = await db.getAllAsync<ImportantAccountRow>(
+        'SELECT * FROM important_accounts WHERE property_id = ? ORDER BY kind ASC, provider_name ASC',
+        [propertyId],
+      );
+
+      return rows.map(toImportantAccount);
+    },
+    async getContinuityPlaybooks(propertyId) {
+      const rows = await db.getAllAsync<ContinuityPlaybookRow>(
+        'SELECT * FROM continuity_playbooks WHERE property_id = ? ORDER BY category ASC, title ASC',
+        [propertyId],
+      );
+
+      return rows.map(toContinuityPlaybook);
+    },
     async getTasks(propertyId) {
       const rows = await db.getAllAsync<TaskRow>(
         `SELECT * FROM maintenance_tasks
@@ -235,6 +353,42 @@ export async function createSQLiteHomeVaultRepository(): Promise<HomeVaultReposi
     },
     async deleteDocument(documentId) {
       return deleteDocument(db, documentId);
+    },
+    async createAccessItem(input) {
+      return createAccessItem(db, input);
+    },
+    async updateAccessItem(input) {
+      return updateAccessItem(db, input);
+    },
+    async deleteAccessItem(accessItemId) {
+      return deleteAccessItem(db, accessItemId);
+    },
+    async createEmergencyContact(input) {
+      return createEmergencyContact(db, input);
+    },
+    async updateEmergencyContact(input) {
+      return updateEmergencyContact(db, input);
+    },
+    async deleteEmergencyContact(contactId) {
+      return deleteEmergencyContact(db, contactId);
+    },
+    async createImportantAccount(input) {
+      return createImportantAccount(db, input);
+    },
+    async updateImportantAccount(input) {
+      return updateImportantAccount(db, input);
+    },
+    async deleteImportantAccount(accountId) {
+      return deleteImportantAccount(db, accountId);
+    },
+    async createContinuityPlaybook(input) {
+      return createContinuityPlaybook(db, input);
+    },
+    async updateContinuityPlaybook(input) {
+      return updateContinuityPlaybook(db, input);
+    },
+    async deleteContinuityPlaybook(playbookId) {
+      return deleteContinuityPlaybook(db, playbookId);
     },
     async createTask(input) {
       return createTask(db, input);
@@ -323,25 +477,36 @@ async function insertSnapshotRows(db: SQLiteDatabase, snapshot: HomeVaultSnapsho
   for (const asset of snapshot.assets) {
     await db.runAsync(
       `INSERT INTO assets (
-        id, property_id, room_id, name, category, brand, model, serial,
-        install_date, purchase_date, warranty_expiry, photo_uri, cost_cents, status, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        id, property_id, room_id, name, category, owner_name, backup_helper_name, brand, model, serial,
+        install_date, purchase_date, warranty_expiry, backup_enabled, screen_lock_enabled,
+        find_my_device_enabled, network_name, internet_provider, network_admin_url, photo_uri,
+        cost_cents, status, notes, last_reviewed_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         asset.id,
         asset.propertyId,
         asset.roomId ?? null,
         asset.name,
         asset.category,
+        asset.ownerName ?? null,
+        asset.backupHelperName ?? null,
         asset.brand ?? null,
         asset.model ?? null,
         asset.serial ?? null,
         asset.installDate ?? null,
         asset.purchaseDate ?? null,
         asset.warrantyExpiry ?? null,
+        toSqliteBoolean(asset.backupEnabled),
+        toSqliteBoolean(asset.screenLockEnabled),
+        toSqliteBoolean(asset.findMyDeviceEnabled),
+        asset.networkName ?? null,
+        asset.internetProvider ?? null,
+        asset.networkAdminUrl ?? null,
         asset.photoUri ?? null,
         asset.costCents ?? null,
         asset.status,
         asset.notes ?? null,
+        asset.lastReviewedAt ?? null,
       ],
     );
   }
@@ -364,6 +529,104 @@ async function insertSnapshotRows(db: SQLiteDatabase, snapshot: HomeVaultSnapsho
         document.amountCents ?? null,
         document.ocrText ?? null,
         JSON.stringify(document.linkedRecordIds),
+      ],
+    );
+  }
+
+  for (const accessItem of snapshot.accessItems) {
+    await db.runAsync(
+      `INSERT INTO access_items (
+        id, property_id, category, label, username, access_code, location, instructions,
+        notes, linked_asset_id, linked_document_ids_json, last_verified_at, last_reviewed_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        accessItem.id,
+        accessItem.propertyId,
+        accessItem.category,
+        accessItem.label,
+        accessItem.username ?? null,
+        accessItem.accessCode ?? null,
+        accessItem.location ?? null,
+        accessItem.instructions ?? null,
+        accessItem.notes ?? null,
+        accessItem.linkedAssetId ?? null,
+        JSON.stringify(accessItem.linkedDocumentIds),
+        accessItem.lastVerifiedAt ?? null,
+        accessItem.lastReviewedAt ?? null,
+      ],
+    );
+  }
+
+  for (const contact of snapshot.emergencyContacts) {
+    await db.runAsync(
+      `INSERT INTO emergency_contacts (
+        id, property_id, name, role, priority, responsibility_category, owner_role,
+        backup_helper_name, phone, email, address, notes, last_reviewed_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        contact.id,
+        contact.propertyId,
+        contact.name,
+        contact.role,
+        contact.priority,
+        contact.responsibilityCategory ?? null,
+        contact.ownerRole ?? null,
+        contact.backupHelperName ?? null,
+        contact.phone ?? null,
+        contact.email ?? null,
+        contact.address ?? null,
+        contact.notes ?? null,
+        contact.lastReviewedAt ?? null,
+      ],
+    );
+  }
+
+  for (const account of snapshot.importantAccounts) {
+    await db.runAsync(
+      `INSERT INTO important_accounts (
+        id, property_id, kind, provider_name, label, account_number, website, phone, email,
+        manager_role, backup_helper_name, is_shared_household_account,
+        mfa_enabled, recovery_codes_stored, managed_in_password_manager, recovery_notes, notes,
+        linked_document_ids_json, last_reviewed_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        account.id,
+        account.propertyId,
+        account.kind,
+        account.providerName,
+        account.label,
+        account.accountNumber ?? null,
+        account.website ?? null,
+        account.phone ?? null,
+        account.email ?? null,
+        account.managerRole ?? null,
+        account.backupHelperName ?? null,
+        toSqliteBoolean(account.isSharedHouseholdAccount),
+        toSqliteBoolean(account.mfaEnabled),
+        toSqliteBoolean(account.recoveryCodesStored),
+        toSqliteBoolean(account.managedInPasswordManager),
+        account.recoveryNotes ?? null,
+        account.notes ?? null,
+        JSON.stringify(account.linkedDocumentIds),
+        account.lastReviewedAt ?? null,
+      ],
+    );
+  }
+
+  for (const playbook of snapshot.continuityPlaybooks) {
+    await db.runAsync(
+      `INSERT INTO continuity_playbooks (
+        id, property_id, category, title, state, notes, steps_json, linked_record_ids_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        playbook.id,
+        playbook.propertyId,
+        playbook.category,
+        playbook.title,
+        playbook.state,
+        playbook.notes ?? null,
+        JSON.stringify(playbook.steps),
+        JSON.stringify(playbook.linkedRecordIds),
       ],
     );
   }
@@ -528,6 +791,10 @@ async function deleteSnapshotRows(db: SQLiteDatabase): Promise<void> {
   await db.runAsync('DELETE FROM task_completions');
   await db.runAsync('DELETE FROM repair_events');
   await db.runAsync('DELETE FROM maintenance_tasks');
+  await db.runAsync('DELETE FROM continuity_playbooks');
+  await db.runAsync('DELETE FROM important_accounts');
+  await db.runAsync('DELETE FROM emergency_contacts');
+  await db.runAsync('DELETE FROM access_items');
   await db.runAsync('DELETE FROM parts');
   await db.runAsync('DELETE FROM documents');
   await db.runAsync('DELETE FROM assets');
@@ -597,25 +864,36 @@ async function createAsset(db: SQLiteDatabase, input: CreateAssetInput): Promise
 
   await db.runAsync(
     `INSERT INTO assets (
-      id, property_id, room_id, name, category, brand, model, serial,
-      install_date, purchase_date, warranty_expiry, photo_uri, cost_cents, status, notes
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      id, property_id, room_id, name, category, owner_name, backup_helper_name, brand, model, serial,
+      install_date, purchase_date, warranty_expiry, backup_enabled, screen_lock_enabled,
+      find_my_device_enabled, network_name, internet_provider, network_admin_url, photo_uri,
+      cost_cents, status, notes, last_reviewed_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       asset.id,
       asset.propertyId,
       asset.roomId ?? null,
       asset.name,
       asset.category,
+      asset.ownerName ?? null,
+      asset.backupHelperName ?? null,
       asset.brand ?? null,
       asset.model ?? null,
       asset.serial ?? null,
       asset.installDate ?? null,
       asset.purchaseDate ?? null,
       asset.warrantyExpiry ?? null,
+      toSqliteBoolean(asset.backupEnabled),
+      toSqliteBoolean(asset.screenLockEnabled),
+      toSqliteBoolean(asset.findMyDeviceEnabled),
+      asset.networkName ?? null,
+      asset.internetProvider ?? null,
+      asset.networkAdminUrl ?? null,
       asset.photoUri ?? null,
       asset.costCents ?? null,
       asset.status,
       asset.notes ?? null,
+      asset.lastReviewedAt ?? null,
     ],
   );
 
@@ -736,32 +1014,50 @@ async function updateAsset(db: SQLiteDatabase, input: UpdateAssetInput): Promise
      SET room_id = ?,
          name = ?,
          category = ?,
+         owner_name = ?,
+         backup_helper_name = ?,
          brand = ?,
          model = ?,
          serial = ?,
          install_date = ?,
          purchase_date = ?,
          warranty_expiry = ?,
+         backup_enabled = ?,
+         screen_lock_enabled = ?,
+         find_my_device_enabled = ?,
+         network_name = ?,
+         internet_provider = ?,
+         network_admin_url = ?,
          photo_uri = ?,
          cost_cents = ?,
          status = ?,
          notes = ?,
+         last_reviewed_at = ?,
          updated_at = CURRENT_TIMESTAMP
      WHERE id = ? AND property_id = ?`,
     [
       input.roomId ?? null,
       input.name,
       input.category,
+      input.ownerName ?? null,
+      input.backupHelperName ?? null,
       input.brand ?? null,
       input.model ?? null,
       input.serial ?? null,
       input.installDate ?? null,
       input.purchaseDate ?? null,
       input.warrantyExpiry ?? null,
+      toSqliteBoolean(input.backupEnabled),
+      toSqliteBoolean(input.screenLockEnabled),
+      toSqliteBoolean(input.findMyDeviceEnabled),
+      input.networkName ?? null,
+      input.internetProvider ?? null,
+      input.networkAdminUrl ?? null,
       input.photoUri ?? null,
       input.costCents ?? null,
       input.status,
       input.notes ?? null,
+      input.lastReviewedAt ?? null,
       input.id,
       input.propertyId,
     ],
@@ -857,6 +1153,326 @@ async function updateDocument(
 
 async function deleteDocument(db: SQLiteDatabase, documentId: EntityId): Promise<void> {
   await db.runAsync('DELETE FROM documents WHERE id = ?', [documentId]);
+}
+
+async function createAccessItem(
+  db: SQLiteDatabase,
+  input: CreateAccessItemInput,
+): Promise<AccessItem> {
+  const accessItem: AccessItem = {
+    ...input,
+    id: input.id ?? createEntityId('access'),
+    linkedDocumentIds: [...input.linkedDocumentIds],
+  };
+
+  await db.runAsync(
+    `INSERT INTO access_items (
+      id, property_id, category, label, username, access_code, location, instructions,
+      notes, linked_asset_id, linked_document_ids_json, last_verified_at, last_reviewed_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      accessItem.id,
+      accessItem.propertyId,
+      accessItem.category,
+      accessItem.label,
+      accessItem.username ?? null,
+      accessItem.accessCode ?? null,
+      accessItem.location ?? null,
+      accessItem.instructions ?? null,
+      accessItem.notes ?? null,
+      accessItem.linkedAssetId ?? null,
+      JSON.stringify(accessItem.linkedDocumentIds),
+      accessItem.lastVerifiedAt ?? null,
+      accessItem.lastReviewedAt ?? null,
+    ],
+  );
+
+  return accessItem;
+}
+
+async function updateAccessItem(
+  db: SQLiteDatabase,
+  input: UpdateAccessItemInput,
+): Promise<AccessItem> {
+  await db.runAsync(
+    `UPDATE access_items
+     SET category = ?,
+         label = ?,
+         username = ?,
+         access_code = ?,
+         location = ?,
+         instructions = ?,
+         notes = ?,
+         linked_asset_id = ?,
+         linked_document_ids_json = ?,
+         last_verified_at = ?,
+         last_reviewed_at = ?,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE id = ? AND property_id = ?`,
+    [
+      input.category,
+      input.label,
+      input.username ?? null,
+      input.accessCode ?? null,
+      input.location ?? null,
+      input.instructions ?? null,
+      input.notes ?? null,
+      input.linkedAssetId ?? null,
+      JSON.stringify(input.linkedDocumentIds),
+      input.lastVerifiedAt ?? null,
+      input.lastReviewedAt ?? null,
+      input.id,
+      input.propertyId,
+    ],
+  );
+
+  return { ...input, linkedDocumentIds: [...input.linkedDocumentIds] };
+}
+
+async function deleteAccessItem(db: SQLiteDatabase, accessItemId: EntityId): Promise<void> {
+  await db.runAsync('DELETE FROM access_items WHERE id = ?', [accessItemId]);
+}
+
+async function createEmergencyContact(
+  db: SQLiteDatabase,
+  input: CreateEmergencyContactInput,
+): Promise<EmergencyContact> {
+  const contact: EmergencyContact = {
+    ...input,
+    id: input.id ?? createEntityId('contact'),
+  };
+
+  await db.runAsync(
+    `INSERT INTO emergency_contacts (
+      id, property_id, name, role, priority, responsibility_category, owner_role,
+      backup_helper_name, phone, email, address, notes, last_reviewed_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      contact.id,
+      contact.propertyId,
+      contact.name,
+      contact.role,
+      contact.priority,
+      contact.responsibilityCategory ?? null,
+      contact.ownerRole ?? null,
+      contact.backupHelperName ?? null,
+      contact.phone ?? null,
+      contact.email ?? null,
+      contact.address ?? null,
+      contact.notes ?? null,
+      contact.lastReviewedAt ?? null,
+    ],
+  );
+
+  return contact;
+}
+
+async function updateEmergencyContact(
+  db: SQLiteDatabase,
+  input: UpdateEmergencyContactInput,
+): Promise<EmergencyContact> {
+  await db.runAsync(
+    `UPDATE emergency_contacts
+     SET name = ?,
+         role = ?,
+         priority = ?,
+         responsibility_category = ?,
+         owner_role = ?,
+         backup_helper_name = ?,
+         phone = ?,
+         email = ?,
+         address = ?,
+         notes = ?,
+         last_reviewed_at = ?,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE id = ? AND property_id = ?`,
+    [
+      input.name,
+      input.role,
+      input.priority,
+      input.responsibilityCategory ?? null,
+      input.ownerRole ?? null,
+      input.backupHelperName ?? null,
+      input.phone ?? null,
+      input.email ?? null,
+      input.address ?? null,
+      input.notes ?? null,
+      input.lastReviewedAt ?? null,
+      input.id,
+      input.propertyId,
+    ],
+  );
+
+  return { ...input };
+}
+
+async function deleteEmergencyContact(db: SQLiteDatabase, contactId: EntityId): Promise<void> {
+  await db.runAsync('DELETE FROM emergency_contacts WHERE id = ?', [contactId]);
+}
+
+async function createImportantAccount(
+  db: SQLiteDatabase,
+  input: CreateImportantAccountInput,
+): Promise<ImportantAccount> {
+  const account: ImportantAccount = {
+    ...input,
+    id: input.id ?? createEntityId('account'),
+    linkedDocumentIds: [...input.linkedDocumentIds],
+  };
+
+  await db.runAsync(
+    `INSERT INTO important_accounts (
+      id, property_id, kind, provider_name, label, account_number, website, phone, email,
+      manager_role, backup_helper_name, is_shared_household_account,
+      mfa_enabled, recovery_codes_stored, managed_in_password_manager, recovery_notes, notes,
+      linked_document_ids_json, last_reviewed_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      account.id,
+      account.propertyId,
+      account.kind,
+      account.providerName,
+      account.label,
+      account.accountNumber ?? null,
+      account.website ?? null,
+      account.phone ?? null,
+      account.email ?? null,
+      account.managerRole ?? null,
+      account.backupHelperName ?? null,
+      toSqliteBoolean(account.isSharedHouseholdAccount),
+      toSqliteBoolean(account.mfaEnabled),
+      toSqliteBoolean(account.recoveryCodesStored),
+      toSqliteBoolean(account.managedInPasswordManager),
+      account.recoveryNotes ?? null,
+      account.notes ?? null,
+      JSON.stringify(account.linkedDocumentIds),
+      account.lastReviewedAt ?? null,
+    ],
+  );
+
+  return account;
+}
+
+async function updateImportantAccount(
+  db: SQLiteDatabase,
+  input: UpdateImportantAccountInput,
+): Promise<ImportantAccount> {
+  await db.runAsync(
+    `UPDATE important_accounts
+     SET kind = ?,
+         provider_name = ?,
+         label = ?,
+         account_number = ?,
+         website = ?,
+         phone = ?,
+         email = ?,
+         manager_role = ?,
+         backup_helper_name = ?,
+         is_shared_household_account = ?,
+         mfa_enabled = ?,
+         recovery_codes_stored = ?,
+         managed_in_password_manager = ?,
+         recovery_notes = ?,
+         notes = ?,
+         linked_document_ids_json = ?,
+         last_reviewed_at = ?,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE id = ? AND property_id = ?`,
+    [
+      input.kind,
+      input.providerName,
+      input.label,
+      input.accountNumber ?? null,
+      input.website ?? null,
+      input.phone ?? null,
+      input.email ?? null,
+      input.managerRole ?? null,
+      input.backupHelperName ?? null,
+      toSqliteBoolean(input.isSharedHouseholdAccount),
+      toSqliteBoolean(input.mfaEnabled),
+      toSqliteBoolean(input.recoveryCodesStored),
+      toSqliteBoolean(input.managedInPasswordManager),
+      input.recoveryNotes ?? null,
+      input.notes ?? null,
+      JSON.stringify(input.linkedDocumentIds),
+      input.lastReviewedAt ?? null,
+      input.id,
+      input.propertyId,
+    ],
+  );
+
+  return { ...input, linkedDocumentIds: [...input.linkedDocumentIds] };
+}
+
+async function deleteImportantAccount(db: SQLiteDatabase, accountId: EntityId): Promise<void> {
+  await db.runAsync('DELETE FROM important_accounts WHERE id = ?', [accountId]);
+}
+
+async function createContinuityPlaybook(
+  db: SQLiteDatabase,
+  input: CreateContinuityPlaybookInput,
+): Promise<ContinuityPlaybook> {
+  const playbook: ContinuityPlaybook = {
+    ...input,
+    id: input.id ?? createEntityId('playbook'),
+    steps: input.steps.map((step) => ({ ...step })),
+    linkedRecordIds: [...input.linkedRecordIds],
+  };
+
+  await db.runAsync(
+    `INSERT INTO continuity_playbooks (
+      id, property_id, category, title, state, notes, steps_json, linked_record_ids_json
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      playbook.id,
+      playbook.propertyId,
+      playbook.category,
+      playbook.title,
+      playbook.state,
+      playbook.notes ?? null,
+      JSON.stringify(playbook.steps),
+      JSON.stringify(playbook.linkedRecordIds),
+    ],
+  );
+
+  return playbook;
+}
+
+async function updateContinuityPlaybook(
+  db: SQLiteDatabase,
+  input: UpdateContinuityPlaybookInput,
+): Promise<ContinuityPlaybook> {
+  await db.runAsync(
+    `UPDATE continuity_playbooks
+     SET category = ?,
+         title = ?,
+         state = ?,
+         notes = ?,
+         steps_json = ?,
+         linked_record_ids_json = ?,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE id = ? AND property_id = ?`,
+    [
+      input.category,
+      input.title,
+      input.state,
+      input.notes ?? null,
+      JSON.stringify(input.steps),
+      JSON.stringify(input.linkedRecordIds),
+      input.id,
+      input.propertyId,
+    ],
+  );
+
+  return {
+    ...input,
+    steps: input.steps.map((step) => ({ ...step })),
+    linkedRecordIds: [...input.linkedRecordIds],
+  };
+}
+
+async function deleteContinuityPlaybook(db: SQLiteDatabase, playbookId: EntityId): Promise<void> {
+  await db.runAsync('DELETE FROM continuity_playbooks WHERE id = ?', [playbookId]);
 }
 
 async function createTask(db: SQLiteDatabase, input: CreateTaskInput): Promise<MaintenanceTask> {
@@ -1206,17 +1822,42 @@ function toAsset(row: AssetRow): Asset {
     roomId: row.room_id ?? undefined,
     name: row.name,
     category: row.category,
+    ownerName: row.owner_name ?? undefined,
+    backupHelperName: row.backup_helper_name ?? undefined,
     brand: row.brand ?? undefined,
     model: row.model ?? undefined,
     serial: row.serial ?? undefined,
     installDate: row.install_date ?? undefined,
     purchaseDate: row.purchase_date ?? undefined,
     warrantyExpiry: row.warranty_expiry ?? undefined,
+    backupEnabled: fromSqliteBoolean(row.backup_enabled),
+    screenLockEnabled: fromSqliteBoolean(row.screen_lock_enabled),
+    findMyDeviceEnabled: fromSqliteBoolean(row.find_my_device_enabled),
+    networkName: row.network_name ?? undefined,
+    internetProvider: row.internet_provider ?? undefined,
+    networkAdminUrl: row.network_admin_url ?? undefined,
     photoUri: row.photo_uri ?? undefined,
     costCents: row.cost_cents ?? undefined,
     status: row.status,
     notes: row.notes ?? undefined,
+    lastReviewedAt: row.last_reviewed_at ?? undefined,
   };
+}
+
+function toSqliteBoolean(value: boolean | undefined): number | null {
+  if (value == null) {
+    return null;
+  }
+
+  return value ? 1 : 0;
+}
+
+function fromSqliteBoolean(value: number | null): boolean | undefined {
+  if (value == null) {
+    return undefined;
+  }
+
+  return value === 1;
 }
 
 function toDocument(row: DocumentRow): DocumentRecord {
@@ -1231,6 +1872,79 @@ function toDocument(row: DocumentRow): DocumentRecord {
     vendor: row.vendor ?? undefined,
     amountCents: row.amount_cents ?? undefined,
     ocrText: row.ocr_text ?? undefined,
+    linkedRecordIds: parseLinkedRecordIds(row.linked_record_ids_json),
+  };
+}
+
+function toAccessItem(row: AccessItemRow): AccessItem {
+  return {
+    id: row.id,
+    propertyId: row.property_id,
+    category: row.category,
+    label: row.label,
+    username: row.username ?? undefined,
+    accessCode: row.access_code ?? undefined,
+    location: row.location ?? undefined,
+    instructions: row.instructions ?? undefined,
+    notes: row.notes ?? undefined,
+    linkedAssetId: row.linked_asset_id ?? undefined,
+    linkedDocumentIds: parseLinkedRecordIds(row.linked_document_ids_json),
+    lastVerifiedAt: row.last_verified_at ?? undefined,
+    lastReviewedAt: row.last_reviewed_at ?? undefined,
+  };
+}
+
+function toEmergencyContact(row: EmergencyContactRow): EmergencyContact {
+  return {
+    id: row.id,
+    propertyId: row.property_id,
+    name: row.name,
+    role: row.role,
+    priority: row.priority,
+    responsibilityCategory: row.responsibility_category ?? undefined,
+    ownerRole: row.owner_role ?? undefined,
+    backupHelperName: row.backup_helper_name ?? undefined,
+    phone: row.phone ?? undefined,
+    email: row.email ?? undefined,
+    address: row.address ?? undefined,
+    notes: row.notes ?? undefined,
+    lastReviewedAt: row.last_reviewed_at ?? undefined,
+  };
+}
+
+function toImportantAccount(row: ImportantAccountRow): ImportantAccount {
+  return {
+    id: row.id,
+    propertyId: row.property_id,
+    kind: row.kind,
+    providerName: row.provider_name,
+    label: row.label,
+    accountNumber: row.account_number ?? undefined,
+    website: row.website ?? undefined,
+    phone: row.phone ?? undefined,
+    email: row.email ?? undefined,
+    managerRole: row.manager_role ?? undefined,
+    backupHelperName: row.backup_helper_name ?? undefined,
+    isSharedHouseholdAccount: fromSqliteBoolean(row.is_shared_household_account),
+    mfaEnabled: fromSqliteBoolean(row.mfa_enabled),
+    recoveryCodesStored: fromSqliteBoolean(row.recovery_codes_stored),
+    managedInPasswordManager: fromSqliteBoolean(row.managed_in_password_manager),
+    recoveryNotes: row.recovery_notes ?? undefined,
+    notes: row.notes ?? undefined,
+    linkedDocumentIds: parseLinkedRecordIds(row.linked_document_ids_json),
+    lastReviewedAt: row.last_reviewed_at ?? undefined,
+  };
+}
+
+function toContinuityPlaybook(row: ContinuityPlaybookRow): ContinuityPlaybook {
+  return {
+    id: row.id,
+    propertyId: row.property_id,
+    category: row.category,
+    title: row.title,
+    state: row.state,
+    notes: row.notes ?? undefined,
+    steps: parsePlaybookSteps(row.steps_json),
     linkedRecordIds: parseLinkedRecordIds(row.linked_record_ids_json),
   };
 }
@@ -1250,6 +1964,27 @@ function parseAttachment(value: string | null): DocumentRecord['attachment'] {
   } catch {
     return undefined;
   }
+}
+
+function parsePlaybookSteps(rawJson: string): ContinuityPlaybook['steps'] {
+  const parsed = JSON.parse(rawJson) as unknown;
+
+  if (!Array.isArray(parsed)) {
+    return [];
+  }
+
+  return parsed
+    .filter((value): value is Record<string, unknown> => typeof value === 'object' && value !== null)
+    .map((step, index) => ({
+      id:
+        typeof step.id === 'string' && step.id.length > 0
+          ? step.id
+          : `playbook-step-${index + 1}`,
+      label: typeof step.label === 'string' ? step.label : 'Untitled step',
+      notes: typeof step.notes === 'string' ? step.notes : undefined,
+      isRequired: step.isRequired !== false,
+      isComplete: step.isComplete === true,
+    }));
 }
 
 function toTask(row: TaskRow): MaintenanceTask {

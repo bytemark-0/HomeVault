@@ -15,6 +15,7 @@ type DocumentDetailScreenProps = {
   onDelete: () => Promise<void>;
   onEdit: () => void;
   onLinkedRecordPress?: (recordId: string) => void;
+  onShare?: () => void;
 };
 
 export function DocumentDetailScreen({
@@ -23,6 +24,7 @@ export function DocumentDetailScreen({
   onDelete,
   onEdit,
   onLinkedRecordPress,
+  onShare,
 }: DocumentDetailScreenProps) {
   return (
     <ScrollView
@@ -35,6 +37,11 @@ export function DocumentDetailScreen({
           <Text style={styles.secondaryButtonText}>Back</Text>
         </Pressable>
         <View style={styles.headerActions}>
+          {onShare ? (
+            <Pressable onPress={onShare} style={styles.secondaryButton} accessibilityRole="button">
+              <Text style={styles.secondaryButtonText}>Share</Text>
+            </Pressable>
+          ) : null}
           <Pressable
             onPress={() => confirmDeleteDocument(document.title, onDelete)}
             style={styles.dangerButton}

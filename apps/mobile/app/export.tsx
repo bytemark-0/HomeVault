@@ -1,15 +1,22 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useHomeVault } from '../src/context/HomeVaultContext';
 import { ExportManifestScreen } from '../src/screens/ExportManifestScreen';
 import { colors } from '../src/theme/colors';
-import type { HomeVaultExportChecklistItem, HomeVaultExportPackage } from '@homevault/export';
+import {
+  HOMEVAULT_TRUSTED_SHARE_AUDIENCES,
+  type HomeVaultExportChecklistItem,
+  type HomeVaultExportPackage,
+  type HomeVaultTrustedShareAudienceKey,
+} from '@homevault/export';
 import { getHomeVaultRepository } from '../src/data/localHomeVaultRepository';
 import { buildRestoreSnapshot, type ValidatedBackup } from '../src/utils/backupImport';
+import { getAnnualReviewTaskRoute } from '../src/utils/annualReview';
 
 export default function ExportRoute() {
+  const params = useLocalSearchParams<{ audience?: string; focus?: string }>();
   const { appData, reload, setBackupSummary, setRestoreSummary, showToast } = useHomeVault();
 
   if (!appData) return null;
@@ -74,14 +81,20 @@ export default function ExportRoute() {
       return;
     }
     if (fixId === 'tasks') {
-      if (firstOpenTask) { router.push(`/task/${firstOpenTask.id}`); return; }
+      if (firstOpenTask) { router.push(getAnnualReviewTaskRoute(firstOpenTask.id)); return; }
       router.push('/(tabs)/maintenance');
       return;
     }
-    if (firstOpenTask) { router.push(`/task/${firstOpenTask.id}`); return; }
+    if (firstOpenTask) { router.push(getAnnualReviewTaskRoute(firstOpenTask.id)); return; }
     if (firstAsset) { router.push(`/asset/${firstAsset.id}/add-repair`); return; }
     router.push('/(tabs)/maintenance');
   };
+
+  const initialTrustedShareAudience = HOMEVAULT_TRUSTED_SHARE_AUDIENCES.some(
+    (audience) => audience.key === params.audience,
+  )
+    ? (params.audience as HomeVaultTrustedShareAudienceKey)
+    : undefined;
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -90,10 +103,16 @@ export default function ExportRoute() {
         rooms={appData.rooms}
         assets={appData.assets}
         documents={appData.documents}
+        accessItems={appData.accessItems}
+        emergencyContacts={appData.emergencyContacts}
+        importantAccounts={appData.importantAccounts}
+        continuityPlaybooks={appData.continuityPlaybooks}
         parts={appData.parts}
         tasks={appData.tasks}
         taskCompletions={appData.taskCompletions}
         repairEvents={appData.repairEvents}
+        initialFocusSection={params.focus === 'trusted-share' || params.focus === 'packet' ? params.focus : undefined}
+        initialTrustedShareAudience={initialTrustedShareAudience}
         onBackupCreated={handleBackupCreated}
         onBack={() => router.back()}
         onFixPress={handleFixPress}

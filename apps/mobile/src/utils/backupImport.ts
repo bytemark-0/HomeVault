@@ -188,6 +188,20 @@ export async function buildRestoreSnapshot(
     rooms,
     assets,
     documents,
+    accessItems: backup.package.records.accessItems.map((accessItem) => ({
+      ...accessItem,
+      linkedDocumentIds: [...accessItem.linkedDocumentIds],
+    })),
+    emergencyContacts: backup.package.records.emergencyContacts.map((contact) => ({ ...contact })),
+    importantAccounts: backup.package.records.importantAccounts.map((account) => ({
+      ...account,
+      linkedDocumentIds: [...account.linkedDocumentIds],
+    })),
+    continuityPlaybooks: backup.package.records.continuityPlaybooks.map((playbook) => ({
+      ...playbook,
+      steps: playbook.steps.map((step) => ({ ...step })),
+      linkedRecordIds: [...playbook.linkedRecordIds],
+    })),
     tasks: backup.package.records.tasks.map((task) => ({ ...task })),
     taskCompletions: backup.package.records.taskCompletions.map((completion) => ({ ...completion })),
     repairEvents: backup.package.records.repairEvents.map((repairEvent) => ({
@@ -433,6 +447,20 @@ function exportPackageToSnapshot(exportPackage: HomeVaultExportPackage): HomeVau
     documents: exportPackage.records.documents.map((document) => ({
       ...document,
       linkedRecordIds: [...document.linkedRecordIds],
+    })),
+    accessItems: exportPackage.records.accessItems.map((accessItem) => ({
+      ...accessItem,
+      linkedDocumentIds: [...accessItem.linkedDocumentIds],
+    })),
+    emergencyContacts: exportPackage.records.emergencyContacts.map((contact) => ({ ...contact })),
+    importantAccounts: exportPackage.records.importantAccounts.map((account) => ({
+      ...account,
+      linkedDocumentIds: [...account.linkedDocumentIds],
+    })),
+    continuityPlaybooks: exportPackage.records.continuityPlaybooks.map((playbook) => ({
+      ...playbook,
+      steps: playbook.steps.map((step) => ({ ...step })),
+      linkedRecordIds: [...playbook.linkedRecordIds],
     })),
     tasks: exportPackage.records.tasks.map((task) => ({ ...task })),
     taskCompletions: exportPackage.records.taskCompletions.map((completion) => ({ ...completion })),

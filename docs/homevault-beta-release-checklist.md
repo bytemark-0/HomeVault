@@ -187,6 +187,27 @@ Verification note:
 
 ---
 
+## Emergency Plan Release Hardening
+
+Run this focused pass before calling the Emergency Plan release ready:
+
+- [ ] Verify onboarding → Emergency tab → packet export → trusted share on a clean install.
+- [ ] Verify upgraded-install behavior with existing household continuity data present.
+- [ ] Verify empty, partial, and fully prepared household states across Emergency, Export, and annual review.
+- [ ] Verify trusted-share, packet export, and annual review behavior on web and native surfaces.
+- [ ] Verify sensitive values do not appear in previews, logs, notifications, or stale-route recovery screens.
+- [ ] Run at least one spouse/partner and one helper handoff pilot.
+
+Required regression command:
+
+```bash
+npm run test:emergency-plan
+```
+
+Record findings in the release notes or link follow-up bugs before shipping.
+
+---
+
 ## Stop-Ship Rules
 
 Pause beta distribution for any:

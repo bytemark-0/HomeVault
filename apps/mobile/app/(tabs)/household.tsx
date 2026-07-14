@@ -6,7 +6,8 @@ import { SampleModeNotice } from '../../src/components/SampleModeNotice';
 import { HouseholdScreen } from '../../src/screens/HouseholdScreen';
 import { printPropertySummary } from '../../src/utils/printReport';
 import { getHomeVaultRepository } from '../../src/data/localHomeVaultRepository';
-import { getSetupChecklistProgress, restoreSetupChecklist } from '../../src/utils/setupChecklist';
+import { getSetupChecklistProgress } from '../../src/utils/setupChecklist';
+import { buildSeasonalReadinessTracks } from '../../src/utils/seasonalReadiness';
 export default function HouseholdTab() {
   const { appData, backupSummary, restoreSummary, setRestoreSummary, reload, showToast } = useHomeVault();
 
@@ -29,16 +30,26 @@ export default function HouseholdTab() {
     appData?.documents.filter((d) => d.linkedRecordIds.length > 0).length ?? 0;
   const documentedAssetCount =
     appData?.assets.filter((a) => a.documentCount > 0).length ?? 0;
-  const hasIncompleteGettingStarted = appData
+  const readinessProgress = appData
     ? getSetupChecklistProgress({
-        roomCount: appData.roomCount,
-        assetCount: appData.assetCount,
-        taskCount: appData.tasks.length,
-        documentCount: appData.documentCount,
-        hasPropertyPhoto: Boolean(appData.property.photoUri),
-        backupCreated: Boolean(backupSummary),
-      }).incomplete.length > 0
-    : false;
+        accessItems: appData.accessItems,
+        assets: appData.assets,
+        emergencyContacts: appData.emergencyContacts,
+        importantAccounts: appData.importantAccounts,
+      })
+    : null;
+  const hasIncompleteGettingStarted = (readinessProgress?.incomplete.length ?? 0) > 0;
+  const seasonalTracks = appData
+    ? buildSeasonalReadinessTracks({
+        property: appData.property,
+        assets: appData.assets,
+        documents: appData.documents,
+        accessItems: appData.accessItems,
+        emergencyContacts: appData.emergencyContacts,
+        importantAccounts: appData.importantAccounts,
+        continuityPlaybooks: appData.continuityPlaybooks,
+      })
+    : [];
 
   if (!appData) return null;
 
@@ -54,15 +65,27 @@ export default function HouseholdTab() {
         backupSummary={backupSummary ?? undefined}
         isDemo={appData.property.label === 'Maple Street home'}
         property={appData.property}
+        readinessDoneCount={readinessProgress?.doneCount ?? 0}
+        readinessNextLabel={readinessProgress?.next?.label}
+        readinessTotal={readinessProgress?.total ?? 0}
         restoreSummary={restoreSummary ?? undefined}
         rooms={appData.rooms}
+        seasonalTracks={seasonalTracks}
         onAddRoom={() => router.push('/room/new')}
         onDismissRestoreNotice={() => setRestoreSummary(null)}
         onEditProperty={() => router.push('/property/edit')}
         onExportManifest={() => router.push('/export')}
+        onOpenSeasonalTrack={(trackKey) => {
+          const track = seasonalTracks.find((item) => item.key === trackKey);
+
+          if (!track) {
+            return;
+          }
+
+          router.push(track.route as never);
+        }}
         onShowGettingStarted={async () => {
-          await restoreSetupChecklist();
-          router.push('/(tabs)');
+          router.push('/readiness-setup');
         }}
         onPrintSummary={() => void handlePrintSummary()}
         onResetDemoData={async () => {

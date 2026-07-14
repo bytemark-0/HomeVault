@@ -1,5 +1,12 @@
 import { fireEvent, render } from '@testing-library/react-native';
 
+jest.mock('expo-file-system/legacy', () => ({
+  documentDirectory: 'file:///documents/',
+  getInfoAsync: jest.fn(async () => ({ exists: false })),
+  readAsStringAsync: jest.fn(),
+  writeAsStringAsync: jest.fn(),
+}));
+
 const mockRouter = {
   push: jest.fn(),
 };
@@ -36,17 +43,73 @@ describe('HomeTab quick actions', () => {
         },
         assetCount: 0,
         roomCount: 0,
-        documentCount: 0,
-        activeTaskCount: 0,
+        documentCount: 1,
+        activeTaskCount: 1,
         healthScore: null,
         rooms: [],
-        assets: [],
-        dueTasks: [],
+        assets: [
+          {
+            id: 'asset-1',
+            propertyId: 'property-1',
+            roomId: 'room-1',
+            name: 'Water heater',
+            category: 'Appliance',
+            roomName: 'Utility',
+            documentCount: 1,
+            lastServiceLabel: 'Not serviced',
+            nextTaskLabel: 'Flush tank',
+            warrantyExpiringSoon: false,
+            status: 'ready' as const,
+          },
+        ],
+        dueTasks: [
+          {
+            id: 'task-1',
+            propertyId: 'property-1',
+            scope: 'asset' as const,
+            scopeId: 'asset-1',
+            title: 'Flush tank',
+            state: 'upcoming' as const,
+            recurrenceKind: 'interval' as const,
+            recurrenceLabel: 'Yearly',
+            scopeLabel: 'Water heater',
+            dueLabel: 'Jul 10',
+          },
+        ],
         recentAssets: [],
         recentActivity: [],
         savedCostLabel: '$0',
-        documents: [],
-        tasks: [],
+        documents: [
+          {
+            id: 'document-1',
+            propertyId: 'property-1',
+            title: 'Water heater manual',
+            type: 'manual' as const,
+            typeLabel: 'Manual',
+            linkedToLabel: 'Water heater',
+            dateLabel: 'Jun 27, 2026',
+            linkedRecords: [{ id: 'asset-1', label: 'Water heater', kind: 'asset' as const }],
+            linkedRecordIds: ['asset-1'],
+          },
+        ],
+        accessItems: [],
+        emergencyContacts: [],
+        importantAccounts: [],
+        continuityPlaybooks: [],
+        tasks: [
+          {
+            id: 'task-1',
+            propertyId: 'property-1',
+            scope: 'asset' as const,
+            scopeId: 'asset-1',
+            title: 'Flush tank',
+            state: 'upcoming' as const,
+            recurrenceKind: 'interval' as const,
+            recurrenceLabel: 'Yearly',
+            scopeLabel: 'Water heater',
+            dueLabel: 'Jul 10',
+          },
+        ],
         taskCompletions: [],
         repairEvents: [],
         parts: [],
@@ -60,12 +123,28 @@ describe('HomeTab quick actions', () => {
   it('routes quick actions with one tap from the dashboard', async () => {
     const { getByText } = await render(<HomeTab />);
 
-    fireEvent.press(getByText('Add asset'));
-    fireEvent.press(getByText('Add task'));
-    fireEvent.press(getByText('Add document'));
+    expect(getByText('What this already protects')).toBeTruthy();
+    expect(getByText('1 device documented')).toBeTruthy();
+    expect(getByText('1 reminder scheduled')).toBeTruthy();
+    expect(getByText('Next best step')).toBeTruthy();
+    expect(getByText('Save Wi-Fi details')).toBeTruthy();
 
-    expect(mockRouter.push).toHaveBeenNthCalledWith(1, '/asset/new');
-    expect(mockRouter.push).toHaveBeenNthCalledWith(2, '/task/new');
-    expect(mockRouter.push).toHaveBeenNthCalledWith(3, '/document/new');
+    fireEvent.press(getByText('Access details'));
+    fireEvent.press(getByText('Emergency contacts'));
+    fireEvent.press(getByText('Annual review'));
+    fireEvent.press(getByText('Insurance records'));
+    fireEvent.press(getByText('Add device'));
+
+    expect(mockRouter.push).toHaveBeenNthCalledWith(1, '/(tabs)/access');
+    expect(mockRouter.push).toHaveBeenNthCalledWith(2, '/contact');
+    expect(mockRouter.push).toHaveBeenNthCalledWith(3, '/annual-review');
+    expect(mockRouter.push).toHaveBeenNthCalledWith(4, {
+      pathname: '/(tabs)/documents',
+      params: { collection: 'insurance' },
+    });
+    expect(mockRouter.push).toHaveBeenNthCalledWith(5, {
+      pathname: '/asset/new',
+      params: { mode: 'device' },
+    });
   });
 });

@@ -1,12 +1,17 @@
 import type { ReactNode } from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
-import { QuickStartScreen } from '../../screens/onboarding/QuickStartScreen';
+import {
+  getEmergencyPriorityForCount,
+  getQuickStartChecklistProgress,
+  QuickStartScreen,
+} from '../../screens/onboarding/QuickStartScreen';
 import { getHomeVaultRepository } from '../../data/localHomeVaultRepository';
-
-const mockFirstAssetScreen = jest.fn();
-const mockAddTaskScreen = jest.fn();
-const mockAddDocumentScreen = jest.fn();
+import {
+  clearReadinessSetupState,
+  readReadinessSetupState,
+  writeReadinessSetupState,
+} from '../../utils/onboardingStorage';
 
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaView: ({ children }: { children: ReactNode }) => children,
@@ -17,20 +22,27 @@ jest.mock('../../data/localHomeVaultRepository', () => ({
   getHomeVaultRepository: jest.fn(),
 }));
 
-jest.mock('../../screens/onboarding/FirstAssetScreen', () => ({
-  FirstAssetScreen: (props: unknown) => mockFirstAssetScreen(props),
-}));
-
-jest.mock('../../screens/AddTaskScreen', () => ({
-  AddTaskScreen: (props: unknown) => mockAddTaskScreen(props),
-}));
-
-jest.mock('../../screens/AddDocumentScreen', () => ({
-  AddDocumentScreen: (props: unknown) => mockAddDocumentScreen(props),
-}));
+jest.mock('../../utils/onboardingStorage', () => {
+  const actual = jest.requireActual('../../utils/onboardingStorage');
+  return {
+    ...actual,
+    readReadinessSetupState: jest.fn(),
+    writeReadinessSetupState: jest.fn().mockResolvedValue(undefined),
+    clearReadinessSetupState: jest.fn().mockResolvedValue(undefined),
+  };
+});
 
 const mockGetHomeVaultRepository = getHomeVaultRepository as jest.MockedFunction<
   typeof getHomeVaultRepository
+>;
+const mockReadReadinessSetupState = readReadinessSetupState as jest.MockedFunction<
+  typeof readReadinessSetupState
+>;
+const mockWriteReadinessSetupState = writeReadinessSetupState as jest.MockedFunction<
+  typeof writeReadinessSetupState
+>;
+const mockClearReadinessSetupState = clearReadinessSetupState as jest.MockedFunction<
+  typeof clearReadinessSetupState
 >;
 
 describe('QuickStartScreen', () => {
@@ -41,255 +53,147 @@ describe('QuickStartScreen', () => {
     type: 'single_family' as const,
   };
 
+  function buildRepo({
+    accessItems = [],
+    assets = [],
+    emergencyContacts = [],
+    importantAccounts = [],
+  }: {
+    accessItems?: unknown[];
+    assets?: unknown[];
+    emergencyContacts?: unknown[];
+    importantAccounts?: unknown[];
+  } = {}) {
+    return {
+      getAccessItems: jest.fn().mockResolvedValue(accessItems),
+      getAssets: jest.fn().mockResolvedValue(assets),
+      getEmergencyContacts: jest.fn().mockResolvedValue(emergencyContacts),
+      getImportantAccounts: jest.fn().mockResolvedValue(importantAccounts),
+      createAccessItem: jest.fn().mockResolvedValue({ id: 'access-1' }),
+      createAsset: jest.fn().mockResolvedValue({ id: 'asset-1' }),
+      createEmergencyContact: jest.fn().mockResolvedValue({ id: 'contact-1' }),
+      createImportantAccount: jest.fn().mockResolvedValue({ id: 'account-1' }),
+    };
+  }
+
   beforeEach(() => {
     jest.clearAllMocks();
-    mockGetHomeVaultRepository.mockResolvedValue({
-      createTask: jest.fn().mockResolvedValue({ id: 'task-1' }),
-      createDocument: jest.fn().mockResolvedValue({ id: 'document-1' }),
-    } as never);
-
-    mockFirstAssetScreen.mockImplementation(
-      ({
-        initialCategory,
-        onBack,
-        onSaved,
-      }: {
-        initialCategory: string;
-        onBack: () => void;
-        onSaved: () => void;
-      }) => {
-        const { Pressable, Text } = require('react-native');
-
-        return (
-          <>
-            <Text>{`First asset: ${initialCategory}`}</Text>
-            <Pressable accessibilityRole="button" onPress={onSaved}>
-              <Text>Asset saved</Text>
-            </Pressable>
-            <Pressable accessibilityRole="button" onPress={onBack}>
-              <Text>Asset back</Text>
-            </Pressable>
-          </>
-        );
-      },
-    );
-
-    mockAddTaskScreen.mockImplementation(
-      ({
-        onCancel,
-        onSave,
-      }: {
-        onCancel: () => void;
-        onSave: (input: unknown) => Promise<void>;
-      }) => {
-        const { Pressable, Text } = require('react-native');
-
-        return (
-          <>
-            <Text>First task screen</Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() =>
-                void onSave({
-                  propertyId: 'property-1',
-                  scope: 'property',
-                  scopeId: 'property-1',
-                  title: 'Replace filter',
-                  dueDate: '2026-12-01',
-                  recurrenceKind: 'interval',
-                  recurrenceLabel: 'Monthly',
-                  state: 'upcoming',
-                })
-              }
-            >
-              <Text>Task saved</Text>
-            </Pressable>
-            <Pressable accessibilityRole="button" onPress={onCancel}>
-              <Text>Task cancel</Text>
-            </Pressable>
-          </>
-        );
-      },
-    );
-
-    mockAddDocumentScreen.mockImplementation(
-      ({
-        onCancel,
-        onSave,
-      }: {
-        onCancel: () => void;
-        onSave: (input: unknown) => Promise<void>;
-      }) => {
-        const { Pressable, Text } = require('react-native');
-
-        return (
-          <>
-            <Text>First document screen</Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() =>
-                void onSave({
-                  propertyId: 'property-1',
-                  title: 'Warranty packet',
-                  type: 'warranty',
-                  linkedRecordIds: ['property-1'],
-                })
-              }
-            >
-              <Text>Document saved</Text>
-            </Pressable>
-            <Pressable accessibilityRole="button" onPress={onCancel}>
-              <Text>Document cancel</Text>
-            </Pressable>
-          </>
-        );
-      },
-    );
+    mockReadReadinessSetupState.mockResolvedValue({ currentStep: null, skippedSteps: [] });
   });
 
-  it('shows the quick-start choices and helper copy', async () => {
-    const { getByText } = await render(
+  it('starts with Wi-Fi as the first readiness step for a new setup', async () => {
+    mockGetHomeVaultRepository.mockResolvedValue(buildRepo() as never);
+
+    const { getByText, queryAllByText } = await render(
       <QuickStartScreen property={property} onDone={jest.fn()} />,
     );
 
-    expect(getByText('What do you want to add first?')).toBeTruthy();
-    expect(getByText('Add an appliance')).toBeTruthy();
-    expect(getByText('Add a home system')).toBeTruthy();
-    expect(getByText('Add a maintenance reminder')).toBeTruthy();
-    expect(getByText('Save a document')).toBeTruthy();
-    expect(getByText('Skip to dashboard')).toBeTruthy();
+    await waitFor(() => expect(getByText('Add the essentials first')).toBeTruthy());
+    expect(getByText('0 of 5')).toBeTruthy();
+    expect(queryAllByText('Save Wi-Fi details').length).toBeGreaterThan(0);
   });
 
-  it('opens the appliance flow', async () => {
-    const { getByText } = await render(
+  it('resumes the saved readiness step when onboarding is reopened', async () => {
+    mockGetHomeVaultRepository.mockResolvedValue(buildRepo() as never);
+    mockReadReadinessSetupState.mockResolvedValue({
+      currentStep: 'insurance',
+      skippedSteps: ['wifi', 'access'],
+    });
+
+    const { queryAllByText } = await render(
       <QuickStartScreen property={property} onDone={jest.fn()} />,
     );
-
-    await fireEvent.press(getByText('Add an appliance'));
-
-    expect(getByText('First asset: Appliance')).toBeTruthy();
-  });
-
-  it('opens the home-system flow with the system category', async () => {
-    const { getByText } = await render(
-      <QuickStartScreen property={property} onDone={jest.fn()} />,
-    );
-
-    await fireEvent.press(getByText('Add a home system'));
-
-    expect(getByText('First asset: Heating & cooling')).toBeTruthy();
-  });
-
-  it('opens the maintenance-reminder flow and returns to choices on cancel', async () => {
-    const { getByText } = await render(
-      <QuickStartScreen property={property} onDone={jest.fn()} />,
-    );
-
-    await fireEvent.press(getByText('Add a maintenance reminder'));
-    expect(getByText('First task screen')).toBeTruthy();
-
-    await fireEvent.press(getByText('Task cancel'));
-    expect(getByText('Add a maintenance reminder')).toBeTruthy();
-  });
-
-  it('opens the document flow and returns to choices on cancel', async () => {
-    const { getByText } = await render(
-      <QuickStartScreen property={property} onDone={jest.fn()} />,
-    );
-
-    await fireEvent.press(getByText('Save a document'));
-    expect(getByText('First document screen')).toBeTruthy();
-
-    await fireEvent.press(getByText('Document cancel'));
-    expect(getByText('Save a document')).toBeTruthy();
-  });
-
-  it('returns to choices when backing out of the first-asset flow', async () => {
-    const { getByText } = await render(
-      <QuickStartScreen property={property} onDone={jest.fn()} />,
-    );
-
-    await fireEvent.press(getByText('Add an appliance'));
-    expect(getByText('First asset: Appliance')).toBeTruthy();
-
-    await fireEvent.press(getByText('Asset back'));
-    expect(getByText('Add an appliance')).toBeTruthy();
-  });
-
-  it('finishes onboarding when skipping quick start', async () => {
-    const onDone = jest.fn();
-    const { getByText } = await render(
-      <QuickStartScreen property={property} onDone={onDone} />,
-    );
-
-    await fireEvent.press(getByText('Skip to dashboard'));
-
-    expect(onDone).toHaveBeenCalledTimes(1);
-  });
-
-  it('finishes onboarding after the first-asset flow saves', async () => {
-    const onDone = jest.fn();
-    const { getByText } = await render(
-      <QuickStartScreen property={property} onDone={onDone} />,
-    );
-
-    await fireEvent.press(getByText('Add an appliance'));
-    await fireEvent.press(getByText('Asset saved'));
-
-    expect(onDone).toHaveBeenCalledTimes(1);
-  });
-
-  it('creates a first task and then finishes onboarding', async () => {
-    const repo = {
-      createTask: jest.fn().mockResolvedValue({ id: 'task-1' }),
-      createDocument: jest.fn().mockResolvedValue({ id: 'document-1' }),
-    };
-    mockGetHomeVaultRepository.mockResolvedValue(repo as never);
-    const onDone = jest.fn();
-    const { getByText } = await render(
-      <QuickStartScreen property={property} onDone={onDone} />,
-    );
-
-    await fireEvent.press(getByText('Add a maintenance reminder'));
-    await fireEvent.press(getByText('Task saved'));
 
     await waitFor(() =>
-      expect(repo.createTask).toHaveBeenCalledWith({
-        propertyId: 'property-1',
-        scope: 'property',
-        scopeId: 'property-1',
-        title: 'Replace filter',
-        dueDate: '2026-12-01',
-        recurrenceKind: 'interval',
-        recurrenceLabel: 'Monthly',
-        state: 'upcoming',
-      }),
+      expect(queryAllByText('Add an insurance account').length).toBeGreaterThan(0),
     );
-    expect(onDone).toHaveBeenCalledTimes(1);
   });
 
-  it('creates a first document and then finishes onboarding', async () => {
-    const repo = {
-      createTask: jest.fn().mockResolvedValue({ id: 'task-1' }),
-      createDocument: jest.fn().mockResolvedValue({ id: 'document-1' }),
-    };
-    mockGetHomeVaultRepository.mockResolvedValue(repo as never);
-    const onDone = jest.fn();
-    const { getByText } = await render(
-      <QuickStartScreen property={property} onDone={onDone} />,
+  it('uses saved records to jump ahead for a partially completed setup', async () => {
+    mockGetHomeVaultRepository.mockResolvedValue(
+      buildRepo({
+        accessItems: [
+          { id: 'wifi-1', propertyId: 'property-1', category: 'wifi' },
+          { id: 'garage-1', propertyId: 'property-1', category: 'garage' },
+        ],
+      }) as never,
     );
 
-    await fireEvent.press(getByText('Save a document'));
-    await fireEvent.press(getByText('Document saved'));
+    const { getByText, queryAllByText } = await render(
+      <QuickStartScreen property={property} onDone={jest.fn()} />,
+    );
 
     await waitFor(() =>
-      expect(repo.createDocument).toHaveBeenCalledWith({
+      expect(queryAllByText('Add an insurance account').length).toBeGreaterThan(0),
+    );
+    expect(getByText('2 of 5')).toBeTruthy();
+  });
+
+  it('saves Wi-Fi details and advances to the next unfinished step', async () => {
+    const repo = buildRepo();
+    repo.getAccessItems
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ id: 'wifi-1', propertyId: 'property-1', category: 'wifi' }]);
+    mockGetHomeVaultRepository.mockResolvedValue(repo as never);
+
+    const { getByLabelText, getByText, queryAllByText } = await render(
+      <QuickStartScreen property={property} onDone={jest.fn()} />,
+    );
+
+    await waitFor(() => expect(queryAllByText('Save Wi-Fi details').length).toBeGreaterThan(0));
+
+    const networkNameInput = getByLabelText('Network name');
+    const passwordInput = getByLabelText('Password');
+    const routerLocationInput = getByLabelText('Router location');
+
+    fireEvent.changeText(networkNameInput, 'OakStreet-5G');
+    fireEvent.changeText(passwordInput, '9274');
+    fireEvent.changeText(routerLocationInput, 'Hall closet shelf');
+    await waitFor(() => expect(networkNameInput.props.value).toBe('OakStreet-5G'));
+    await waitFor(() => expect(passwordInput.props.value).toBe('9274'));
+    await waitFor(() => expect(routerLocationInput.props.value).toBe('Hall closet shelf'));
+    fireEvent.press(getByText('Save and continue'));
+
+    await waitFor(() =>
+      expect(repo.createAccessItem).toHaveBeenCalledWith({
         propertyId: 'property-1',
-        title: 'Warranty packet',
-        type: 'warranty',
-        linkedRecordIds: ['property-1'],
+        category: 'wifi',
+        label: 'Wi-Fi access',
+        username: 'OakStreet-5G',
+        accessCode: '9274',
+        location: 'Hall closet shelf',
+        linkedDocumentIds: [],
+        lastVerifiedAt: expect.any(String),
       }),
     );
-    expect(onDone).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(queryAllByText('Save an access code').length).toBeGreaterThan(0));
+    expect(mockWriteReadinessSetupState).toHaveBeenCalledWith({
+      currentStep: 'access',
+      skippedSteps: [],
+    });
+  });
+
+  it('keeps emergency onboarding incomplete until three contacts are saved', () => {
+    const progress = getQuickStartChecklistProgress({
+      accessItems: [
+        { category: 'wifi' as const },
+        { category: 'garage' as const },
+      ],
+      assets: [{ category: 'Network', name: 'Router' }],
+      emergencyContacts: [{ id: 'contact-1' }],
+      importantAccounts: [{ kind: 'insurance' as const }],
+    });
+
+    expect(progress.doneCount).toBe(4);
+    expect(progress.done.has('emergency')).toBe(false);
+    expect(progress.emergencyContactCount).toBe(1);
+    expect(progress.next?.key).toBe('emergency');
+  });
+
+  it('assigns onboarding emergency contacts a useful priority sequence', () => {
+    expect(getEmergencyPriorityForCount(0)).toBe('primary');
+    expect(getEmergencyPriorityForCount(1)).toBe('secondary');
+    expect(getEmergencyPriorityForCount(2)).toBe('service_provider');
+    expect(getEmergencyPriorityForCount(3)).toBe('other');
   });
 });

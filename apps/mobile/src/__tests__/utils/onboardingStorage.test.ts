@@ -21,8 +21,10 @@ jest.mock('expo-file-system/legacy', () => {
 });
 
 import {
+  readReadinessSetupState,
   readCreatePropertyDraft,
   readOnboardingState,
+  writeReadinessSetupState,
   writeCreatePropertyDraft,
 } from '../../utils/onboardingStorage';
 
@@ -75,5 +77,37 @@ describe('onboardingStorage', () => {
     await writeCreatePropertyDraft(draft);
 
     await expect(readCreatePropertyDraft()).resolves.toEqual(draft);
+  });
+
+  it('falls back safely when readiness setup state is invalid', async () => {
+    FileSystem.__setFile(
+      'file:///documents/readiness_setup_state.json',
+      JSON.stringify({
+        currentStep: 'not-real',
+        skippedSteps: ['wifi', 'broken-step'],
+      }),
+    );
+
+    await expect(readReadinessSetupState()).resolves.toEqual({
+      currentStep: null,
+      skippedSteps: ['wifi'],
+    });
+  });
+
+  it('round-trips readiness setup state', async () => {
+    const state = {
+      currentStep: 'emergency' as const,
+      skippedSteps: ['wifi', 'access'] as const,
+    };
+
+    await writeReadinessSetupState({
+      currentStep: state.currentStep,
+      skippedSteps: [...state.skippedSteps],
+    });
+
+    await expect(readReadinessSetupState()).resolves.toEqual({
+      currentStep: 'emergency',
+      skippedSteps: ['wifi', 'access'],
+    });
   });
 });

@@ -12,7 +12,7 @@ import {
 } from '../utils/setupChecklist';
 
 export function SetupChecklistCard() {
-  const { appData, backupSummary } = useHomeVault();
+  const { appData } = useHomeVault();
   const [dismissed, setDismissed] = useState(true);
   const [expanded, setExpanded] = useState(false);
 
@@ -23,12 +23,10 @@ export function SetupChecklistCard() {
   if (!appData || dismissed) return null;
 
   const { done, doneCount, incomplete, next, total } = getSetupChecklistProgress({
-    roomCount: appData.roomCount,
-    assetCount: appData.assetCount,
-    taskCount: appData.tasks.length,
-    documentCount: appData.documentCount,
-    hasPropertyPhoto: Boolean(appData.property.photoUri),
-    backupCreated: Boolean(backupSummary),
+    accessItems: appData.accessItems,
+    assets: appData.assets,
+    emergencyContacts: appData.emergencyContacts,
+    importantAccounts: appData.importantAccounts,
   });
   if (incomplete.length === 0) return null;
   if (!next) return null;
@@ -41,7 +39,7 @@ export function SetupChecklistCard() {
   return (
     <View style={styles.card}>
       <View style={styles.headerRow}>
-        <Text style={styles.heading}>Getting started</Text>
+        <Text style={styles.heading}>Readiness setup</Text>
         <Text style={styles.progress}>
           {doneCount} of {total}
         </Text>

@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { useHomeVault } from '../src/context/HomeVaultContext';
 import { SearchScreen } from '../src/screens/SearchScreen';
 import { colors } from '../src/theme/colors';
+import { getAnnualReviewTaskRoute } from '../src/utils/annualReview';
 
 export default function SearchRoute() {
   const { appData } = useHomeVault();
@@ -20,7 +21,7 @@ export default function SearchRoute() {
         onAssetPress={(id) => { router.back(); router.push(`/asset/${id}`); }}
         onDocumentPress={(id) => { router.back(); router.push(`/document/${id}`); }}
         onRoomPress={(id) => { router.back(); router.push(`/room/${id}`); }}
-        onTaskPress={(id) => { router.back(); router.push(`/task/${id}`); }}
+        onTaskPress={(id) => { router.back(); router.push(getAnnualReviewTaskRoute(id)); }}
         onClose={() => router.back()}
       />
     </View>

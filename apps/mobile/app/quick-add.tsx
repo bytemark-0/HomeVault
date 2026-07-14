@@ -17,9 +17,10 @@ export default function QuickAddRoute() {
     <SafeAreaView style={styles.safe}>
       <QuickAddScreen
         repairAssetName={quickRepairAsset?.name}
-        onAddAsset={() => { router.back(); router.push('/asset/new'); }}
-        onAddDocument={() => { router.back(); router.push('/document/new'); }}
-        onAddTask={() => { router.back(); router.push('/task/new'); }}
+        onOpenAccess={() => { router.back(); router.push('/(tabs)/access'); }}
+        onOpenDevices={() => { router.back(); router.push({ pathname: '/asset/new', params: { mode: 'device' } }); }}
+        onOpenDocuments={() => { router.back(); router.push('/document/new'); }}
+        onOpenEmergency={() => { router.back(); router.push('/(tabs)/emergency'); }}
         onCancel={() => router.back()}
         onRecordRepair={() => {
           router.back();

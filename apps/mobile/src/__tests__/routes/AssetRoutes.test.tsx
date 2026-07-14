@@ -11,6 +11,7 @@ const mockRouter = {
 const mockUseLocalSearchParams = jest.fn();
 const mockUseHomeVault = jest.fn();
 const mockGetHomeVaultRepository = jest.fn();
+const mockMaybeAddRecommendedMaintenanceTasks = jest.fn();
 let mockAddAssetSaveInput: CreateAssetInput | UpdateAssetInput = {
   propertyId: 'property-1',
   name: 'Dishwasher',
@@ -29,6 +30,11 @@ jest.mock('../../context/HomeVaultContext', () => ({
 
 jest.mock('../../data/localHomeVaultRepository', () => ({
   getHomeVaultRepository: () => mockGetHomeVaultRepository(),
+}));
+
+jest.mock('../../utils/recommendedMaintenance', () => ({
+  maybeAddRecommendedMaintenanceTasks: (...args: unknown[]) =>
+    mockMaybeAddRecommendedMaintenanceTasks(...args),
 }));
 
 jest.mock('../../data/homeVaultSampleData', () => ({
@@ -63,9 +69,13 @@ jest.mock('../../screens/AssetDetailScreen', () => ({
   AssetDetailScreen: ({
     onBack,
     onDelete,
+    onMarkReviewed,
+    onShare,
   }: {
     onBack: () => void;
     onDelete: () => void;
+    onMarkReviewed?: () => void;
+    onShare?: () => void;
   }) => {
     const { Pressable, Text } = require('react-native');
 
@@ -77,6 +87,16 @@ jest.mock('../../screens/AssetDetailScreen', () => ({
         <Pressable accessibilityRole="button" onPress={onDelete}>
           <Text>trigger delete</Text>
         </Pressable>
+        {onMarkReviewed ? (
+          <Pressable accessibilityRole="button" onPress={onMarkReviewed}>
+            <Text>trigger review</Text>
+          </Pressable>
+        ) : null}
+        {onShare ? (
+          <Pressable accessibilityRole="button" onPress={onShare}>
+            <Text>trigger share</Text>
+          </Pressable>
+        ) : null}
       </>
     );
   },
@@ -171,6 +191,7 @@ describe('asset routes', () => {
       }),
       deleteAsset: jest.fn().mockResolvedValue(undefined),
     });
+    mockMaybeAddRecommendedMaintenanceTasks.mockResolvedValue(0);
     mockRouter.canGoBack.mockReturnValue(false);
     mockAddAssetSaveInput = {
       propertyId: 'property-1',
@@ -212,6 +233,38 @@ describe('asset routes', () => {
     expect(mockRouter.back).not.toHaveBeenCalled();
   });
 
+  it('reports when recommended reminders are added during asset creation', async () => {
+    const context = buildHomeVaultContext();
+    const repo = {
+      createAsset: jest.fn().mockResolvedValue({
+        id: 'asset-new',
+        propertyId: 'property-1',
+        name: 'Dishwasher',
+        category: 'Appliance',
+        status: 'ready',
+      }),
+    };
+    mockUseHomeVault.mockReturnValue(context);
+    mockGetHomeVaultRepository.mockResolvedValue(repo);
+    mockMaybeAddRecommendedMaintenanceTasks.mockResolvedValue(2);
+
+    const { getByText } = await render(<NewAssetRoute />);
+
+    fireEvent.press(getByText('trigger save'));
+
+    await waitFor(() =>
+      expect(mockMaybeAddRecommendedMaintenanceTasks).toHaveBeenCalledWith(repo, {
+        id: 'asset-new',
+        propertyId: 'property-1',
+        name: 'Dishwasher',
+        category: 'Appliance',
+        status: 'ready',
+      }),
+    );
+    expect(context.showToast).toHaveBeenCalledWith('Asset saved with 2 recommended reminders');
+    expect(mockRouter.replace).toHaveBeenCalledWith('/asset/asset-new');
+  });
+
   it('uses back navigation for new-asset cancel when history exists', async () => {
     mockRouter.canGoBack.mockReturnValue(true);
 
@@ -221,6 +274,40 @@ describe('asset routes', () => {
 
     expect(mockRouter.back).toHaveBeenCalledTimes(1);
     expect(mockRouter.replace).not.toHaveBeenCalled();
+  });
+
+  it('opens the item share flow for device assets', async () => {
+    mockUseLocalSearchParams.mockReturnValue({ id: 'asset-dishwasher', source: 'devices' });
+
+    const { getByText } = await render(<AssetDetailRoute />);
+
+    fireEvent.press(getByText('trigger share'));
+
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/share/item',
+      params: { id: 'asset-dishwasher', recordType: 'asset' },
+    });
+  });
+
+  it('marks device assets reviewed from the detail route', async () => {
+    const context = buildHomeVaultContext();
+    const repo = { updateAsset: jest.fn().mockResolvedValue({ id: 'asset-dishwasher' }) };
+    mockUseHomeVault.mockReturnValue(context);
+    mockGetHomeVaultRepository.mockResolvedValue(repo);
+    mockUseLocalSearchParams.mockReturnValue({ id: 'asset-dishwasher', source: 'devices' });
+
+    const { getByText } = await render(<AssetDetailRoute />);
+    fireEvent.press(getByText('trigger review'));
+
+    await waitFor(() =>
+      expect(repo.updateAsset).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'asset-dishwasher',
+          lastReviewedAt: expect.any(String),
+        }),
+      ),
+    );
+    expect(context.showToast).toHaveBeenCalledWith('Device review updated');
   });
 
   it('shows a recovery view when the asset detail route is stale', async () => {

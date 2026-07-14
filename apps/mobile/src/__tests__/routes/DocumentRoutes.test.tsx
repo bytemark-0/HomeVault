@@ -58,9 +58,11 @@ jest.mock('../../screens/DocumentDetailScreen', () => ({
   DocumentDetailScreen: ({
     onBack,
     onDelete,
+    onShare,
   }: {
     onBack: () => void;
     onDelete: () => Promise<void>;
+    onShare?: () => void;
   }) => {
     const { Pressable, Text } = require('react-native');
 
@@ -72,6 +74,11 @@ jest.mock('../../screens/DocumentDetailScreen', () => ({
         <Pressable accessibilityRole="button" onPress={() => void onDelete()}>
           <Text>trigger delete</Text>
         </Pressable>
+        {onShare ? (
+          <Pressable accessibilityRole="button" onPress={onShare}>
+            <Text>trigger share</Text>
+          </Pressable>
+        ) : null}
       </>
     );
   },
@@ -178,6 +185,27 @@ describe('document routes', () => {
     await waitFor(() => expect(repo.updateDocument).toHaveBeenCalled());
     expect(context.showToast).toHaveBeenCalledWith('Document updated');
     expect(mockRouter.replace).toHaveBeenCalledWith('/document/document-1');
+  });
+
+  it('opens the item share flow for critical documents', async () => {
+    const context = buildHomeVaultContext();
+    context.appData.documents = [
+      {
+        ...context.appData.documents[0],
+        type: 'emergency',
+        typeLabel: 'Emergency',
+        title: 'Water shutoff map',
+      },
+    ];
+    mockUseHomeVault.mockReturnValue(context);
+
+    const { getByText } = await render(<DocumentDetailRoute />);
+    fireEvent.press(getByText('trigger share'));
+
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/share/item',
+      params: { id: 'document-1', recordType: 'document' },
+    });
   });
 
   it('deletes the document and returns to Documents', async () => {

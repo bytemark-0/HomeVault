@@ -174,10 +174,10 @@ export function SearchScreen({
       >
         {!hasQuery ? (
           <View style={styles.hintPanel}>
-            <Text style={styles.hintTitle}>Search everything</Text>
+            <Text style={styles.hintTitle}>Search the whole household guide</Text>
             <Text style={styles.hintText}>
-              Find assets, documents, tasks, and rooms by name, brand, model, serial, vendor, or
-              any other detail — all at once.
+              Find devices, documents, reminders, and areas by name, brand, model, serial,
+              vendor, or any other detail someone might need in the moment.
             </Text>
             <View style={styles.hintKinds}>
               {(['asset', 'document', 'task', 'room'] as const).map((k) => (
@@ -193,7 +193,7 @@ export function SearchScreen({
           <View style={styles.emptyPanel}>
             <Text style={styles.emptyTitle}>No results</Text>
             <Text style={styles.emptyText}>
-              Nothing matched "{trimmed}" across assets, documents, tasks, or rooms.
+              Nothing matched "{trimmed}" across devices, documents, reminders, or areas.
             </Text>
           </View>
         ) : (

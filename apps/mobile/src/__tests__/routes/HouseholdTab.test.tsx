@@ -4,7 +4,6 @@ const mockRouter = {
   push: jest.fn(),
 };
 const mockUseHomeVault = jest.fn();
-const mockRestoreSetupChecklist = jest.fn().mockResolvedValue(undefined);
 
 jest.mock('expo-router', () => ({
   router: mockRouter,
@@ -22,34 +21,42 @@ jest.mock('../../data/localHomeVaultRepository', () => ({
   getHomeVaultRepository: jest.fn(),
 }));
 
-jest.mock('../../utils/setupChecklist', () => {
-  const actual = jest.requireActual('../../utils/setupChecklist');
-  return {
-    ...actual,
-    restoreSetupChecklist: mockRestoreSetupChecklist,
-  };
-});
-
 jest.mock('../../components/SampleModeNotice', () => ({
   SampleModeNotice: () => null,
 }));
 
 jest.mock('../../screens/HouseholdScreen', () => ({
   HouseholdScreen: ({
+    onOpenSeasonalTrack,
     onShowGettingStarted,
+    seasonalTracks,
     showGettingStartedAction,
   }: {
+    onOpenSeasonalTrack?: (key: string) => void;
     onShowGettingStarted?: () => Promise<void>;
+    seasonalTracks?: Array<{ key: string; label: string }>;
     showGettingStartedAction?: boolean;
   }) => {
     const { Pressable, Text } = require('react-native');
 
-    return showGettingStartedAction ? (
-      <Pressable accessibilityRole="button" onPress={() => void onShowGettingStarted?.()}>
-        <Text>Show getting started</Text>
-      </Pressable>
-    ) : (
-      <Text>No getting started action</Text>
+    return (
+      <>
+        {showGettingStartedAction ? (
+          <Pressable accessibilityRole="button" onPress={() => void onShowGettingStarted?.()}>
+            <Text>Show getting started</Text>
+          </Pressable>
+        ) : (
+          <Text>No getting started action</Text>
+        )}
+        {seasonalTracks?.[0] ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => onOpenSeasonalTrack?.(seasonalTracks[0].key)}
+          >
+            <Text>{`Open ${seasonalTracks[0].label}`}</Text>
+          </Pressable>
+        ) : null}
+      </>
     );
   },
 }));
@@ -57,19 +64,17 @@ jest.mock('../../screens/HouseholdScreen', () => ({
 const HouseholdTab = require('../../../app/(tabs)/household').default;
 
 function buildContext({
-  roomCount = 0,
-  assetCount = 0,
-  taskCount = 0,
-  documentCount = 0,
-  photoUri,
+  accessItems = [],
+  assets = [],
+  emergencyContacts = [],
+  importantAccounts = [],
   backupSummary = null,
 }: {
-  roomCount?: number;
-  assetCount?: number;
-  taskCount?: number;
-  documentCount?: number;
-  photoUri?: string;
+  accessItems?: Array<{ category: 'wifi' | 'garage' }>;
+  assets?: Array<{ category: string; name: string }>;
   backupSummary?: { updatedAt: string } | null;
+  emergencyContacts?: Array<{ id: string }>;
+  importantAccounts?: Array<{ kind: 'insurance' }>;
 }) {
   return {
     appData: {
@@ -78,21 +83,24 @@ function buildContext({
         householdId: 'household-1',
         label: 'Home',
         type: 'single_family' as const,
-        photoUri,
       },
-      assetCount,
-      roomCount,
-      documentCount,
-      activeTaskCount: taskCount,
+      assetCount: assets.length,
+      roomCount: 0,
+      documentCount: 0,
+      activeTaskCount: 0,
       healthScore: null,
       rooms: [],
-      assets: [],
+      assets,
       dueTasks: [],
       recentAssets: [],
       recentActivity: [],
       savedCostLabel: '$0',
       documents: [],
-      tasks: Array.from({ length: taskCount }, (_, index) => ({ id: `task-${index}` })),
+      accessItems,
+      emergencyContacts,
+      importantAccounts,
+      continuityPlaybooks: [],
+      tasks: [],
       taskCompletions: [],
       repairEvents: [],
       parts: [],
@@ -108,13 +116,18 @@ function buildContext({
 describe('HouseholdTab getting started action', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-07-10T12:00:00.000Z'));
   });
 
-  it('restores the setup checklist and routes home when guidance is reopened', async () => {
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('opens readiness setup when guidance is reopened', async () => {
     mockUseHomeVault.mockReturnValue(
       buildContext({
-        roomCount: 1,
-        assetCount: 0,
+        accessItems: [],
       }),
     );
 
@@ -122,18 +135,19 @@ describe('HouseholdTab getting started action', () => {
 
     fireEvent.press(getByText('Show getting started'));
 
-    await waitFor(() => expect(mockRestoreSetupChecklist).toHaveBeenCalledTimes(1));
-    expect(mockRouter.push).toHaveBeenCalledWith('/(tabs)');
+    await waitFor(() => expect(mockRouter.push).toHaveBeenCalledWith('/readiness-setup'));
   });
 
   it('does not show the restore action when setup is already complete', async () => {
     mockUseHomeVault.mockReturnValue(
       buildContext({
-        roomCount: 1,
-        assetCount: 1,
-        taskCount: 1,
-        documentCount: 1,
-        photoUri: 'file:///home.jpg',
+        accessItems: [
+          { category: 'wifi' },
+          { category: 'garage' },
+        ],
+        assets: [{ category: 'Network', name: 'Main Wi-Fi router' }],
+        emergencyContacts: [{ id: 'contact-1' }],
+        importantAccounts: [{ kind: 'insurance' }],
         backupSummary: { updatedAt: '2026-06-23T00:00:00.000Z' },
       }),
     );
@@ -141,5 +155,22 @@ describe('HouseholdTab getting started action', () => {
     const { getByText } = await render(<HouseholdTab />);
 
     expect(getByText('No getting started action')).toBeTruthy();
+  });
+
+  it('opens the first active seasonal track from the household summary', async () => {
+    mockUseHomeVault.mockReturnValue(
+      buildContext({
+        accessItems: [{ category: 'garage' }],
+        assets: [{ category: 'Networking', name: 'Main Wi-Fi router' }],
+        emergencyContacts: [{ id: 'contact-1' }],
+        importantAccounts: [{ kind: 'insurance' }],
+      }),
+    );
+
+    const { getByText } = await render(<HouseholdTab />);
+
+    fireEvent.press(getByText('Open Storm season'));
+
+    await waitFor(() => expect(mockRouter.push).toHaveBeenCalledWith('/playbook/guide-storm-prep'));
   });
 });

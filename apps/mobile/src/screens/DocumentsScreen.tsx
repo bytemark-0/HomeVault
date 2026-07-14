@@ -1,10 +1,18 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import type { DocumentRecord } from '@homevault/domain';
 import { SectionTitle } from '../components/SectionTitle';
 import { formatDocumentAttachmentStatus } from '../data/documentAttachmentLabels';
 import type { AssetListItem, DocumentListItem, RoomListItem } from '../data/homeVaultSampleData';
 import { colors } from '../theme/colors';
+import {
+  type DocumentCollectionFilter,
+  getDocumentReadinessLabel,
+  isCriticalDocument,
+  isInsuranceDocument,
+  matchesDocumentCollection,
+} from '../utils/documentTaxonomy';
 
 export type DocumentReviewFilter = 'missingAttachments' | 'missingAssetDocumentation';
 
@@ -14,14 +22,25 @@ type DocumentsScreenProps = {
   propertyId?: string;
   documents: DocumentListItem[];
   documentCount: number;
+  collection?: DocumentCollectionFilter | null;
   reviewFilter?: DocumentReviewFilter | null;
   onAddDocument: () => void;
+  onAddDocumentOfType?: (type: DocumentRecord['type']) => void;
   onAddDocumentForRecord?: (recordId: string) => void;
+  onClearCollection?: () => void;
   onClearReviewFilter?: () => void;
   onDocumentPress: (documentId: string) => void;
+  onShareDocument?: (documentId: string) => void;
 };
 
-const typeFilters = ['All', 'Receipt', 'Manual', 'Warranty', 'Invoice', 'Report'];
+const collectionFilters: Array<{ label: string; value: DocumentCollectionFilter }> = [
+  { label: 'All', value: 'all' },
+  { label: 'Insurance', value: 'insurance' },
+  { label: 'Warranty', value: 'warranty' },
+  { label: 'Manual', value: 'manual' },
+  { label: 'Critical', value: 'critical' },
+  { label: 'General', value: 'general' },
+];
 
 export function DocumentsScreen({
   assets = [],
@@ -29,19 +48,41 @@ export function DocumentsScreen({
   propertyId,
   documents,
   documentCount,
+  collection,
   reviewFilter,
   onAddDocument,
+  onAddDocumentOfType,
   onAddDocumentForRecord,
+  onClearCollection,
   onClearReviewFilter,
   onDocumentPress,
+  onShareDocument,
 }: DocumentsScreenProps) {
   const [query, setQuery] = useState('');
-  const [activeType, setActiveType] = useState('All');
+  const [activeCollection, setActiveCollection] = useState<DocumentCollectionFilter>(
+    collection ?? 'all',
+  );
   const [activeLinkedRecordId, setActiveLinkedRecordId] = useState('');
   const missingDocumentAssets = useMemo(
     () => assets.filter((asset) => asset.documentCount === 0),
     [assets],
   );
+  const insuranceDocuments = useMemo(
+    () => documents.filter((document) => isInsuranceDocument(document)),
+    [documents],
+  );
+  const criticalDocuments = useMemo(
+    () => documents.filter((document) => isCriticalDocument(document)),
+    [documents],
+  );
+  const collectionCount = useMemo(
+    () => documents.filter((document) => matchesDocumentCollection(document, activeCollection)).length,
+    [activeCollection, documents],
+  );
+
+  useEffect(() => {
+    setActiveCollection(collection ?? 'all');
+  }, [collection]);
 
   const linkedRecordOptions = useMemo(() => {
     const linkedIds = new Set(documents.flatMap((d) => d.linkedRecordIds));
@@ -70,7 +111,7 @@ export function DocumentsScreen({
     const normalizedQuery = query.trim().toLowerCase();
 
     return documents.filter((document) => {
-      const matchesType = activeType === 'All' || document.typeLabel === activeType;
+      const matchesType = matchesDocumentCollection(document, activeCollection);
       const matchesLinkedRecord =
         activeLinkedRecordId === '' || document.linkedRecordIds.includes(activeLinkedRecordId);
       const matchesReviewFilter =
@@ -92,7 +133,7 @@ export function DocumentsScreen({
 
       return matchesType && matchesLinkedRecord && matchesReviewFilter && matchesQuery;
     });
-  }, [activeLinkedRecordId, activeType, documents, query, reviewFilter]);
+  }, [activeCollection, activeLinkedRecordId, documents, query, reviewFilter]);
   const isMissingAssetDocumentationFilter = reviewFilter === 'missingAssetDocumentation';
 
   return (
@@ -102,45 +143,117 @@ export function DocumentsScreen({
           {reviewFilter ? 'Readiness review' : 'Document vault'}
         </Text>
         <Text style={styles.focusTitle}>
-          {formatFocusTitle(reviewFilter, documentCount, missingDocumentAssets.length)}
+          {formatFocusTitle(
+            reviewFilter,
+            activeCollection,
+            collectionCount,
+            missingDocumentAssets.length,
+          )}
         </Text>
         <Text style={styles.focusMeta}>
-          {formatFocusMeta(reviewFilter)}
+          {formatFocusMeta(reviewFilter, activeCollection)}
         </Text>
-        {reviewFilter && onClearReviewFilter ? (
+        <View style={styles.focusActions}>
+          {reviewFilter && onClearReviewFilter ? (
+            <Pressable
+              onPress={onClearReviewFilter}
+              style={styles.clearReviewButton}
+              accessibilityRole="button"
+            >
+              <Text style={styles.clearReviewText}>Show all documents</Text>
+            </Pressable>
+          ) : null}
+          {collection && onClearCollection ? (
+            <Pressable
+              onPress={onClearCollection}
+              style={styles.clearReviewButton}
+              accessibilityRole="button"
+            >
+              <Text style={styles.clearReviewText}>Clear collection</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      </View>
+
+      {!reviewFilter ? (
+        <View style={styles.summaryRow}>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryValue}>{insuranceDocuments.length}</Text>
+            <Text style={styles.summaryLabel}>insurance records</Text>
+          </View>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryValue}>
+              {documents.filter((document) => document.type === 'warranty').length}
+            </Text>
+            <Text style={styles.summaryLabel}>warranty files</Text>
+          </View>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryValue}>{criticalDocuments.length}</Text>
+            <Text style={styles.summaryLabel}>critical files</Text>
+          </View>
+        </View>
+      ) : null}
+
+      {!reviewFilter ? (
+        <View style={styles.quickActionRow}>
           <Pressable
-            onPress={onClearReviewFilter}
-            style={styles.clearReviewButton}
+            onPress={() => {
+              if (onAddDocumentOfType) {
+                onAddDocumentOfType('insurance');
+              } else {
+                onAddDocument();
+              }
+            }}
+            style={[styles.quickActionCard, styles.quickActionCardPrimary]}
             accessibilityRole="button"
           >
-            <Text style={styles.clearReviewText}>Show all documents</Text>
+            <Text style={styles.quickActionTitlePrimary}>Save insurance policy</Text>
+            <Text style={styles.quickActionDetailPrimary}>
+              Keep claim, provider, and policy files easy to find.
+            </Text>
           </Pressable>
-        ) : null}
-      </View>
+          <Pressable
+            onPress={() => {
+              if (onAddDocumentOfType) {
+                onAddDocumentOfType('warranty');
+              } else {
+                onAddDocument();
+              }
+            }}
+            style={styles.quickActionCard}
+            accessibilityRole="button"
+          >
+            <Text style={styles.quickActionTitle}>Add warranty file</Text>
+            <Text style={styles.quickActionDetail}>
+              Save coverage paperwork, manuals, or emergency reference files.
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       <View style={styles.searchBox}>
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Search title, asset, vendor, date"
+          placeholder="Search policy, warranty, vendor, or device"
           placeholderTextColor={colors.muted}
           style={styles.searchInput}
         />
       </View>
 
       <View style={styles.filterRow}>
-        {typeFilters.map((filter) => {
-          const isActive = filter === activeType;
+        {collectionFilters.map((filter) => {
+          const isActive = filter.value === activeCollection;
 
           return (
             <Pressable
-              key={filter}
-              onPress={() => setActiveType(filter)}
+              key={filter.value}
+              onPress={() => setActiveCollection(filter.value)}
               style={[styles.filterPill, isActive && styles.filterPillActive]}
               accessibilityRole="button"
             >
               <Text style={[styles.filterText, isActive && styles.filterTextActive]}>
-                {filter}
+                {filter.label}
               </Text>
             </Pressable>
           );
@@ -172,7 +285,7 @@ export function DocumentsScreen({
         </ScrollView>
       )}
 
-      <SectionTitle title="Recently added" action="Import" onActionPress={onAddDocument} />
+      <SectionTitle title="Coverage and recovery files" action="Add file" onActionPress={onAddDocument} />
       {isMissingAssetDocumentationFilter ? (
         missingDocumentAssets.length > 0 ? (
           missingDocumentAssets.map((asset) => (
@@ -202,46 +315,88 @@ export function DocumentsScreen({
           ))
         ) : (
           <View style={styles.emptyPanel}>
-            <Text style={styles.emptyTitle}>All assets have documents</Text>
-            <Text style={styles.emptyText}>Every asset currently has at least one linked document.</Text>
+            <Text style={styles.emptyTitle}>Every key device has backup paperwork</Text>
+            <Text style={styles.emptyText}>
+              Each tracked device currently has at least one linked record.
+            </Text>
           </View>
         )
       ) : documents.length === 0 ? (
         <View style={styles.emptyPanel}>
-          <Text style={styles.emptyTitle}>Build the document vault</Text>
+          <Text style={styles.emptyTitle}>Save the first policy or recovery file</Text>
           <Text style={styles.emptyText}>
-            Add a receipt, manual, warranty, invoice, or inspection report and link it to a room or asset.
+            Add an insurance policy, warranty packet, manual, emergency plan, or home file and
+            link it to the property, a room, or a critical device.
           </Text>
-          <Pressable onPress={onAddDocument} style={styles.emptyAction} accessibilityRole="button">
-            <Text style={styles.emptyActionText}>Import document</Text>
-          </Pressable>
+          <View style={styles.emptyActions}>
+            <Pressable
+              onPress={() => {
+                if (onAddDocumentOfType) {
+                  onAddDocumentOfType('insurance');
+                } else {
+                  onAddDocument();
+                }
+              }}
+              style={styles.emptyAction}
+              accessibilityRole="button"
+            >
+              <Text style={styles.emptyActionText}>Save insurance policy</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                if (onAddDocumentOfType) {
+                  onAddDocumentOfType('warranty');
+                } else {
+                  onAddDocument();
+                }
+              }}
+              style={styles.emptySecondaryAction}
+              accessibilityRole="button"
+            >
+              <Text style={styles.emptySecondaryActionText}>Add warranty file</Text>
+            </Pressable>
+          </View>
         </View>
       ) : filteredDocuments.length > 0 ? (
-        filteredDocuments.map((document) => (
-          <Pressable
-            key={document.id}
-            onPress={() => onDocumentPress(document.id)}
-            style={styles.documentRow}
-            accessibilityRole="button"
-          >
-            <View style={styles.fileIcon}>
-              <Text style={styles.fileIconText}>{document.typeLabel.slice(0, 1)}</Text>
+        filteredDocuments.map((document) => {
+          const canShareDocument = Boolean(onShareDocument) && isCriticalDocument(document);
+
+          return (
+            <View key={document.id} style={styles.documentRow}>
+              <Pressable
+                onPress={() => onDocumentPress(document.id)}
+                style={styles.documentMainButton}
+                accessibilityRole="button"
+              >
+                <View style={styles.fileIcon}>
+                  <Text style={styles.fileIconText}>{document.typeLabel.slice(0, 1)}</Text>
+                </View>
+                <View style={styles.rowBody}>
+                  <Text style={styles.rowTitle}>{document.title}</Text>
+                  <Text style={styles.rowMeta}>
+                    {getDocumentReadinessLabel(document)} · {document.typeLabel} · {document.linkedToLabel}
+                  </Text>
+                  <Text style={styles.fileMeta}>
+                    {formatDocumentAttachmentStatus(document)} · {document.dateLabel}
+                  </Text>
+                </View>
+              </Pressable>
+              {canShareDocument ? (
+                <Pressable
+                  onPress={() => onShareDocument?.(document.id)}
+                  style={styles.rowAction}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.rowActionText}>Share file</Text>
+                </Pressable>
+              ) : null}
             </View>
-            <View style={styles.rowBody}>
-              <Text style={styles.rowTitle}>{document.title}</Text>
-              <Text style={styles.rowMeta}>
-                {document.typeLabel} · {document.linkedToLabel} · {document.dateLabel}
-              </Text>
-              <Text style={styles.fileMeta}>
-                {formatDocumentAttachmentStatus(document)}
-              </Text>
-            </View>
-          </Pressable>
-        ))
+          );
+        })
       ) : (
         <View style={styles.emptyPanel}>
-          <Text style={styles.emptyTitle}>No documents found</Text>
-          <Text style={styles.emptyText}>Try another search or type filter.</Text>
+          <Text style={styles.emptyTitle}>No matching coverage records found</Text>
+          <Text style={styles.emptyText}>Try another search, link, or document collection filter.</Text>
         </View>
       )}
     </View>
@@ -254,6 +409,7 @@ function getDocumentAttachmentUri(document: DocumentListItem) {
 
 function formatFocusTitle(
   reviewFilter: DocumentReviewFilter | null | undefined,
+  collection: DocumentCollectionFilter,
   documentCount: number,
   missingAssetDocumentationCount: number,
 ) {
@@ -265,10 +421,27 @@ function formatFocusTitle(
     return `${missingAssetDocumentationCount} assets need documents`;
   }
 
-  return `${documentCount} files linked to the home`;
+  switch (collection) {
+    case 'insurance':
+      return `${documentCount} records saved · insurance in focus`;
+    case 'warranty':
+      return 'Warranty packets and coverage proof';
+    case 'manual':
+      return 'Manuals and operating instructions';
+    case 'critical':
+      return 'Critical files for repairs and emergencies';
+    case 'general':
+      return 'General household files and supporting records';
+    case 'all':
+    default:
+      return `${documentCount} files linked to the home`;
+  }
 }
 
-function formatFocusMeta(reviewFilter: DocumentReviewFilter | null | undefined) {
+function formatFocusMeta(
+  reviewFilter: DocumentReviewFilter | null | undefined,
+  collection: DocumentCollectionFilter,
+) {
   if (reviewFilter === 'missingAttachments') {
     return 'Attach source files so exported backups point to the right receipts, manuals, and reports.';
   }
@@ -277,7 +450,21 @@ function formatFocusMeta(reviewFilter: DocumentReviewFilter | null | undefined) 
     return 'Add a receipt, manual, warranty, invoice, or report for each uncovered asset.';
   }
 
-  return 'Receipts, warranties, manuals, reports, and service invoices';
+  switch (collection) {
+    case 'insurance':
+      return 'Policies, claims, and provider files someone needs during damage or loss.';
+    case 'warranty':
+      return 'Coverage terms, receipts, and manufacturer paperwork tied to key equipment.';
+    case 'manual':
+      return 'Operating guides, quick-start sheets, and router or device instructions.';
+    case 'critical':
+      return 'Emergency plans, shutoff maps, property files, and the records you would hand off first.';
+    case 'general':
+      return 'Receipts, invoices, inspection reports, photos, and other supporting records.';
+    case 'all':
+    default:
+      return 'Policies, warranties, manuals, emergency files, and general home records in one vault.';
+  }
 }
 
 const styles = StyleSheet.create({
@@ -312,6 +499,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 19,
   },
+  focusActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
   clearReviewButton: {
     alignSelf: 'flex-start',
     minHeight: 34,
@@ -326,6 +518,66 @@ const styles = StyleSheet.create({
     color: colors.green,
     fontSize: 12,
     fontWeight: '900',
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  summaryCard: {
+    flex: 1,
+    borderRadius: 8,
+    borderColor: colors.line,
+    borderWidth: 1,
+    backgroundColor: colors.panel,
+    padding: 12,
+    gap: 2,
+  },
+  summaryValue: {
+    color: colors.ink,
+    fontSize: 22,
+    fontWeight: '900',
+  },
+  summaryLabel: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  quickActionRow: {
+    gap: 10,
+  },
+  quickActionCard: {
+    borderRadius: 8,
+    borderColor: colors.line,
+    borderWidth: 1,
+    backgroundColor: colors.panel,
+    padding: 14,
+    gap: 4,
+  },
+  quickActionCardPrimary: {
+    backgroundColor: colors.green,
+    borderColor: colors.green,
+  },
+  quickActionTitle: {
+    color: colors.blue,
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  quickActionDetail: {
+    color: colors.muted,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '700',
+  },
+  quickActionTitlePrimary: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  quickActionDetailPrimary: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '700',
   },
   searchBox: {
     minHeight: 48,
@@ -379,6 +631,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  documentMainButton: {
+    flex: 1,
     flexDirection: 'row',
     gap: 12,
   },
@@ -459,6 +717,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 18,
   },
+  emptyActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
   emptyAction: {
     alignSelf: 'flex-start',
     minHeight: 38,
@@ -471,6 +735,23 @@ const styles = StyleSheet.create({
   },
   emptyActionText: {
     color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  emptySecondaryAction: {
+    alignSelf: 'flex-start',
+    minHeight: 38,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    borderColor: colors.line,
+    borderWidth: 1,
+    backgroundColor: colors.panel,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  emptySecondaryActionText: {
+    color: colors.blue,
     fontSize: 13,
     fontWeight: '900',
   },

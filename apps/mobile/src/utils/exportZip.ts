@@ -2,7 +2,7 @@ import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import JSZip from 'jszip';
 
-import type { HomeVaultExportPackage } from '@homevault/export';
+import { formatSensitiveDataWarning, type HomeVaultExportPackage } from '@homevault/export';
 import type { Property } from '@homevault/domain';
 import type { AssetListItem, DocumentListItem, RoomListItem } from '../data/homeVaultSampleData';
 
@@ -153,7 +153,7 @@ function slugify(name: string): string {
 }
 
 function buildReadme(pkg: HomeVaultExportPackage): string {
-  const { property, recordCounts, generatedAt } = pkg.manifest;
+  const { property, recordCounts, generatedAt, sensitiveData } = pkg.manifest;
   const date = new Date(generatedAt).toLocaleDateString('en-US', {
     year: 'numeric', month: 'long', day: 'numeric',
   });
@@ -165,6 +165,9 @@ function buildReadme(pkg: HomeVaultExportPackage): string {
     `Property : ${property.label}`,
     `Generated: ${date}`,
     '',
+    ...(sensitiveData.includesSensitiveData
+      ? ['Warning', '-------', formatSensitiveDataWarning(sensitiveData), '']
+      : []),
     'Contents',
     '--------',
     '  backup.json            — Full backup (records + manifest)',

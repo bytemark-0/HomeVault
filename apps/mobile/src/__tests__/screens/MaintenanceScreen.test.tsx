@@ -5,7 +5,7 @@ import { MaintenanceScreen } from '../../screens/MaintenanceScreen';
 describe('MaintenanceScreen', () => {
   it('shows the no-tasks empty state and calls new task', async () => {
     const onAddTask = jest.fn();
-    const { getAllByText, getByText } = await render(
+    const { getByText } = await render(
       <MaintenanceScreen
         tasks={[]}
         onAddTask={onAddTask}
@@ -16,13 +16,8 @@ describe('MaintenanceScreen', () => {
       />,
     );
 
-    expect(getByText('Create the first maintenance task')).toBeTruthy();
-    const newTaskButtons = getAllByText('New task');
-    const emptyStateButton = newTaskButtons[1];
-    if (!emptyStateButton) {
-      throw new Error('Expected the empty-state New task button to render.');
-    }
-    await fireEvent.press(emptyStateButton);
+    expect(getByText('Save the first readiness reminder')).toBeTruthy();
+    await fireEvent.press(getByText('Add reminder'));
     expect(onAddTask).toHaveBeenCalledTimes(1);
   });
 

@@ -9,12 +9,17 @@ import { getHomeVaultRepository } from '../../src/data/localHomeVaultRepository'
 import { navigateBackOrReplace } from '../../src/utils/navigation';
 import { colors } from '../../src/theme/colors';
 import { computeNextDueDate, getTaskStateForDate } from '../../src/utils/taskUtils';
+import { isAnnualReviewTaskId } from '../../src/utils/annualReview';
 
 export default function TaskDetailRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { appData, reload, showToast } = useHomeVault();
 
   if (!appData) return null;
+  if (isAnnualReviewTaskId(id)) {
+    router.replace('/annual-review');
+    return null;
+  }
   const task = appData.tasks.find((t) => t.id === id);
   if (!task) {
     return (

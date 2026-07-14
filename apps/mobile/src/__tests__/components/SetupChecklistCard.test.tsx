@@ -37,19 +37,17 @@ const mockDismissSetupChecklist = dismissSetupChecklist as jest.MockedFunction<
 const SetupChecklistCard = require('../../components/SetupChecklistCard').SetupChecklistCard;
 
 function buildContext({
-  assetCount = 0,
+  accessItems = [],
+  assets = [],
   backupSummary = null,
-  documentCount = 0,
-  photoUri,
-  roomCount = 0,
-  taskCount = 0,
+  emergencyContacts = [],
+  importantAccounts = [],
 }: {
-  assetCount?: number;
+  accessItems?: Array<{ category: 'wifi' | 'garage' | 'insurance' | 'router' | 'other' }>;
+  assets?: Array<{ category: string; name: string }>;
   backupSummary?: { updatedAt: string } | null;
-  documentCount?: number;
-  photoUri?: string;
-  roomCount?: number;
-  taskCount?: number;
+  emergencyContacts?: Array<{ id: string }>;
+  importantAccounts?: Array<{ kind: 'insurance' | 'utility' | 'other' }>;
 }) {
   return {
     appData: {
@@ -58,21 +56,24 @@ function buildContext({
         householdId: 'household-1',
         label: 'Home',
         type: 'single_family' as const,
-        photoUri,
       },
-      assetCount,
-      roomCount,
-      documentCount,
-      activeTaskCount: taskCount,
+      assetCount: assets.length,
+      roomCount: 0,
+      documentCount: 0,
+      activeTaskCount: 0,
       healthScore: null,
       rooms: [],
-      assets: [],
+      assets,
       dueTasks: [],
       recentAssets: [],
       recentActivity: [],
       savedCostLabel: '$0',
       documents: [],
-      tasks: Array.from({ length: taskCount }, (_, index) => ({ id: `task-${index}` })),
+      accessItems,
+      emergencyContacts,
+      importantAccounts,
+      continuityPlaybooks: [],
+      tasks: [],
       taskCompletions: [],
       repairEvents: [],
       parts: [],
@@ -104,52 +105,56 @@ describe('SetupChecklistCard', () => {
   it('shows zero-state guidance with the first recommended action', async () => {
     const { getByText } = await render(<SetupChecklistCard />);
 
-    await waitFor(() => expect(getByText('Getting started')).toBeTruthy());
-    expect(getByText('0 of 6')).toBeTruthy();
-    expect(getByText('Add a room or area')).toBeTruthy();
+    await waitFor(() => expect(getByText('Readiness setup')).toBeTruthy());
+    expect(getByText('0 of 5')).toBeTruthy();
+    expect(getByText('Save Wi-Fi details')).toBeTruthy();
 
-    fireEvent.press(getByText('Add a room or area'));
-    expect(mockRouter.push).toHaveBeenCalledWith('/room/new');
+    fireEvent.press(getByText('Save Wi-Fi details'));
+    expect(mockRouter.push).toHaveBeenCalledWith('/readiness-setup?step=wifi');
   });
 
   it('shows the next incomplete step for a partially configured home', async () => {
     mockUseHomeVault.mockReturnValue(
       buildContext({
-        roomCount: 1,
-        assetCount: 1,
+        accessItems: [
+          { category: 'wifi' },
+          { category: 'garage' },
+        ],
       }),
     );
 
     const { getByText } = await render(<SetupChecklistCard />);
 
-    await waitFor(() => expect(getByText('2 of 6')).toBeTruthy());
-    expect(getByText('Add a maintenance reminder')).toBeTruthy();
+    await waitFor(() => expect(getByText('2 of 5')).toBeTruthy());
+    expect(getByText('Add an insurance account')).toBeTruthy();
   });
 
   it('hides itself when every setup step is complete', async () => {
     mockUseHomeVault.mockReturnValue(
       buildContext({
-        roomCount: 1,
-        assetCount: 1,
-        taskCount: 1,
-        documentCount: 1,
-        photoUri: 'file:///home.jpg',
+        accessItems: [
+          { category: 'wifi' },
+          { category: 'garage' },
+        ],
+        assets: [{ category: 'Network', name: 'Main Wi-Fi router' }],
+        emergencyContacts: [{ id: 'contact-1' }],
+        importantAccounts: [{ kind: 'insurance' }],
         backupSummary: { updatedAt: '2026-06-23T00:00:00.000Z' },
       }),
     );
 
     const { queryByText } = await render(<SetupChecklistCard />);
 
-    await waitFor(() => expect(queryByText('Getting started')).toBeNull());
+    await waitFor(() => expect(queryByText('Readiness setup')).toBeNull());
   });
 
   it('dismisses the checklist persistently', async () => {
     const { getByText, queryByText } = await render(<SetupChecklistCard />);
 
-    await waitFor(() => expect(getByText('Getting started')).toBeTruthy());
+    await waitFor(() => expect(getByText('Readiness setup')).toBeTruthy());
     fireEvent.press(getByText('Dismiss'));
 
     await waitFor(() => expect(mockDismissSetupChecklist).toHaveBeenCalledTimes(1));
-    expect(queryByText('Getting started')).toBeNull();
+    expect(queryByText('Readiness setup')).toBeNull();
   });
 });

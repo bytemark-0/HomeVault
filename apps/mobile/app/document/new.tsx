@@ -2,6 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import type { DocumentRecord } from '@homevault/domain';
 import { useHomeVault } from '../../src/context/HomeVaultContext';
 import { AddDocumentScreen } from '../../src/screens/AddDocumentScreen';
 import { getHomeVaultRepository } from '../../src/data/localHomeVaultRepository';
@@ -10,7 +11,10 @@ import type { CreateDocumentInput } from '@homevault/database';
 import { colors } from '../../src/theme/colors';
 
 export default function NewDocumentRoute() {
-  const { linkedRecordId } = useLocalSearchParams<{ linkedRecordId?: string }>();
+  const { linkedRecordId, type } = useLocalSearchParams<{
+    linkedRecordId?: string;
+    type?: DocumentRecord['type'];
+  }>();
   const { appData, reload, showToast } = useHomeVault();
 
   if (!appData) return null;
@@ -34,6 +38,7 @@ export default function NewDocumentRoute() {
         assets={appData.assets}
         rooms={appData.rooms}
         initialLinkedRecordId={linkedRecordId}
+        initialType={type}
         onCancel={() => navigateBackOrReplace('/(tabs)/documents')}
         onSave={handleSave}
       />

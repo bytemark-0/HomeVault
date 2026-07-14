@@ -1,6 +1,6 @@
 import { View, StyleSheet } from 'react-native';
 
-type TabKey = 'home' | 'inventory' | 'maintenance' | 'documents' | 'household';
+type TabKey = 'home' | 'access' | 'documents' | 'devices' | 'emergency';
 
 type TabIconProps = {
   tabKey: TabKey;
@@ -11,27 +11,24 @@ export function TabIcon({ tabKey, color }: TabIconProps) {
   switch (tabKey) {
     case 'home':
       return <HomeIcon color={color} />;
-    case 'inventory':
-      return <InventoryIcon color={color} />;
-    case 'maintenance':
-      return <TasksIcon color={color} />;
+    case 'access':
+      return <AccessIcon color={color} />;
     case 'documents':
       return <DocumentsIcon color={color} />;
-    case 'household':
-      return <HouseholdIcon color={color} />;
+    case 'devices':
+      return <DevicesIcon color={color} />;
+    case 'emergency':
+      return <EmergencyIcon color={color} />;
   }
 }
 
-// House silhouette: roof peak + body
 function HomeIcon({ color }: { color: string }) {
   return (
     <View style={styles.frame}>
-      {/* Roof: two angled bars meeting at a peak */}
       <View style={styles.roofRow}>
         <View style={[styles.roofLeft, { backgroundColor: color }]} />
         <View style={[styles.roofRight, { backgroundColor: color }]} />
       </View>
-      {/* Body */}
       <View style={[styles.houseBody, { backgroundColor: color }]}>
         <View style={[styles.door, { backgroundColor: color }]} />
       </View>
@@ -39,8 +36,22 @@ function HomeIcon({ color }: { color: string }) {
   );
 }
 
-// 2×2 grid of squares — inventory/items
-function InventoryIcon({ color }: { color: string }) {
+function AccessIcon({ color }: { color: string }) {
+  return (
+    <View style={styles.frame}>
+      <View style={styles.keyHeadRow}>
+        <View style={[styles.keyRing, { borderColor: color }]} />
+        <View style={[styles.keyStem, { backgroundColor: color }]} />
+      </View>
+      <View style={styles.keyTeethRow}>
+        <View style={[styles.keyToothTall, { backgroundColor: color }]} />
+        <View style={[styles.keyToothShort, { backgroundColor: color }]} />
+      </View>
+    </View>
+  );
+}
+
+function DevicesIcon({ color }: { color: string }) {
   return (
     <View style={styles.frame}>
       <View style={styles.gridRow}>
@@ -55,26 +66,6 @@ function InventoryIcon({ color }: { color: string }) {
   );
 }
 
-// Stacked lines with a check on the first — task list
-function TasksIcon({ color }: { color: string }) {
-  return (
-    <View style={styles.frame}>
-      {/* Checkmark row */}
-      <View style={styles.taskRow}>
-        <View style={styles.taskCheck}>
-          <View style={[styles.checkLeft, { backgroundColor: color }]} />
-          <View style={[styles.checkRight, { backgroundColor: color }]} />
-        </View>
-        <View style={[styles.taskLine, { backgroundColor: color, flex: 1 }]} />
-      </View>
-      {/* Plain line rows */}
-      <View style={[styles.taskLine, { backgroundColor: color, marginTop: 4 }]} />
-      <View style={[styles.taskLine, { backgroundColor: color, width: 12, marginTop: 4 }]} />
-    </View>
-  );
-}
-
-// Page rectangle with 3 text lines
 function DocumentsIcon({ color }: { color: string }) {
   return (
     <View style={[styles.page, { borderColor: color }]}>
@@ -85,20 +76,13 @@ function DocumentsIcon({ color }: { color: string }) {
   );
 }
 
-// Building: flat roof + 3 floors of windows
-function HouseholdIcon({ color }: { color: string }) {
+function EmergencyIcon({ color }: { color: string }) {
   return (
     <View style={styles.frame}>
-      <View style={[styles.buildingRoof, { backgroundColor: color }]} />
-      <View style={[styles.buildingBody, { borderColor: color }]}>
-        <View style={styles.windowRow}>
-          <View style={[styles.window, { backgroundColor: color }]} />
-          <View style={[styles.window, { backgroundColor: color }]} />
-        </View>
-        <View style={styles.windowRow}>
-          <View style={[styles.window, { backgroundColor: color }]} />
-          <View style={[styles.window, { backgroundColor: color }]} />
-        </View>
+      <View style={[styles.alertTriangle, { borderBottomColor: color }]} />
+      <View style={styles.alertMark}>
+        <View style={[styles.alertStem, { backgroundColor: color }]} />
+        <View style={[styles.alertDot, { backgroundColor: color }]} />
       </View>
     </View>
   );
@@ -111,8 +95,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
   },
-
-  // Home icon
   roofRow: {
     flexDirection: 'row',
     width: 18,
@@ -147,8 +129,41 @@ const styles = StyleSheet.create({
     borderRadius: 1,
     opacity: 0.35,
   },
-
-  // Inventory grid
+  keyHeadRow: {
+    width: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 1,
+  },
+  keyRing: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    borderWidth: 2,
+  },
+  keyStem: {
+    width: 9,
+    height: 2.5,
+    borderRadius: 1,
+  },
+  keyTeethRow: {
+    width: 18,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 2,
+    marginTop: 2,
+  },
+  keyToothTall: {
+    width: 2.5,
+    height: 5,
+    borderRadius: 0.5,
+  },
+  keyToothShort: {
+    width: 2.5,
+    height: 3.5,
+    borderRadius: 0.5,
+  },
   gridRow: {
     flexDirection: 'row',
     gap: 3,
@@ -159,41 +174,6 @@ const styles = StyleSheet.create({
     height: 7,
     borderRadius: 1.5,
   },
-
-  // Tasks checklist
-  taskRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    width: 18,
-  },
-  taskCheck: {
-    width: 7,
-    height: 7,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    gap: 0,
-  },
-  checkLeft: {
-    width: 3,
-    height: 2,
-    borderRadius: 0.5,
-    transform: [{ rotate: '45deg' }, { translateY: -1 }],
-  },
-  checkRight: {
-    width: 5,
-    height: 2,
-    borderRadius: 0.5,
-    transform: [{ rotate: '-55deg' }, { translateX: -2 }, { translateY: -2 }],
-  },
-  taskLine: {
-    height: 2,
-    borderRadius: 1,
-    width: 18,
-  },
-
-  // Documents page
   page: {
     width: 14,
     height: 18,
@@ -212,32 +192,29 @@ const styles = StyleSheet.create({
     borderRadius: 1,
     width: '60%',
   },
-
-  // Household building
-  buildingRoof: {
-    width: 18,
-    height: 2.5,
-    borderRadius: 1,
-    marginBottom: 1,
+  alertTriangle: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 9,
+    borderRightWidth: 9,
+    borderBottomWidth: 16,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
   },
-  buildingBody: {
-    width: 16,
-    height: 12,
-    borderWidth: 1.5,
-    borderRadius: 1,
-    padding: 2,
+  alertMark: {
+    position: 'absolute',
+    bottom: 3,
+    alignItems: 'center',
     gap: 2,
-    justifyContent: 'center',
   },
-  windowRow: {
-    flexDirection: 'row',
-    gap: 3,
-    justifyContent: 'center',
+  alertStem: {
+    width: 2.5,
+    height: 6,
+    borderRadius: 1,
   },
-  window: {
-    width: 4,
-    height: 3,
-    borderRadius: 0.5,
-    opacity: 0.6,
+  alertDot: {
+    width: 2.5,
+    height: 2.5,
+    borderRadius: 1.25,
   },
 });

@@ -43,34 +43,34 @@ describe('SampleModeNotice', () => {
 
     const { queryByText } = await render(<SampleModeNotice />);
 
-    expect(queryByText('Sample data only')).toBeNull();
+    expect(queryByText('Sample continuity guide')).toBeNull();
   });
 
   it('labels sample data and exposes the create-vault action', async () => {
     const { getByText } = await render(<SampleModeNotice />);
 
-    expect(getByText('Sample data only')).toBeTruthy();
-    expect(getByText('You are exploring seeded records.')).toBeTruthy();
-    expect(getByText('Create your own vault')).toBeTruthy();
+    expect(getByText('Sample continuity guide')).toBeTruthy();
+    expect(getByText('You are exploring a sample household operating manual.')).toBeTruthy();
+    expect(getByText('Create your own guide')).toBeTruthy();
   });
 
   it('confirms before leaving sample mode', async () => {
     const alert = jest.spyOn(Alert, 'alert');
     const { getByText } = await render(<SampleModeNotice />);
 
-    fireEvent.press(getByText('Create your own vault'));
+    fireEvent.press(getByText('Create your own guide'));
 
     expect(alert).toHaveBeenCalledWith(
-      'Create your own vault?',
+      'Create your own household guide?',
       'HomeVault will delete the sample records on this device and return you to setup.',
       expect.arrayContaining([
         expect.objectContaining({ text: 'Cancel' }),
-        expect.objectContaining({ text: 'Create my own vault', onPress: expect.any(Function) }),
+        expect.objectContaining({ text: 'Create my own guide', onPress: expect.any(Function) }),
       ]),
     );
 
     const actions = alert.mock.calls[0]?.[2] ?? [];
-    const createAction = actions.find((action) => action.text === 'Create my own vault');
+    const createAction = actions.find((action) => action.text === 'Create my own guide');
     createAction?.onPress?.();
 
     expect(exitSampleMode).toHaveBeenCalledTimes(1);

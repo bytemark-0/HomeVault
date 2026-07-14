@@ -11,23 +11,23 @@ export function SampleModeNotice() {
   return (
     <View style={styles.notice} accessibilityLabel="Sample home notice">
       <View style={styles.body}>
-        <Text style={styles.kicker}>Sample data only</Text>
-        <Text style={styles.title}>You are exploring seeded records.</Text>
+        <Text style={styles.kicker}>Sample continuity guide</Text>
+        <Text style={styles.title}>You are exploring a sample household operating manual.</Text>
         <Text style={styles.text}>
-          Create your own vault before adding real household details. Leaving sample mode deletes
-          these sample records from this device.
+          Use it to see how access details, key documents, devices, and recovery notes fit
+          together. Leaving sample mode deletes these demo records from this device.
         </Text>
       </View>
       <Pressable
         style={styles.action}
         onPress={() =>
           Alert.alert(
-            'Create your own vault?',
+            'Create your own household guide?',
             'HomeVault will delete the sample records on this device and return you to setup.',
             [
               { text: 'Cancel', style: 'cancel' },
               {
-                text: 'Create my own vault',
+                text: 'Create my own guide',
                 style: 'destructive',
                 onPress: () => void exitSampleMode(),
               },
@@ -35,9 +35,9 @@ export function SampleModeNotice() {
           )
         }
         accessibilityRole="button"
-        accessibilityLabel="Create your own vault"
+        accessibilityLabel="Create your own household guide"
       >
-        <Text style={styles.actionText}>Create your own vault</Text>
+        <Text style={styles.actionText}>Create your own guide</Text>
       </Pressable>
     </View>
   );

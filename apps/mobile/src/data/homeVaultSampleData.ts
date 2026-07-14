@@ -1,7 +1,11 @@
 import type {
   Asset,
+  AccessItem,
+  ContinuityPlaybook,
   DocumentRecord,
+  EmergencyContact,
   MaintenanceTask,
+  ImportantAccount,
   PartSupply,
   Property,
   RepairEvent,
@@ -9,6 +13,7 @@ import type {
   TaskCompletion,
 } from '@homevault/domain';
 import type { HomeVaultSnapshot } from '@homevault/database';
+import { getDocumentTypeLabel } from '../utils/documentTaxonomy';
 import { formatCurrency, formatDateLabel, formatTaskDueLabel } from '../utils/taskUtils';
 
 export type AssetListItem = Asset & {
@@ -262,6 +267,28 @@ export const sampleTaskCompletions: TaskCompletionListItem[] = [
 
 export const sampleDocuments: DocumentListItem[] = [
   {
+    id: 'doc-home-policy',
+    propertyId: sampleProperty.id,
+    title: 'Prairie Mutual home policy',
+    type: 'insurance',
+    linkedRecordIds: [sampleProperty.id],
+    typeLabel: 'Insurance',
+    linkedToLabel: 'Property',
+    dateLabel: 'Jun 2026',
+    linkedRecords: [{ id: sampleProperty.id, label: 'Property', kind: 'property' }],
+  },
+  {
+    id: 'doc-dishwasher-warranty',
+    propertyId: sampleProperty.id,
+    title: 'Bosch dishwasher warranty packet',
+    type: 'warranty',
+    linkedRecordIds: ['asset-dishwasher'],
+    typeLabel: 'Warranty',
+    linkedToLabel: 'Dishwasher',
+    dateLabel: 'Mar 2021',
+    linkedRecords: [{ id: 'asset-dishwasher', label: 'Dishwasher', kind: 'asset' }],
+  },
+  {
     id: 'doc-hvac-manual',
     propertyId: sampleProperty.id,
     title: 'XR16 installation manual',
@@ -293,6 +320,17 @@ export const sampleDocuments: DocumentListItem[] = [
     linkedToLabel: 'Property',
     dateLabel: 'Aug 2023',
     linkedRecords: [{ id: sampleProperty.id, label: 'Property', kind: 'property' }],
+  },
+  {
+    id: 'doc-water-shutoff-map',
+    propertyId: sampleProperty.id,
+    title: 'Water shutoff map',
+    type: 'photo',
+    linkedRecordIds: ['asset-water-heater'],
+    typeLabel: 'Photo',
+    linkedToLabel: 'Water heater',
+    dateLabel: 'May 2026',
+    linkedRecords: [{ id: 'asset-water-heater', label: 'Water heater', kind: 'asset' }],
   },
 ];
 
@@ -334,11 +372,228 @@ export const sampleParts: PartSupply[] = [
   },
 ];
 
+export const sampleAccessItems: AccessItem[] = [
+  {
+    id: 'access-wifi',
+    propertyId: sampleProperty.id,
+    category: 'wifi',
+    label: 'Main Wi-Fi',
+    username: 'MapleStreet-5G',
+    accessCode: '9274',
+    location: 'Router shelf in utility room',
+    instructions: 'SSID is printed on the router label. Restart power only if both lights are red.',
+    linkedAssetId: 'asset-hvac',
+    linkedDocumentIds: ['doc-hvac-manual'],
+    lastVerifiedAt: '2026-06-01',
+    lastReviewedAt: '2026-06-01',
+  },
+  {
+    id: 'access-garage',
+    propertyId: sampleProperty.id,
+    category: 'garage',
+    label: 'Garage keypad',
+    accessCode: '1942',
+    location: 'Exterior keypad beside side door',
+    instructions: 'Hold enter for two seconds after the code.',
+    linkedDocumentIds: [],
+    lastVerifiedAt: '2026-05-15',
+    lastReviewedAt: '2026-05-15',
+  },
+  {
+    id: 'access-water-shutoff',
+    propertyId: sampleProperty.id,
+    category: 'utility_shutoff',
+    label: 'Main water shutoff',
+    location: 'Garage south wall behind the shelving',
+    instructions: 'Turn the blue handle clockwise until the pipe is perpendicular, then open the basement faucet to confirm flow stopped.',
+    linkedAssetId: 'asset-water-heater',
+    linkedDocumentIds: ['doc-water-shutoff-map'],
+    lastVerifiedAt: '2026-06-18',
+    lastReviewedAt: '2026-06-18',
+  },
+  {
+    id: 'access-lockbox',
+    propertyId: sampleProperty.id,
+    category: 'lockbox',
+    label: 'Back gate lockbox',
+    accessCode: '3118',
+    location: 'Mounted low on the cedar fence behind the grill cover',
+    instructions: 'Press the cover closed after returning the spare key so the latch reseals.',
+    linkedDocumentIds: [],
+    lastVerifiedAt: '2026-06-12',
+    lastReviewedAt: '2026-06-12',
+  },
+  {
+    id: 'access-entry-note',
+    propertyId: sampleProperty.id,
+    category: 'entry_note',
+    label: 'Side gate and dog note',
+    location: 'Left-side gate off the driveway',
+    instructions: 'Use the side gate first and keep the mudroom door closed until the dog settles.',
+    notes: 'Package shelf is inside the mudroom on the right.',
+    linkedDocumentIds: [],
+  },
+];
+
+export const sampleEmergencyContacts: EmergencyContact[] = [
+  {
+    id: 'contact-neighbor',
+    propertyId: sampleProperty.id,
+    name: 'Jamie Lee',
+    role: 'Neighbor with spare key',
+    priority: 'primary',
+    phone: '555-0101',
+    notes: 'Can reach the backyard gate if pets need help.',
+    lastReviewedAt: '2026-06-20',
+  },
+  {
+    id: 'contact-plumber',
+    propertyId: sampleProperty.id,
+    name: 'River City Plumbing',
+    role: 'Emergency plumber',
+    priority: 'service_provider',
+    phone: '555-0140',
+    lastReviewedAt: '2026-04-01',
+  },
+];
+
+export const sampleImportantAccounts: ImportantAccount[] = [
+  {
+    id: 'account-insurance',
+    propertyId: sampleProperty.id,
+    kind: 'insurance',
+    providerName: 'Prairie Mutual',
+    label: 'Home policy',
+    accountNumber: 'POL-883492',
+    website: 'https://example.com/prairie-mutual',
+    phone: '555-0119',
+    managerRole: 'self',
+    isSharedHouseholdAccount: false,
+    mfaEnabled: true,
+    recoveryCodesStored: true,
+    managedInPasswordManager: true,
+    recoveryNotes: 'Claim photos live in the shared drive under Home/Claims.',
+    linkedDocumentIds: ['doc-home-policy'],
+    lastReviewedAt: '2026-06-15',
+  },
+  {
+    id: 'account-email',
+    propertyId: sampleProperty.id,
+    kind: 'email',
+    providerName: 'Gmail',
+    label: 'Family recovery email',
+    email: 'family@example.test',
+    managerRole: 'shared_household',
+    isSharedHouseholdAccount: true,
+    mfaEnabled: true,
+    recoveryCodesStored: true,
+    managedInPasswordManager: true,
+    recoveryNotes: 'Used for household alerts, resets, and backup notifications.',
+    linkedDocumentIds: [],
+    lastReviewedAt: '2026-06-10',
+  },
+  {
+    id: 'account-carrier',
+    propertyId: sampleProperty.id,
+    kind: 'carrier',
+    providerName: 'Blue Wireless',
+    label: 'Primary mobile carrier',
+    phone: '555-0122',
+    managerRole: 'partner',
+    isSharedHouseholdAccount: false,
+    mfaEnabled: true,
+    recoveryCodesStored: false,
+    managedInPasswordManager: true,
+    recoveryNotes: 'Use this account first for stolen phone, line lock, or SIM-swap recovery.',
+    linkedDocumentIds: [],
+    lastReviewedAt: '2026-04-02',
+  },
+  {
+    id: 'account-platform',
+    propertyId: sampleProperty.id,
+    kind: 'platform',
+    providerName: 'Apple ID',
+    label: 'Family Apple account',
+    email: 'family-apple@example.test',
+    managerRole: 'shared_household',
+    isSharedHouseholdAccount: true,
+    mfaEnabled: true,
+    recoveryCodesStored: false,
+    managedInPasswordManager: true,
+    recoveryNotes: 'Controls iCloud backups and find-my-device for the family phones.',
+    linkedDocumentIds: [],
+    lastReviewedAt: '2026-02-01',
+  },
+  {
+    id: 'account-utility',
+    propertyId: sampleProperty.id,
+    kind: 'utility',
+    providerName: 'Maple Power & Water',
+    label: 'Electric and water billing',
+    phone: '555-0136',
+    website: 'https://example.com/maple-utility',
+    managerRole: 'shared_household',
+    isSharedHouseholdAccount: true,
+    mfaEnabled: true,
+    recoveryCodesStored: false,
+    managedInPasswordManager: true,
+    recoveryNotes: 'Use this account to verify outages, billing notices, and shutoff threats by calling back directly.',
+    linkedDocumentIds: [],
+    lastReviewedAt: '2026-06-28',
+  },
+  {
+    id: 'account-banking',
+    propertyId: sampleProperty.id,
+    kind: 'banking',
+    providerName: 'River Bank',
+    label: 'Primary household checking',
+    phone: '555-0130',
+    website: 'https://example.com/river-bank',
+    managerRole: 'self',
+    isSharedHouseholdAccount: false,
+    mfaEnabled: true,
+    recoveryCodesStored: false,
+    managedInPasswordManager: true,
+    recoveryNotes: 'Use only the saved app bookmark and callback number for urgent fraud checks.',
+    linkedDocumentIds: [],
+    lastReviewedAt: '2026-06-22',
+  },
+];
+
+export const sampleContinuityPlaybooks: ContinuityPlaybook[] = [
+  {
+    id: 'playbook-storm',
+    propertyId: sampleProperty.id,
+    category: 'storm',
+    title: 'Storm outage restart',
+    state: 'in_progress',
+    steps: [
+      {
+        id: 'playbook-step-1',
+        label: 'Confirm sump pump breaker is on',
+        isRequired: true,
+        isComplete: true,
+      },
+      {
+        id: 'playbook-step-2',
+        label: 'Check router and modem lights after power returns',
+        isRequired: true,
+        isComplete: false,
+      },
+    ],
+    linkedRecordIds: ['asset-hvac', 'doc-hvac-manual'],
+  },
+];
+
 export const sampleSnapshot: HomeVaultSnapshot = {
   properties: [sampleProperty],
   rooms: sampleRooms,
   assets: sampleAssets,
   documents: sampleDocuments,
+  accessItems: sampleAccessItems,
+  emergencyContacts: sampleEmergencyContacts,
+  importantAccounts: sampleImportantAccounts,
+  continuityPlaybooks: sampleContinuityPlaybooks,
   tasks: sampleTasks,
   taskCompletions: sampleTaskCompletions,
   repairEvents: sampleRepairEvents,
@@ -471,7 +726,7 @@ export function toDocumentListItem(
 
   return {
     ...document,
-    typeLabel: formatDocumentType(document.type),
+    typeLabel: getDocumentTypeLabel(document.type),
     linkedToLabel: formatLinkedRecordSummary(linkedLabels),
     dateLabel: document.date ?? 'No date',
     linkedRecords,
@@ -572,10 +827,6 @@ export function formatCostTotal(values: Array<number | undefined>) {
   const total = values.reduce<number>((sum, value) => sum + (value ?? 0), 0);
 
   return formatCurrency(total);
-}
-
-function formatDocumentType(type: DocumentRecord['type']) {
-  return type.slice(0, 1).toUpperCase() + type.slice(1);
 }
 
 function formatLinkedRecordSummary(labels: string[]) {

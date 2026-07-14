@@ -1,7 +1,11 @@
 import type {
   Asset,
+  AccessItem,
+  ContinuityPlaybook,
   DocumentRecord,
+  EmergencyContact,
   EntityId,
+  ImportantAccount,
   MaintenanceTask,
   PartSupply,
   Property,
@@ -15,6 +19,10 @@ export type HomeVaultSnapshot = {
   rooms: RoomArea[];
   assets: Asset[];
   documents: DocumentRecord[];
+  accessItems: AccessItem[];
+  emergencyContacts: EmergencyContact[];
+  importantAccounts: ImportantAccount[];
+  continuityPlaybooks: ContinuityPlaybook[];
   tasks: MaintenanceTask[];
   taskCompletions: TaskCompletion[];
   repairEvents: RepairEvent[];
@@ -26,6 +34,10 @@ export type HomeVaultRepository = {
   getRooms(propertyId: EntityId): Promise<RoomArea[]>;
   getAssets(propertyId: EntityId): Promise<Asset[]>;
   getDocuments(propertyId: EntityId): Promise<DocumentRecord[]>;
+  getAccessItems(propertyId: EntityId): Promise<AccessItem[]>;
+  getEmergencyContacts(propertyId: EntityId): Promise<EmergencyContact[]>;
+  getImportantAccounts(propertyId: EntityId): Promise<ImportantAccount[]>;
+  getContinuityPlaybooks(propertyId: EntityId): Promise<ContinuityPlaybook[]>;
   getTasks(propertyId: EntityId): Promise<MaintenanceTask[]>;
   getTaskCompletions(propertyId: EntityId): Promise<TaskCompletion[]>;
   getRepairEvents(propertyId: EntityId): Promise<RepairEvent[]>;
@@ -41,6 +53,18 @@ export type HomeVaultRepository = {
   createDocument(input: CreateDocumentInput): Promise<DocumentRecord>;
   updateDocument(input: UpdateDocumentInput): Promise<DocumentRecord>;
   deleteDocument(documentId: EntityId): Promise<void>;
+  createAccessItem(input: CreateAccessItemInput): Promise<AccessItem>;
+  updateAccessItem(input: UpdateAccessItemInput): Promise<AccessItem>;
+  deleteAccessItem(accessItemId: EntityId): Promise<void>;
+  createEmergencyContact(input: CreateEmergencyContactInput): Promise<EmergencyContact>;
+  updateEmergencyContact(input: UpdateEmergencyContactInput): Promise<EmergencyContact>;
+  deleteEmergencyContact(contactId: EntityId): Promise<void>;
+  createImportantAccount(input: CreateImportantAccountInput): Promise<ImportantAccount>;
+  updateImportantAccount(input: UpdateImportantAccountInput): Promise<ImportantAccount>;
+  deleteImportantAccount(accountId: EntityId): Promise<void>;
+  createContinuityPlaybook(input: CreateContinuityPlaybookInput): Promise<ContinuityPlaybook>;
+  updateContinuityPlaybook(input: UpdateContinuityPlaybookInput): Promise<ContinuityPlaybook>;
+  deleteContinuityPlaybook(playbookId: EntityId): Promise<void>;
   createTask(input: CreateTaskInput): Promise<MaintenanceTask>;
   updateTask(input: UpdateTaskInput): Promise<MaintenanceTask>;
   deleteTask(taskId: EntityId): Promise<void>;
@@ -79,6 +103,30 @@ export type CreateDocumentInput = Omit<DocumentRecord, 'id'> & {
 };
 
 export type UpdateDocumentInput = DocumentRecord;
+
+export type CreateAccessItemInput = Omit<AccessItem, 'id'> & {
+  id?: EntityId;
+};
+
+export type UpdateAccessItemInput = AccessItem;
+
+export type CreateEmergencyContactInput = Omit<EmergencyContact, 'id'> & {
+  id?: EntityId;
+};
+
+export type UpdateEmergencyContactInput = EmergencyContact;
+
+export type CreateImportantAccountInput = Omit<ImportantAccount, 'id'> & {
+  id?: EntityId;
+};
+
+export type UpdateImportantAccountInput = ImportantAccount;
+
+export type CreateContinuityPlaybookInput = Omit<ContinuityPlaybook, 'id'> & {
+  id?: EntityId;
+};
+
+export type UpdateContinuityPlaybookInput = ContinuityPlaybook;
 
 export type CreateTaskInput = Omit<MaintenanceTask, 'id'> & {
   id?: EntityId;
@@ -133,6 +181,26 @@ export function createMemoryHomeVaultRepository(
     },
     async getDocuments(propertyId) {
       return snapshot.documents.filter((document) => document.propertyId === propertyId);
+    },
+    async getAccessItems(propertyId) {
+      return snapshot.accessItems
+        .filter((accessItem) => accessItem.propertyId === propertyId)
+        .map((accessItem) => cloneAccessItem(accessItem));
+    },
+    async getEmergencyContacts(propertyId) {
+      return snapshot.emergencyContacts
+        .filter((contact) => contact.propertyId === propertyId)
+        .map((contact) => ({ ...contact }));
+    },
+    async getImportantAccounts(propertyId) {
+      return snapshot.importantAccounts
+        .filter((account) => account.propertyId === propertyId)
+        .map((account) => cloneImportantAccount(account));
+    },
+    async getContinuityPlaybooks(propertyId) {
+      return snapshot.continuityPlaybooks
+        .filter((playbook) => playbook.propertyId === propertyId)
+        .map((playbook) => cloneContinuityPlaybook(playbook));
     },
     async getTasks(propertyId) {
       const today = new Date().toISOString().slice(0, 10);
@@ -252,6 +320,11 @@ export function createMemoryHomeVaultRepository(
       );
       snapshot.repairEvents = snapshot.repairEvents.filter((r) => !assetIds.has(r.assetId));
       snapshot.parts = snapshot.parts.filter((p) => p.assetId == null || !assetIds.has(p.assetId));
+      snapshot.accessItems = snapshot.accessItems.map((accessItem) =>
+        accessItem.linkedAssetId && assetIds.has(accessItem.linkedAssetId)
+          ? { ...accessItem, linkedAssetId: undefined }
+          : accessItem,
+      );
       snapshot.assets = snapshot.assets.filter((asset) => asset.roomId !== roomId);
     },
     async createAsset(input) {
@@ -295,6 +368,11 @@ export function createMemoryHomeVaultRepository(
       );
       snapshot.repairEvents = snapshot.repairEvents.filter((r) => r.assetId !== assetId);
       snapshot.parts = snapshot.parts.filter((p) => p.assetId !== assetId);
+      snapshot.accessItems = snapshot.accessItems.map((accessItem) =>
+        accessItem.linkedAssetId === assetId
+          ? { ...accessItem, linkedAssetId: undefined }
+          : accessItem,
+      );
     },
     async createDocument(input) {
       const document: DocumentRecord = {
@@ -331,6 +409,148 @@ export function createMemoryHomeVaultRepository(
       }
 
       snapshot.documents.splice(documentIndex, 1);
+    },
+    async createAccessItem(input) {
+      const accessItem: AccessItem = {
+        ...input,
+        id: input.id ?? createEntityId('access'),
+        linkedDocumentIds: [...input.linkedDocumentIds],
+      };
+
+      snapshot.accessItems.push(accessItem);
+
+      return cloneAccessItem(accessItem);
+    },
+    async updateAccessItem(input) {
+      const accessItemIndex = snapshot.accessItems.findIndex(
+        (accessItem) => accessItem.id === input.id,
+      );
+
+      if (accessItemIndex === -1) {
+        throw new Error(`Access item ${input.id} was not found in the local store.`);
+      }
+
+      snapshot.accessItems[accessItemIndex] = {
+        ...input,
+        linkedDocumentIds: [...input.linkedDocumentIds],
+      };
+
+      return cloneAccessItem(input);
+    },
+    async deleteAccessItem(accessItemId) {
+      const accessItemIndex = snapshot.accessItems.findIndex(
+        (accessItem) => accessItem.id === accessItemId,
+      );
+
+      if (accessItemIndex === -1) {
+        throw new Error(`Access item ${accessItemId} was not found in the local store.`);
+      }
+
+      snapshot.accessItems.splice(accessItemIndex, 1);
+    },
+    async createEmergencyContact(input) {
+      const contact: EmergencyContact = {
+        ...input,
+        id: input.id ?? createEntityId('contact'),
+      };
+
+      snapshot.emergencyContacts.push(contact);
+
+      return { ...contact };
+    },
+    async updateEmergencyContact(input) {
+      const contactIndex = snapshot.emergencyContacts.findIndex((contact) => contact.id === input.id);
+
+      if (contactIndex === -1) {
+        throw new Error(`Emergency contact ${input.id} was not found in the local store.`);
+      }
+
+      snapshot.emergencyContacts[contactIndex] = { ...input };
+
+      return { ...input };
+    },
+    async deleteEmergencyContact(contactId) {
+      const contactIndex = snapshot.emergencyContacts.findIndex((contact) => contact.id === contactId);
+
+      if (contactIndex === -1) {
+        throw new Error(`Emergency contact ${contactId} was not found in the local store.`);
+      }
+
+      snapshot.emergencyContacts.splice(contactIndex, 1);
+    },
+    async createImportantAccount(input) {
+      const account: ImportantAccount = {
+        ...input,
+        id: input.id ?? createEntityId('account'),
+        linkedDocumentIds: [...input.linkedDocumentIds],
+      };
+
+      snapshot.importantAccounts.push(account);
+
+      return cloneImportantAccount(account);
+    },
+    async updateImportantAccount(input) {
+      const accountIndex = snapshot.importantAccounts.findIndex((account) => account.id === input.id);
+
+      if (accountIndex === -1) {
+        throw new Error(`Important account ${input.id} was not found in the local store.`);
+      }
+
+      snapshot.importantAccounts[accountIndex] = {
+        ...input,
+        linkedDocumentIds: [...input.linkedDocumentIds],
+      };
+
+      return cloneImportantAccount(input);
+    },
+    async deleteImportantAccount(accountId) {
+      const accountIndex = snapshot.importantAccounts.findIndex((account) => account.id === accountId);
+
+      if (accountIndex === -1) {
+        throw new Error(`Important account ${accountId} was not found in the local store.`);
+      }
+
+      snapshot.importantAccounts.splice(accountIndex, 1);
+    },
+    async createContinuityPlaybook(input) {
+      const playbook: ContinuityPlaybook = {
+        ...input,
+        id: input.id ?? createEntityId('playbook'),
+        steps: input.steps.map((step) => ({ ...step })),
+        linkedRecordIds: [...input.linkedRecordIds],
+      };
+
+      snapshot.continuityPlaybooks.push(playbook);
+
+      return cloneContinuityPlaybook(playbook);
+    },
+    async updateContinuityPlaybook(input) {
+      const playbookIndex = snapshot.continuityPlaybooks.findIndex(
+        (playbook) => playbook.id === input.id,
+      );
+
+      if (playbookIndex === -1) {
+        throw new Error(`Continuity playbook ${input.id} was not found in the local store.`);
+      }
+
+      snapshot.continuityPlaybooks[playbookIndex] = {
+        ...input,
+        steps: input.steps.map((step) => ({ ...step })),
+        linkedRecordIds: [...input.linkedRecordIds],
+      };
+
+      return cloneContinuityPlaybook(input);
+    },
+    async deleteContinuityPlaybook(playbookId) {
+      const playbookIndex = snapshot.continuityPlaybooks.findIndex(
+        (playbook) => playbook.id === playbookId,
+      );
+
+      if (playbookIndex === -1) {
+        throw new Error(`Continuity playbook ${playbookId} was not found in the local store.`);
+      }
+
+      snapshot.continuityPlaybooks.splice(playbookIndex, 1);
     },
     async createTask(input) {
       const task: MaintenanceTask = {
@@ -469,6 +689,10 @@ export function createMemoryHomeVaultRepository(
       snapshot.rooms = freshSnapshot.rooms;
       snapshot.assets = freshSnapshot.assets;
       snapshot.documents = freshSnapshot.documents;
+      snapshot.accessItems = freshSnapshot.accessItems;
+      snapshot.emergencyContacts = freshSnapshot.emergencyContacts;
+      snapshot.importantAccounts = freshSnapshot.importantAccounts;
+      snapshot.continuityPlaybooks = freshSnapshot.continuityPlaybooks;
       snapshot.tasks = freshSnapshot.tasks;
       snapshot.taskCompletions = freshSnapshot.taskCompletions;
       snapshot.repairEvents = freshSnapshot.repairEvents;
@@ -479,6 +703,10 @@ export function createMemoryHomeVaultRepository(
       snapshot.rooms = [];
       snapshot.assets = [];
       snapshot.documents = [];
+      snapshot.accessItems = [];
+      snapshot.emergencyContacts = [];
+      snapshot.importantAccounts = [];
+      snapshot.continuityPlaybooks = [];
       snapshot.tasks = [];
       snapshot.taskCompletions = [];
       snapshot.repairEvents = [];
@@ -491,6 +719,10 @@ export function createMemoryHomeVaultRepository(
       snapshot.rooms = freshSnapshot.rooms;
       snapshot.assets = freshSnapshot.assets;
       snapshot.documents = freshSnapshot.documents;
+      snapshot.accessItems = freshSnapshot.accessItems;
+      snapshot.emergencyContacts = freshSnapshot.emergencyContacts;
+      snapshot.importantAccounts = freshSnapshot.importantAccounts;
+      snapshot.continuityPlaybooks = freshSnapshot.continuityPlaybooks;
       snapshot.tasks = freshSnapshot.tasks;
       snapshot.taskCompletions = freshSnapshot.taskCompletions;
       snapshot.repairEvents = freshSnapshot.repairEvents;
@@ -513,6 +745,12 @@ function cloneSnapshot(snapshot: HomeVaultSnapshot): HomeVaultSnapshot {
       attachment: document.attachment ? { ...document.attachment } : undefined,
       linkedRecordIds: [...document.linkedRecordIds],
     })),
+    accessItems: snapshot.accessItems.map((accessItem) => cloneAccessItem(accessItem)),
+    emergencyContacts: snapshot.emergencyContacts.map((contact) => ({ ...contact })),
+    importantAccounts: snapshot.importantAccounts.map((account) => cloneImportantAccount(account)),
+    continuityPlaybooks: snapshot.continuityPlaybooks.map((playbook) =>
+      cloneContinuityPlaybook(playbook),
+    ),
     tasks: snapshot.tasks.map((task) => ({ ...task })),
     taskCompletions: snapshot.taskCompletions.map((completion) => ({ ...completion })),
     repairEvents: snapshot.repairEvents.map((repairEvent) => ({
@@ -528,5 +766,27 @@ function cloneDocument(document: DocumentRecord): DocumentRecord {
     ...document,
     attachment: document.attachment ? { ...document.attachment } : undefined,
     linkedRecordIds: [...document.linkedRecordIds],
+  };
+}
+
+function cloneAccessItem(accessItem: AccessItem): AccessItem {
+  return {
+    ...accessItem,
+    linkedDocumentIds: [...accessItem.linkedDocumentIds],
+  };
+}
+
+function cloneImportantAccount(account: ImportantAccount): ImportantAccount {
+  return {
+    ...account,
+    linkedDocumentIds: [...account.linkedDocumentIds],
+  };
+}
+
+function cloneContinuityPlaybook(playbook: ContinuityPlaybook): ContinuityPlaybook {
+  return {
+    ...playbook,
+    steps: playbook.steps.map((step) => ({ ...step })),
+    linkedRecordIds: [...playbook.linkedRecordIds],
   };
 }

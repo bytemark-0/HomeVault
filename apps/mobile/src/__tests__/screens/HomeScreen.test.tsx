@@ -13,7 +13,7 @@ describe('HomeScreen', () => {
     activeTasks: 0,
     assetCount: 0,
     documentCount: 0,
-    healthScore: null,
+    readinessScore: null,
     recentActivity: [],
     roomCount: 0,
     savedCostLabel: '$0',
@@ -24,9 +24,10 @@ describe('HomeScreen', () => {
     onAssetPress: jest.fn(),
     onTaskPress: jest.fn(),
     onViewCostSummary: jest.fn(),
-    onViewInventory: jest.fn(),
+    onViewDevices: jest.fn(),
     onViewMaintenance: jest.fn(),
     onViewServiceHistory: jest.fn(),
+    nextOpportunity: null,
     statusCards: [
       {
         key: 'setup',
@@ -55,22 +56,22 @@ describe('HomeScreen', () => {
     ],
     quickActions: [
       {
-        key: 'add-asset',
-        label: 'Add asset',
-        detail: 'Appliance, system, or tool',
+        key: 'open-access',
+        label: 'Access details',
+        detail: 'Wi-Fi, codes, and shutoff notes',
         onPress: onAddAsset,
         tone: 'primary' as const,
       },
       {
-        key: 'add-task',
-        label: 'Add task',
-        detail: 'Set a reminder',
+        key: 'open-emergency',
+        label: 'Emergency contacts',
+        detail: 'Who to call and what to export',
         onPress: onAddTask,
       },
       {
-        key: 'add-document',
-        label: 'Add document',
-        detail: 'Warranty, receipt, or manual',
+        key: 'add-device',
+        label: 'Add device',
+        detail: 'Router, system, or appliance',
         onPress: onAddDocument,
       },
     ],
@@ -84,19 +85,19 @@ describe('HomeScreen', () => {
     const { getByText, queryByText } = await render(<HomeScreen {...baseProps} />);
 
     expect(getByText('Oak Street home')).toBeTruthy();
-    expect(getByText('Start building your home record')).toBeTruthy();
+    expect(getByText('Start building the household guide')).toBeTruthy();
     expect(getByText('In progress')).toBeTruthy();
     expect(getByText('Nothing yet')).toBeTruthy();
     expect(getByText('Not started')).toBeTruthy();
-    expect(getByText('Quick actions')).toBeTruthy();
-    expect(getByText('Add asset')).toBeTruthy();
-    expect(getByText('Add task')).toBeTruthy();
-    expect(getByText('Add document')).toBeTruthy();
+    expect(getByText('Build readiness')).toBeTruthy();
+    expect(getByText('Access details')).toBeTruthy();
+    expect(getByText('Emergency contacts')).toBeTruthy();
+    expect(getByText('Add device')).toBeTruthy();
 
     expect(queryByText('Tracked costs')).toBeNull();
-    expect(getByText('No urgent tasks')).toBeTruthy();
+    expect(getByText('No urgent readiness steps')).toBeTruthy();
     expect(getByText('No activity yet')).toBeTruthy();
-    expect(getByText('No asset records yet')).toBeTruthy();
+    expect(getByText('No critical equipment saved yet')).toBeTruthy();
   });
 
   it('shows a partial-account summary state when setup is still underway', async () => {
@@ -137,7 +138,7 @@ describe('HomeScreen', () => {
       />,
     );
 
-    expect(getByText('1 task needs attention')).toBeTruthy();
+    expect(getByText('1 readiness step needs attention')).toBeTruthy();
     expect(getByText('2 of 6 starter steps done.')).toBeTruthy();
     expect(getByText('1 open')).toBeTruthy();
     expect(getByText('1 updates')).toBeTruthy();
@@ -145,7 +146,7 @@ describe('HomeScreen', () => {
 
   it('shows summary metrics and routes section actions for an established vault', async () => {
     const onViewMaintenance = jest.fn();
-    const onViewInventory = jest.fn();
+    const onViewDevices = jest.fn();
     const onViewServiceHistory = jest.fn();
     const onViewCostSummary = jest.fn();
     const { getAllByText, getByText } = await render(
@@ -155,12 +156,41 @@ describe('HomeScreen', () => {
         assetCount={4}
         documentCount={3}
         roomCount={5}
-        healthScore={87}
+        readinessScore={87}
         savedCostLabel="$412"
         onViewMaintenance={onViewMaintenance}
-        onViewInventory={onViewInventory}
+        onViewDevices={onViewDevices}
         onViewServiceHistory={onViewServiceHistory}
         onViewCostSummary={onViewCostSummary}
+        nextOpportunity={{
+          label: 'Add an emergency contact',
+          detail: 'Keep one trusted person listed before you need them.',
+          impactLabel: '+12 pts',
+          onPress: jest.fn(),
+        }}
+        payoffCards={[
+          {
+            key: 'break-fix-ready',
+            label: 'When Something Breaks',
+            value: '2 assets documented',
+            detail: 'Manuals, receipts, and warranties are already tied to the right equipment.',
+            tone: 'success',
+          },
+          {
+            key: 'maintenance-memory',
+            label: 'Work You Won’t Forget',
+            value: '3 reminders scheduled',
+            detail: 'Recurring work no longer has to live in your head.',
+            tone: 'success',
+          },
+          {
+            key: 'service-history',
+            label: 'History You Can Prove',
+            value: '$412',
+            detail: 'Repair and maintenance costs are starting to add up in one timeline.',
+            tone: 'success',
+          },
+        ]}
         statusCards={[
           {
             key: 'setup',
@@ -194,12 +224,18 @@ describe('HomeScreen', () => {
       />,
     );
 
-    expect(getByText('2 tasks need attention')).toBeTruthy();
+    expect(getByText('2 readiness steps need attention')).toBeTruthy();
     expect(getByText('Complete')).toBeTruthy();
-    expect(getByText('Ready')).toBeTruthy();
-    expect(getByText('Assets')).toBeTruthy();
-    expect(getByText('Documents')).toBeTruthy();
-    expect(getByText('Open tasks')).toBeTruthy();
+    expect(getAllByText('Ready').length).toBeGreaterThanOrEqual(1);
+    expect(getByText('Next best step')).toBeTruthy();
+    expect(getByText('Add an emergency contact')).toBeTruthy();
+    expect(getByText('What this already protects')).toBeTruthy();
+    expect(getByText('When Something Breaks')).toBeTruthy();
+    expect(getByText('3 reminders scheduled')).toBeTruthy();
+    expect(getByText('History You Can Prove')).toBeTruthy();
+    expect(getByText('Devices')).toBeTruthy();
+    expect(getByText('Records')).toBeTruthy();
+    expect(getByText('Open steps')).toBeTruthy();
     expect(getByText('Tracked costs')).toBeTruthy();
 
     const [dueNowAction, recentActivityAction] = getAllByText('View all');
@@ -212,7 +248,7 @@ describe('HomeScreen', () => {
     expect(onViewMaintenance).toHaveBeenCalledTimes(1);
 
     fireEvent.press(getByText('Search'));
-    expect(onViewInventory).toHaveBeenCalledTimes(1);
+    expect(onViewDevices).toHaveBeenCalledTimes(1);
 
     fireEvent.press(getByText('Tracked costs'));
     expect(onViewCostSummary).toHaveBeenCalledTimes(1);

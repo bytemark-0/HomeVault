@@ -46,7 +46,7 @@ export async function syncTaskNotifications(tasks: TaskListItem[]): Promise<void
     await Notifications.scheduleNotificationAsync({
       identifier: `task-${task.id}`,
       content: {
-        title: task.title,
+        title: 'HomeVault reminder',
         body: buildNotificationBody(task),
         data: { taskId: task.id },
       },
@@ -64,10 +64,9 @@ export async function clearAllNotifications(): Promise<void> {
 }
 
 function buildNotificationBody(task: TaskListItem): string {
-  const scope = task.scopeLabel;
-  if (task.state === 'snoozed') return `Reminder · ${scope}`;
-  if (task.state === 'due_today') return `Due today · ${scope}`;
-  return `Due ${task.dueLabel} · ${scope}`;
+  if (task.state === 'snoozed') return 'Reminder. Open HomeVault to review.';
+  if (task.state === 'due_today') return 'Due today. Open HomeVault to review.';
+  return `Due ${task.dueLabel}. Open HomeVault to review.`;
 }
 
 function getTriggerDate(

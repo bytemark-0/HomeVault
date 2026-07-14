@@ -87,8 +87,9 @@ export function BetaSupportScreen({ onBack }: BetaSupportScreenProps) {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Local-first privacy</Text>
         <Text style={styles.bodyText}>
-          HomeVault stores your vault on this device. The beta does not upload your home records,
-          documents, addresses, serial numbers, photos, notes, or attachments to a HomeVault server.
+          HomeVault stores your household guide on this device. The beta does not upload your home
+          records, documents, addresses, serial numbers, photos, notes, or attachments to a
+          HomeVault server.
         </Text>
         <Text style={styles.bodyText}>
           Backups and exports are files you choose to create and share. Keep them somewhere safe,
